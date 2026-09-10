@@ -1,0 +1,22 @@
+[
+  {
+    "id": "bb24b5c6-8803-4059-be67-b757c5ce1938",
+    "senderId": "u-teacher-1",
+    "receiverId": "u-8db0edf9-a2ee-49f9-aa1b-ad63d0530c4c",
+    "text": "Alo",
+    "image": null,
+    "attachment": null,
+    "createdAt": "2026-09-09T15:49:29.855Z",
+    "read": true
+  },
+  {
+    "id": "0f599c12-02a3-401e-89fe-151b77502c3b",
+    "senderId": "u-8db0edf9-a2ee-49f9-aa1b-ad63d0530c4c",
+    "receiverId": "u-teacher-1",
+    "text": "Hi",
+    "image": null,
+    "attachment": null,
+    "createdAt": "2026-09-10T01:45:05.728Z",
+    "read": true
+  }
+]

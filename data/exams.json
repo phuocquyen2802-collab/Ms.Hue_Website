@@ -1,0 +1,26 @@
+[
+  {
+    "id": "e-b04323df-e3d3-4416-95ea-6e7a4410e680",
+    "title": "Đề chuẩn 1",
+    "description": "",
+    "createdBy": "u-teacher-1",
+    "assignedTo": [
+      "u-8db0edf9-a2ee-49f9-aa1b-ad63d0530c4c"
+    ],
+    "durationMinutes": 15,
+    "status": "assigned",
+    "createdAt": "2026-09-10T02:43:26.815Z"
+  },
+  {
+    "id": "e-6f635f77-f2aa-4f66-bfff-e6dc2ea8959c",
+    "title": "Đề chuẩn 2",
+    "description": "",
+    "createdBy": "u-teacher-1",
+    "assignedTo": [
+      "u-fcf462ed-d7e1-4589-821a-e05639277d2e"
+    ],
+    "durationMinutes": 15,
+    "status": "assigned",
+    "createdAt": "2026-09-10T03:16:39.984Z"
+  }
+]

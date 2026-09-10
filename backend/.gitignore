@@ -1,0 +1,6 @@
+node_modules/
+.env
+*.log
+backend_out.log
+uploads/
+tmp/

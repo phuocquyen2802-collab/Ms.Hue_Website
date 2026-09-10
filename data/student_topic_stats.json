@@ -1,0 +1,74 @@
+[
+  {
+    "id": "u-8db0edf9-a2ee-49f9-aa1b-ad63d0530c4c_PHƯƠNG TRÌNH LƯỢNG GIÁC",
+    "studentId": "u-8db0edf9-a2ee-49f9-aa1b-ad63d0530c4c",
+    "tag": "PHƯƠNG TRÌNH LƯỢNG GIÁC",
+    "totalAnswered": 5,
+    "totalWrong": 1,
+    "wrongRate": 0.2,
+    "lastUpdated": "2026-09-10T02:45:57.242Z"
+  },
+  {
+    "id": "u-8db0edf9-a2ee-49f9-aa1b-ad63d0530c4c_PHƯƠNG TRÌNH, BẤT PHƯƠNG TRÌNH MŨ VÀ LÔGARIT",
+    "studentId": "u-8db0edf9-a2ee-49f9-aa1b-ad63d0530c4c",
+    "tag": "PHƯƠNG TRÌNH, BẤT PHƯƠNG TRÌNH MŨ VÀ LÔGARIT",
+    "totalAnswered": 9,
+    "totalWrong": 1,
+    "wrongRate": 0.11,
+    "lastUpdated": "2026-09-10T02:45:57.242Z"
+  },
+  {
+    "id": "u-8db0edf9-a2ee-49f9-aa1b-ad63d0530c4c_CẤP SỐ CỘNG VÀ CẤP SỐ NHÂN",
+    "studentId": "u-8db0edf9-a2ee-49f9-aa1b-ad63d0530c4c",
+    "tag": "CẤP SỐ CỘNG VÀ CẤP SỐ NHÂN",
+    "totalAnswered": 3,
+    "totalWrong": 1,
+    "wrongRate": 0.33,
+    "lastUpdated": "2026-09-10T02:45:57.242Z"
+  },
+  {
+    "id": "u-8db0edf9-a2ee-49f9-aa1b-ad63d0530c4c_KHẢO SÁT HÀM SỐ",
+    "studentId": "u-8db0edf9-a2ee-49f9-aa1b-ad63d0530c4c",
+    "tag": "KHẢO SÁT HÀM SỐ",
+    "totalAnswered": 8,
+    "totalWrong": 3,
+    "wrongRate": 0.38,
+    "lastUpdated": "2026-09-10T02:45:57.242Z"
+  },
+  {
+    "id": "u-8db0edf9-a2ee-49f9-aa1b-ad63d0530c4c_NGUYÊN HÀM, TÍCH PHÂN",
+    "studentId": "u-8db0edf9-a2ee-49f9-aa1b-ad63d0530c4c",
+    "tag": "NGUYÊN HÀM, TÍCH PHÂN",
+    "totalAnswered": 9,
+    "totalWrong": 1,
+    "wrongRate": 0.11,
+    "lastUpdated": "2026-09-10T02:45:57.242Z"
+  },
+  {
+    "id": "u-fcf462ed-d7e1-4589-821a-e05639277d2e_HÌNH HỌC KHÔNG GIAN",
+    "studentId": "u-fcf462ed-d7e1-4589-821a-e05639277d2e",
+    "tag": "HÌNH HỌC KHÔNG GIAN",
+    "totalAnswered": 6,
+    "totalWrong": 2,
+    "wrongRate": 0.33,
+    "lastUpdated": "2026-09-10T03:19:09.653Z"
+  },
+  {
+    "id": "u-fcf462ed-d7e1-4589-821a-e05639277d2e_VECTƠ VÀ PHƯƠNG PHÁP TỌA ĐỘ TRONG KHÔNG GIAN",
+    "studentId": "u-fcf462ed-d7e1-4589-821a-e05639277d2e",
+    "tag": "VECTƠ VÀ PHƯƠNG PHÁP TỌA ĐỘ TRONG KHÔNG GIAN",
+    "totalAnswered": 14,
+    "totalWrong": 3,
+    "wrongRate": 0.21,
+    "lastUpdated": "2026-09-10T03:19:09.653Z"
+  },
+  {
+    "id": "u-fcf462ed-d7e1-4589-821a-e05639277d2e_XÁC SUẤT",
+    "studentId": "u-fcf462ed-d7e1-4589-821a-e05639277d2e",
+    "tag": "XÁC SUẤT",
+    "totalAnswered": 8,
+    "totalWrong": 3,
+    "wrongRate": 0.38,
+    "lastUpdated": "2026-09-10T03:19:09.653Z"
+  }
+]

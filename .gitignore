@@ -1,0 +1,75 @@
+# ==========================================
+# DEPENDENCIES
+# ==========================================
+node_modules/
+*/node_modules/
+package-lock.json.bak
+
+# ==========================================
+# ENVIRONMENT & SECRETS (QUAN TRỌNG: Không push API Key)
+# ==========================================
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+*.env
+backend/.env
+frontend/.env
+
+# ==========================================
+# PRODUCTION BUILDS
+# ==========================================
+dist/
+*/dist/
+build/
+*/build/
+out/
+.vite/
+
+# ==========================================
+# LOGS & TEMPORARY FILES
+# ==========================================
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+backend_out.log
+backend/*.log
+
+# ==========================================
+# UPLOADED USER FILES & TEMP STORAGE
+# ==========================================
+data/chat_uploads/*
+!data/chat_uploads/.gitkeep
+temp/
+tmp/
+
+# ==========================================
+# OS & SYSTEM ARTIFACTS
+# ==========================================
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+[Dd]esktop.ini
+
+# ==========================================
+# IDE & EDITOR SETTINGS
+# ==========================================
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
