@@ -1,26 +1,68 @@
 [
   {
-    "id": "e-b04323df-e3d3-4416-95ea-6e7a4410e680",
-    "title": "Đề chuẩn 1",
+    "id": "e-cb9c66e6-5653-49b0-85f2-5baecf837c64",
+    "title": "Đề ôn tập số 1",
     "description": "",
     "createdBy": "u-teacher-1",
     "assignedTo": [
-      "u-8db0edf9-a2ee-49f9-aa1b-ad63d0530c4c"
+      "u-98741842-4faa-4754-9ac8-e0e46af5d42f"
     ],
     "durationMinutes": 15,
     "status": "assigned",
-    "createdAt": "2026-09-10T02:43:26.815Z"
+    "createdAt": "2026-09-21T14:45:35.653Z",
+    "answerKeyFile": {
+      "filename": "e0ad8add-1d9f-4357-ae29-d5b668e70394.docx",
+      "originalName": "Đáp án chi tiết đề 1.docx",
+      "mimeType": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+      "uploadedAt": "2026-09-21T14:45:36.220Z",
+      "previewPdfFilename": "7706cf9b-03a8-4726-9c83-44380b0a828f.pdf"
+    }
   },
   {
-    "id": "e-6f635f77-f2aa-4f66-bfff-e6dc2ea8959c",
+    "id": "e-a4fc650c-9fda-4ab2-a9b5-dca195f472fd",
+    "title": "Bài tập tiếp theo cho đề \"Đề ôn tập số 1\" - Nguyễn Phước Quyền",
+    "description": "Đề tự động sinh dựa trên các chủ đề yếu: PHƯƠNG TRÌNH LƯỢNG GIÁC",
+    "createdBy": "u-teacher-1",
+    "assignedTo": [
+      "u-98741842-4faa-4754-9ac8-e0e46af5d42f"
+    ],
+    "durationMinutes": 30,
+    "status": "assigned",
+    "createdAt": "2026-09-21T14:51:44.429Z",
+    "sourceExamId": "e-cb9c66e6-5653-49b0-85f2-5baecf837c64",
+    "isAiGenerated": true
+  },
+  {
+    "id": "e-b26bab22-9fcc-45da-9db5-994790e09082",
     "title": "Đề chuẩn 2",
     "description": "",
     "createdBy": "u-teacher-1",
     "assignedTo": [
-      "u-fcf462ed-d7e1-4589-821a-e05639277d2e"
+      "u-98741842-4faa-4754-9ac8-e0e46af5d42f"
     ],
     "durationMinutes": 15,
     "status": "assigned",
-    "createdAt": "2026-09-10T03:16:39.984Z"
+    "createdAt": "2026-09-21T15:05:35.489Z",
+    "answerKeyFile": {
+      "filename": "e32796d0-620e-421f-8649-e8fd79e9ac10.docx",
+      "originalName": "Đáp án chi tiết đề 1.docx",
+      "mimeType": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+      "uploadedAt": "2026-09-21T15:05:36.106Z",
+      "previewPdfFilename": "bb77c629-ae81-4d88-9fc9-dfdb135b164a.pdf"
+    }
+  },
+  {
+    "id": "e-7a671e9b-f807-4243-848c-c83c5412a3af",
+    "title": "Bài tập tiếp theo cho đề \"Đề chuẩn 2\" - Nguyễn Phước Quyền",
+    "description": "Đề tự động sinh dựa trên các chủ đề yếu: KHẢO SÁT HÀM SỐ",
+    "createdBy": "u-teacher-1",
+    "assignedTo": [
+      "u-98741842-4faa-4754-9ac8-e0e46af5d42f"
+    ],
+    "durationMinutes": 18,
+    "status": "assigned",
+    "createdAt": "2026-09-21T15:10:27.808Z",
+    "sourceExamId": "e-b26bab22-9fcc-45da-9db5-994790e09082",
+    "isAiGenerated": true
   }
 ]

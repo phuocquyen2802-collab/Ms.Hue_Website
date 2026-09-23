@@ -1,9 +1,10 @@
 import { useEffect, useState, useMemo } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import api from '../services/api';
 import WeakTopicsChart from '../components/WeakTopicsChart';
 
 export default function TeacherAnalyticsPage() {
+  const [searchParams] = useSearchParams();
   const [loading, setLoading] = useState(true);
   const [students, setStudents] = useState([]);
   const [allSubmissions, setAllSubmissions] = useState([]);
@@ -41,7 +42,12 @@ export default function TeacherAnalyticsPage() {
         setStudents(stList);
         setAllSubmissions(subRes.data || []);
 
-        if (stList.length > 0) {
+        // Nếu được điều hướng tới kèm ?studentId=... (VD: bấm tên học sinh
+        // từ trang "Quản lý học sinh") thì chọn sẵn đúng học sinh đó.
+        const studentIdFromUrl = searchParams.get('studentId');
+        if (studentIdFromUrl && stList.some((s) => s.id === studentIdFromUrl)) {
+          setSelectedStudentId(studentIdFromUrl);
+        } else if (stList.length > 0) {
           setSelectedStudentId(stList[0].id);
         }
       } catch (err) {
@@ -229,12 +235,12 @@ export default function TeacherAnalyticsPage() {
                   transition: 'all 0.2s ease',
                   background:
                     selectedClassFilter === 'all'
-                      ? 'linear-gradient(135deg, #2563eb, #1d4ed8)'
+                      ? 'var(--ink)'
                       : 'transparent',
                   color: selectedClassFilter === 'all' ? '#ffffff' : '#64748b',
                   boxShadow:
                     selectedClassFilter === 'all'
-                      ? '0 2px 8px rgba(37,99,235,0.3)'
+                      ? '0 2px 8px rgba(27,35,64,0.3)'
                       : 'none',
                 }}
               >
@@ -257,11 +263,11 @@ export default function TeacherAnalyticsPage() {
                       cursor: 'pointer',
                       transition: 'all 0.2s ease',
                       background: isSelected
-                        ? 'linear-gradient(135deg, #2563eb, #1d4ed8)'
+                        ? 'var(--primary)'
                         : 'transparent',
                       color: isSelected ? '#ffffff' : '#64748b',
                       boxShadow: isSelected
-                        ? '0 2px 8px rgba(37,99,235,0.3)'
+                        ? '0 2px 8px rgba(138,97,31,0.3)'
                         : 'none',
                     }}
                   >
@@ -322,8 +328,8 @@ export default function TeacherAnalyticsPage() {
               className="card"
               style={{
                 marginBottom: 20,
-                background: 'linear-gradient(135deg, rgba(37,99,235,0.05) 0%, rgba(79,70,229,0.08) 100%)',
-                borderColor: 'rgba(37,99,235,0.2)',
+                background: 'linear-gradient(135deg, rgba(27,35,64,0.05) 0%, rgba(138,97,31,0.08) 100%)',
+                borderColor: 'rgba(138,97,31,0.2)',
                 padding: '16px 20px',
               }}
             >
@@ -496,16 +502,12 @@ export default function TeacherAnalyticsPage() {
                     <button
                       type="button"
                       onClick={() => setSelectedSubmissionId('all')}
-                      className="btn btn-sm btn-secondary"
+                      className="btn sm secondary"
                       style={{
                         fontSize: 12,
                         padding: '4px 12px',
                         borderRadius: 20,
                         fontWeight: 600,
-                        border: '1px solid #cbd5e1',
-                        background: '#f8fafc',
-                        color: '#334155',
-                        cursor: 'pointer',
                       }}
                     >
                       🌐 Xem tổng hợp tất cả lần
@@ -660,16 +662,16 @@ export default function TeacherAnalyticsPage() {
                                     onClick={() => setSelectedSubmissionId(isSelected ? 'all' : sub.id)}
                                     style={{
                                       cursor: 'pointer',
-                                      background: isSelected ? 'rgba(37,99,235,0.08)' : idx % 2 === 0 ? '#ffffff' : '#fafbfc',
+                                      background: isSelected ? 'rgba(138,97,31,0.08)' : idx % 2 === 0 ? '#ffffff' : '#fafbfc',
                                       transition: 'all 0.15s ease',
-                                      borderLeft: isSelected ? '4px solid #2563eb' : '4px solid transparent',
+                                      borderLeft: isSelected ? '4px solid var(--primary)' : '4px solid transparent',
                                     }}
                                     title="Click để lọc thống kê chuyên đề theo đợt làm này"
                                   >
                                     <td style={{ padding: '12px 16px' }}>
                                       <span
                                         style={{
-                                          background: isSelected ? '#2563eb' : '#f1f5f9',
+                                          background: isSelected ? 'var(--primary)' : '#f1f5f9',
                                           color: isSelected ? '#ffffff' : '#334155',
                                           fontWeight: 700,
                                           padding: '3px 10px',
@@ -678,7 +680,7 @@ export default function TeacherAnalyticsPage() {
                                           display: 'inline-flex',
                                           alignItems: 'center',
                                           gap: 4,
-                                          boxShadow: isSelected ? '0 2px 6px rgba(37,99,235,0.3)' : 'none',
+                                          boxShadow: isSelected ? '0 2px 6px rgba(138,97,31,0.3)' : 'none',
                                         }}
                                       >
                                         Lần {sub.attempt || (group.submissions.length - idx)}
@@ -720,9 +722,9 @@ export default function TeacherAnalyticsPage() {
                                           display: 'inline-flex',
                                           alignItems: 'center',
                                           gap: 4,
-                                          background: 'linear-gradient(135deg, #2563eb, #1d4ed8)',
+                                          background: 'var(--primary)',
                                           color: '#fff',
-                                          boxShadow: '0 2px 5px rgba(37,99,235,0.2)',
+                                          boxShadow: '0 2px 5px rgba(138,97,31,0.25)',
                                         }}
                                       >
                                         ✨ Xem bài & AI ➔
@@ -762,7 +764,7 @@ export default function TeacherAnalyticsPage() {
                   <button
                     type="button"
                     onClick={() => setSelectedSubmissionId('all')}
-                    className="btn btn-sm btn-secondary"
+                    className="btn sm secondary"
                     style={{ fontSize: 12, padding: '4px 12px', borderRadius: 20, fontWeight: 600 }}
                   >
                     🌐 Xem tất cả
@@ -771,9 +773,9 @@ export default function TeacherAnalyticsPage() {
                   <span
                     style={{
                       fontSize: 12,
-                      color: '#2563eb',
-                      background: 'rgba(37,99,235,0.08)',
-                      border: '1px solid rgba(37,99,235,0.2)',
+                      color: 'var(--primary)',
+                      background: 'rgba(138,97,31,0.08)',
+                      border: '1px solid rgba(138,97,31,0.25)',
                       padding: '4px 12px',
                       borderRadius: 20,
                       fontWeight: 600,

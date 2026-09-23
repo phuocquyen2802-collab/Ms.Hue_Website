@@ -65,6 +65,44 @@ export default function StudentWeakTopicsPage() {
     setSearchParams({ submissionId: id });
   };
 
+  const [expandedAiFolderIds, setExpandedAiFolderIds] = useState(new Set());
+  function toggleAiFolder(examId) {
+    setExpandedAiFolderIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(examId)) next.delete(examId);
+      else next.add(examId);
+      return next;
+    });
+  }
+
+  // Nhóm các đợt làm bài theo đề: đề AI sinh thêm (sourceExamId) sẽ nằm lồng trong đề gốc
+  const { topLevelGroups, aiChildrenByParent } = useMemo(() => {
+    const examIds = new Set(submissions.map((s) => s.examId));
+    const byExam = {};
+    submissions.forEach((s) => {
+      if (!byExam[s.examId]) {
+        byExam[s.examId] = {
+          examId: s.examId,
+          examTitle: s.examTitle,
+          isAiGenerated: s.isAiGenerated,
+          sourceExamId: s.sourceExamId,
+          attempts: [],
+        };
+      }
+      byExam[s.examId].attempts.push(s);
+    });
+    const allGroups = Object.values(byExam);
+    const childrenMap = {};
+    allGroups.forEach((g) => {
+      if (g.sourceExamId && examIds.has(g.sourceExamId)) {
+        if (!childrenMap[g.sourceExamId]) childrenMap[g.sourceExamId] = [];
+        childrenMap[g.sourceExamId].push(g);
+      }
+    });
+    const topGroups = allGroups.filter((g) => !g.sourceExamId || !examIds.has(g.sourceExamId));
+    return { topLevelGroups: topGroups, aiChildrenByParent: childrenMap };
+  }, [submissions]);
+
   if (loading || !data) {
     return (
       <div className="container">
@@ -93,7 +131,7 @@ export default function StudentWeakTopicsPage() {
         <div
           className="card"
           style={{
-            padding: '12px 18px',
+            padding: '16px 18px',
             marginBottom: 20,
             borderRadius: 12,
             border: '1px solid var(--border-color)',
@@ -101,41 +139,177 @@ export default function StudentWeakTopicsPage() {
             boxShadow: '0 2px 8px rgba(0,0,0,0.02)',
           }}
         >
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-muted)' }}>
-                📑 Lọc theo:
-              </span>
-            </div>
+          <div style={{ fontSize: 12.5, fontWeight: 700, color: 'var(--text-muted)', marginBottom: 10 }}>
+            📑 Chọn đề &amp; đợt làm để xem
+          </div>
+          <div
+            style={{
+              display: 'flex',
+              flexDirection: 'column',
+              gap: 6,
+              maxHeight: 260,
+              overflowY: 'auto',
+              paddingRight: 2,
+            }}
+          >
+            {topLevelGroups.map((g) => {
+              const aiChildren = aiChildrenByParent[g.examId] || [];
+              const folderExpanded = expandedAiFolderIds.has(g.examId);
+              return (
+                <div key={g.examId} style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                  {g.attempts.map((s) => {
+                    const isSelected = activeSubmission?.id === s.id;
+                    return (
+                      <button
+                        key={s.id}
+                        type="button"
+                        onClick={() => handleSelectSubmission(s.id)}
+                        title={s.examTitle}
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: 10,
+                          width: '100%',
+                          textAlign: 'left',
+                          border: isSelected ? '1.5px solid var(--gold, #c98a2c)' : '1px solid var(--border-color)',
+                          borderRadius: 10,
+                          padding: '9px 12px',
+                          fontSize: 13,
+                          cursor: 'pointer',
+                          transition: 'background-color 0.15s ease, border-color 0.15s ease',
+                          background: isSelected ? 'var(--gold-soft, #f3e4c6)' : '#fff',
+                        }}
+                      >
+                        <span style={{ fontSize: 16, flexShrink: 0 }}>{s.isAiGenerated ? '✨' : '📝'}</span>
+                        <span
+                          style={{
+                            flex: 1,
+                            minWidth: 0,
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis',
+                            whiteSpace: 'nowrap',
+                            fontWeight: isSelected ? 700 : 500,
+                            color: isSelected ? 'var(--gold-text, #8a611f)' : 'var(--text-main)',
+                          }}
+                        >
+                          {s.examTitle}
+                        </span>
+                        <span
+                          style={{
+                            flexShrink: 0,
+                            fontSize: 11.5,
+                            fontWeight: 700,
+                            padding: '2px 9px',
+                            borderRadius: 999,
+                            background: isSelected ? 'rgba(255,255,255,0.6)' : 'var(--bg-subtle)',
+                            color: isSelected ? 'var(--gold-text, #8a611f)' : 'var(--text-muted)',
+                          }}
+                        >
+                          Lần {s.attempt}
+                        </span>
+                        {isSelected && <span style={{ color: 'var(--gold-text, #8a611f)', fontSize: 13 }}>✓</span>}
+                      </button>
+                    );
+                  })}
 
-            <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
-              {submissions.map((s) => {
-                const isSelected = activeSubmission?.id === s.id;
-                return (
-                  <button
-                    key={s.id}
-                    type="button"
-                    onClick={() => handleSelectSubmission(s.id)}
-                    style={{
-                      border: 'none',
-                      borderRadius: 20,
-                      padding: '6px 14px',
-                      fontSize: 12.5,
-                      fontWeight: isSelected ? 700 : 500,
-                      cursor: 'pointer',
-                      transition: 'all 0.2s ease',
-                      background: isSelected
-                        ? 'linear-gradient(135deg, #2563eb, #1d4ed8)'
-                        : '#f1f5f9',
-                      color: isSelected ? '#ffffff' : '#475569',
-                      boxShadow: isSelected ? '0 2px 6px rgba(37,99,235,0.3)' : 'none',
-                    }}
-                  >
-                    📝 {s.examTitle} (Lần {s.attempt})
-                  </button>
-                );
-              })}
-            </div>
+                  {aiChildren.length > 0 && (
+                    <>
+                      <button
+                        type="button"
+                        onClick={() => toggleAiFolder(g.examId)}
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: 6,
+                          width: '100%',
+                          textAlign: 'left',
+                          border: 'none',
+                          background: 'transparent',
+                          padding: '4px 12px 4px 28px',
+                          fontSize: 12,
+                          fontWeight: 600,
+                          color: 'var(--text-muted)',
+                          cursor: 'pointer',
+                        }}
+                      >
+                        📂 {aiChildren.reduce((sum, c) => sum + c.attempts.length, 0)} bài tập AI sinh thêm{' '}
+                        {folderExpanded ? '▲' : '▼'}
+                      </button>
+
+                      {folderExpanded && (
+                        <div
+                          style={{
+                            display: 'flex',
+                            flexDirection: 'column',
+                            gap: 6,
+                            paddingLeft: 22,
+                            borderLeft: '2px dashed var(--border-color)',
+                            marginLeft: 12,
+                          }}
+                        >
+                          {aiChildren.flatMap((c) =>
+                            c.attempts.map((s) => {
+                              const isSelected = activeSubmission?.id === s.id;
+                              return (
+                                <button
+                                  key={s.id}
+                                  type="button"
+                                  onClick={() => handleSelectSubmission(s.id)}
+                                  title={s.examTitle}
+                                  style={{
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: 10,
+                                    width: '100%',
+                                    textAlign: 'left',
+                                    border: isSelected ? '1.5px solid var(--gold, #c98a2c)' : '1px solid var(--border-color)',
+                                    borderRadius: 10,
+                                    padding: '8px 12px',
+                                    fontSize: 12.5,
+                                    cursor: 'pointer',
+                                    transition: 'background-color 0.15s ease, border-color 0.15s ease',
+                                    background: isSelected ? 'var(--gold-soft, #f3e4c6)' : '#fff',
+                                  }}
+                                >
+                                  <span style={{ fontSize: 15, flexShrink: 0 }}>✨</span>
+                                  <span
+                                    style={{
+                                      flex: 1,
+                                      minWidth: 0,
+                                      overflow: 'hidden',
+                                      textOverflow: 'ellipsis',
+                                      whiteSpace: 'nowrap',
+                                      fontWeight: isSelected ? 700 : 500,
+                                      color: isSelected ? 'var(--gold-text, #8a611f)' : 'var(--text-main)',
+                                    }}
+                                  >
+                                    {s.examTitle}
+                                  </span>
+                                  <span
+                                    style={{
+                                      flexShrink: 0,
+                                      fontSize: 11,
+                                      fontWeight: 700,
+                                      padding: '2px 9px',
+                                      borderRadius: 999,
+                                      background: isSelected ? 'rgba(255,255,255,0.6)' : 'var(--bg-subtle)',
+                                      color: isSelected ? 'var(--gold-text, #8a611f)' : 'var(--text-muted)',
+                                    }}
+                                  >
+                                    Lần {s.attempt}
+                                  </span>
+                                  {isSelected && <span style={{ color: 'var(--gold-text, #8a611f)', fontSize: 13 }}>✓</span>}
+                                </button>
+                              );
+                            })
+                          )}
+                        </div>
+                      )}
+                    </>
+                  )}
+                </div>
+              );
+            })}
           </div>
         </div>
       ) : (

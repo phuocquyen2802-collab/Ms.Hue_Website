@@ -1,5 +1,7 @@
 const express = require('express');
 const multer = require('multer');
+const path = require('path');
+const { v4: uuidv4 } = require('uuid');
 const { verifyToken, requireRole } = require('../middleware/auth');
 const {
   createExam,
@@ -13,6 +15,9 @@ const {
   updateQuestion,
   deleteQuestion,
   assignExam,
+  uploadAnswerKey,
+  deleteAnswerKey,
+  downloadAnswerKey,
 } = require('../controllers/examController');
 const { previewImportStandalone, previewImport, addQuestionsBulk } = require('../controllers/importController');
 
@@ -22,7 +27,23 @@ const router = express.Router();
 // vài MB nên không cần lưu file tạm phức tạp.
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 20 * 1024 * 1024 } });
 
-// Toàn bộ route quản lý đề thi chỉ dành cho giáo viên
+// File đáp án chi tiết lưu thẳng ra đĩa (data/exam_answer_keys) - có thể là
+// PDF/ảnh/Word dung lượng lớn hơn 1 chút so với ảnh công thức thông thường.
+const answerKeyUpload = multer({
+  storage: multer.diskStorage({
+    destination: (req, file, cb) => cb(null, path.join(__dirname, '../../../data/exam_answer_keys')),
+    filename: (req, file, cb) => cb(null, `${uuidv4()}${path.extname(file.originalname)}`),
+  }),
+  limits: { fileSize: 30 * 1024 * 1024 },
+});
+
+// Route xem/tải file đáp án chi tiết CÔNG KHAI (không yêu cầu đăng nhập) -
+// đặt TRƯỚC middleware requireRole('teacher') bên dưới để học sinh (và ai
+// quét mã QR trên điện thoại, có thể chưa đăng nhập trên máy đó) đều xem/tải
+// được trực tiếp, giống cơ chế tải file đính kèm chat (chatRoutes.js).
+router.get('/:examId/answer-key/download', downloadAnswerKey);
+
+// Toàn bộ route quản lý đề thi còn lại chỉ dành cho giáo viên
 router.use(verifyToken, requireRole('teacher'));
 
 router.post('/import-preview', upload.single('file'), previewImportStandalone);
@@ -42,5 +63,8 @@ router.delete('/:examId/questions/:questionId', deleteQuestion);
 router.post('/:examId/import-preview', upload.single('file'), previewImport);
 
 router.put('/:examId/assign', assignExam);
+
+router.post('/:examId/answer-key', answerKeyUpload.single('file'), uploadAnswerKey);
+router.delete('/:examId/answer-key', deleteAnswerKey);
 
 module.exports = router;

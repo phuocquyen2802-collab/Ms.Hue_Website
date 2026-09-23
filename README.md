@@ -4,10 +4,6 @@
 đó đưa ra roadmap ôn tập và bài tập tương tự cho những phần học sinh hay sai
 nhất.
 
-Chi tiết tiến trình xây dựng và quyết định kỹ thuật: xem [docs/STEP_BY_STEP.md](docs/STEP_BY_STEP.md).
-Chi tiết cấu trúc dữ liệu: xem [docs/DATA_SCHEMA.md](docs/DATA_SCHEMA.md).
-Hướng dẫn lấy Google Gemini API key (miễn phí): xem [docs/GEMINI_SETUP.md](docs/GEMINI_SETUP.md).
-
 ## Cấu trúc dự án
 
 ```
@@ -17,57 +13,49 @@ data/       Dữ liệu lưu dạng file JSON (thay cho SQL database)
 docs/       Tài liệu thiết kế + nhật ký tiến trình
 ```
 
-## Yêu cầu môi trường
+## Cần cài trước khi chạy ở máy khác
 
-- **Node.js** bản 18 trở lên (đã bao gồm `npm`). Kiểm tra bằng `node -v`.
-- Không cần cài đặt database gì thêm (dữ liệu lưu dạng file JSON trong `data/`).
+- **Node.js 18+** (kèm `npm`). Kiểm tra: `node -v`.
+- **LibreOffice** (bản mới nhất, cài mặc định là được) - dùng để chuyển công
+  thức Toán/hình vẽ trong file Word (.docx) sang ảnh, và chuyển file đáp án
+  Word sang PDF để xem trước. Thiếu cái này thì tính năng tải đề/đáp án từ
+  Word vẫn chạy nhưng thiếu ảnh công thức và không xem trước Word được.
+  - Windows/macOS: tải tại https://www.libreoffice.org/download/download/
+  - Linux: `sudo apt install libreoffice`
+- Không cần cài database (dữ liệu lưu file JSON trong `data/`).
 - (Tuỳ chọn) Google Gemini API key nếu muốn dùng tính năng sinh roadmap AI
   thật - xem [docs/GEMINI_SETUP.md](docs/GEMINI_SETUP.md) để lấy key miễn
-  phí. Không có key vẫn chạy được toàn bộ các tính năng còn lại bình thường.
+  phí. Không có key vẫn chạy được các tính năng còn lại bình thường.
 
-## Hướng dẫn build & chạy thử (lần đầu)
+## Hướng dẫn build & chạy
 
 Dự án gồm 2 phần chạy độc lập: **backend** (cổng 5000) và **frontend** (cổng
-5173). Cần mở 2 cửa sổ terminal, mỗi terminal chạy 1 phần.
+5173). Mở 2 terminal, mỗi terminal chạy 1 phần.
 
-### Bước 1 - Chạy Backend (terminal 1)
+### 1. Backend
 
 ```bash
 cd backend
 npm install
+copy .env.example .env    # Windows PowerShell - macOS/Linux dùng: cp .env.example .env
 ```
 
-Tạo file cấu hình `.env` từ file mẫu:
-
-```bash
-# Windows PowerShell
-copy .env.example .env
-
-# macOS / Linux / Git Bash
-cp .env.example .env
-```
-
-Mở file `backend/.env` vừa tạo, chỉnh 2 dòng:
+Mở `backend/.env`, chỉnh:
 
 ```
 JWT_SECRET=doi_thanh_1_chuoi_bat_ky_it_nhat_16_ky_tu
 GEMINI_API_KEY=dan_key_that_vao_day_neu_co
 ```
 
-(Nếu chưa có `GEMINI_API_KEY`, cứ để nguyên giá trị mẫu - chỉ tính năng
-"Sinh roadmap AI" sẽ báo lỗi, các tính năng khác vẫn chạy bình thường.)
-
-Khởi động backend:
+Chạy:
 
 ```bash
 npm run dev
 ```
 
-Thấy dòng `Server đang chạy tại http://localhost:5000` là backend đã sẵn
-sàng. Kiểm tra nhanh bằng cách mở trình duyệt vào
-`http://localhost:5000/api/health`, phải thấy `{"ok":true}`.
+Sẵn sàng khi thấy `Server đang chạy tại http://localhost:5000`.
 
-### Bước 2 - Chạy Frontend (terminal 2, mở terminal mới, giữ terminal 1 chạy)
+### 2. Frontend (terminal khác, giữ terminal 1 đang chạy)
 
 ```bash
 cd frontend
@@ -75,50 +63,21 @@ npm install
 npm run dev
 ```
 
-Thấy dòng `Local: http://localhost:5173/` là frontend đã sẵn sàng. Mở
-trình duyệt vào **http://localhost:5173** để dùng thử.
+Sẵn sàng khi thấy `Local: http://localhost:5173/` - mở trình duyệt vào đó.
 
-### Bước 3 - Đăng nhập thử
-
-Dùng tài khoản giáo viên mặc định bên dưới để đăng nhập, sau đó tự tạo tài
-khoản học sinh trong mục "Thêm học sinh".
-
-### Dừng chạy
-
-Bấm `Ctrl + C` trong từng terminal để dừng backend/frontend.
-
-## Build bản production (tuỳ chọn, không bắt buộc khi demo)
+### Build bản production (frontend)
 
 ```bash
 cd frontend
-npm run build      # sinh ra thư mục frontend/dist (file tĩnh HTML/CSS/JS)
+npm run build      # sinh ra frontend/dist (file tĩnh HTML/CSS/JS)
 npm run preview    # xem thử bản build tại http://localhost:4173
 ```
 
-Backend không cần build, chạy thẳng bằng `npm start` (giống `npm run dev`
-nhưng không tự khởi động lại khi sửa code).
+Backend không cần build, chạy production bằng `npm start` (thay cho `npm run dev`).
 
-## Xử lý sự cố thường gặp
+### Dừng chạy
 
-- **Lỗi `EADDRINUSE` (cổng 5000/5173 đang bị chiếm)**: có tiến trình cũ
-  chưa tắt hẳn. Trên Windows, tìm và tắt bằng:
-  ```powershell
-  netstat -ano | findstr :5000
-  taskkill /PID <số_PID_tìm_được> /F
-  ```
-- **Frontend gọi API báo lỗi mạng/CORS**: kiểm tra backend đã chạy ở cổng
-  5000 chưa, hoặc kiểm tra file `frontend/.env` (nếu có tạo) có
-  `VITE_API_URL` trỏ đúng `http://localhost:5000/api` không.
-- **Lỗi liên quan `GEMINI_API_KEY`**: chỉ ảnh hưởng tính năng sinh roadmap
-  AI, xem lại [docs/GEMINI_SETUP.md](docs/GEMINI_SETUP.md).
-
-## Phân quyền tài khoản
-
-- Trang **Đăng ký** (`/register`) chỉ tạo được tài khoản **giáo viên**.
-- Tài khoản **học sinh** không tự đăng ký được - giáo viên tạo trong mục
-  "Thêm tài khoản học sinh" ở dashboard, và có thể sửa (họ tên, lớp) hoặc
-  xoá tài khoản học sinh tại đó (mục "Danh sách học sinh"). Xoá học sinh sẽ
-  xoá luôn toàn bộ bài nộp, thống kê và đề xuất AI liên quan.
+`Ctrl + C` trong từng terminal.
 
 ## Tài khoản giáo viên mặc định
 
@@ -126,46 +85,26 @@ nhưng không tự khởi động lại khi sửa code).
 |---|---|
 | `admin` | `admin123` |
 
-Tài khoản học sinh chưa có sẵn - đăng nhập bằng tài khoản trên rồi vào mục
-"Thêm học sinh" trên dashboard giáo viên để tạo. Tên đăng nhập không bắt
-buộc phải là địa chỉ email, có thể dùng tên thường (VD: `hocsinh01`).
+Tài khoản học sinh: đăng nhập bằng tài khoản trên rồi tạo trong mục "Thêm
+học sinh" trên dashboard giáo viên.
 
-## Chuông thông báo
+## Xử lý sự cố thường gặp
 
-Icon 🔔 cố định góc phải trên cùng mọi trang. Badge đỏ đếm số thông báo
-chưa đọc; bấm vào chuông xem danh sách, bấm vào 1 thông báo sẽ đánh dấu đã
-đọc (chuyển nền trắng) và điều hướng thẳng tới trang liên quan.
+- **Lỗi `EADDRINUSE` (cổng 5000/5173 đang bị chiếm)**:
+  ```powershell
+  netstat -ano | findstr :5000
+  taskkill /PID <số_PID_tìm_được> /F
+  ```
+- **Frontend gọi API báo lỗi mạng/CORS**: kiểm tra backend đã chạy ở cổng
+  5000 chưa, hoặc `frontend/.env` (nếu có) có `VITE_API_URL` trỏ đúng
+  `http://localhost:5000/api` không.
+- **Thiếu ảnh công thức Toán / không xem trước được file Word**: chưa cài
+  LibreOffice hoặc chưa có trong PATH hệ thống.
+- **Lỗi liên quan `GEMINI_API_KEY`**: chỉ ảnh hưởng tính năng sinh roadmap
+  AI, xem [docs/GEMINI_SETUP.md](docs/GEMINI_SETUP.md).
 
-- **Giáo viên**: mỗi bài học sinh nộp là 1 thông báo, dẫn tới trang quản lý
-  đề thi đó.
-- **Học sinh**: mỗi đề được giao mà chưa làm là 1 thông báo, dẫn thẳng tới
-  trang làm bài.
+## Tài liệu khác
 
-## Tải đề thi từ file Word (.docx)
-
-Vào 1 đề thi -> tab "Danh sách câu hỏi" -> "Thêm câu hỏi mới" -> chọn "Tải
-từ file Word". Hệ thống tự tách câu hỏi, 4 đáp án và gợi ý tag chủ đề theo
-từng "CHỦ ĐỀ ..." trong file.
-
-**Tự động điền sẵn đáp án đúng (tuỳ chọn)**: nếu file có sẵn bảng đáp án ở
-cuối, hệ thống sẽ tự nhận diện và điền sẵn, giáo viên chỉ cần xác nhận lại
-thay vì chọn tay từng câu. Cách soạn: thêm 1 đoạn có tiêu đề chứa chữ
-**"ĐÁP ÁN"** ở cuối file (sau toàn bộ câu hỏi), liệt kê theo đúng **thứ tự
-câu hỏi xuất hiện trong file**, dạng:
-
-```
-ĐÁP ÁN
-
-1-A  2-C  3-B  4-D  5-A ...
-```
-
-Dấu nối giữa số và chữ chấp nhận `-`, `.`, `:` hoặc `)`. Số thứ tự không
-cần khớp với số ghi trong từng "Câu N" ở phần đề (vì nhiều đề tự đánh số
-lại từ 1 theo mỗi chủ đề) - hệ thống ghép theo đúng thứ tự xuất hiện. Nếu
-số lượng đáp án tìm được không khớp số câu hỏi tách được, hệ thống sẽ
-KHÔNG tự đoán mà báo cảnh báo để giáo viên tự chọn tay (tránh gán nhầm hàng
-loạt).
-
-Dù có hay không có bảng đáp án, giáo viên luôn xem lại và có thể đổi đáp án
-ở bước kiểm tra trước khi lưu vào đề - hệ thống không tự lưu mà không qua
-xác nhận.
+- [docs/STEP_BY_STEP.md](docs/STEP_BY_STEP.md) - tiến trình xây dựng
+- [docs/DATA_SCHEMA.md](docs/DATA_SCHEMA.md) - cấu trúc dữ liệu
+- [docs/GEMINI_SETUP.md](docs/GEMINI_SETUP.md) - lấy Google Gemini API key

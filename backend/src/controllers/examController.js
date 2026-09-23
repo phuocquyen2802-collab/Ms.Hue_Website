@@ -1,6 +1,128 @@
+const fs = require('fs');
+const path = require('path');
 const { v4: uuidv4 } = require('uuid');
 const dataAccess = require('../models/dataAccess');
 const weaknessAnalysisService = require('../services/weaknessAnalysisService');
+const wmfConvertService = require('../services/wmfConvertService');
+
+// Thư mục lưu file đáp án chi tiết (lời giải) giáo viên tải lên cho từng đề -
+// giống cơ chế lưu file đính kèm chat (chatController.js), dùng tên file
+// ngẫu nhiên trên đĩa để tránh trùng/đoán được, tên gốc lưu riêng trong data.
+const ANSWER_KEY_DIR = path.join(__dirname, '../../../data/exam_answer_keys');
+if (!fs.existsSync(ANSWER_KEY_DIR)) {
+  fs.mkdirSync(ANSWER_KEY_DIR, { recursive: true });
+}
+
+function decodeUtf8FileName(str) {
+  if (!str) return '';
+  try {
+    return Buffer.from(str, 'latin1').toString('utf8');
+  } catch {
+    return str;
+  }
+}
+
+const WORD_MIME_TYPES = [
+  'application/msword',
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+];
+
+function removeAnswerKeyFilesFromDisk(answerKeyFile) {
+  if (!answerKeyFile) return;
+  if (answerKeyFile.filename) {
+    const p = path.join(ANSWER_KEY_DIR, answerKeyFile.filename);
+    if (fs.existsSync(p)) fs.unlinkSync(p);
+  }
+  if (answerKeyFile.previewPdfFilename) {
+    const p = path.join(ANSWER_KEY_DIR, answerKeyFile.previewPdfFilename);
+    if (fs.existsSync(p)) fs.unlinkSync(p);
+  }
+}
+
+// [Giáo viên] Tải lên file đáp án chi tiết (PDF/ảnh/Word) cho 1 đề thi -
+// thay thế file cũ nếu đã có (xoá file cũ khỏi đĩa để không rác dần). Nếu là
+// file Word, TỰ TẠO THÊM 1 bản PDF xem trước bằng LibreOffice (trình duyệt
+// không tự hiển thị được .doc/.docx, nhưng hiển thị PDF trực tiếp rất tốt) -
+// bản gốc Word vẫn giữ nguyên để tải về, bản PDF chỉ dùng để xem trên web.
+async function uploadAnswerKey(req, res) {
+  const exam = dataAccess.findById('exams', req.params.examId);
+  if (!exam || exam.createdBy !== req.user.id) {
+    return res.status(404).json({ message: 'Không tìm thấy đề thi' });
+  }
+  if (!req.file) {
+    return res.status(400).json({ message: 'Không có tệp nào được tải lên' });
+  }
+
+  removeAnswerKeyFilesFromDisk(exam.answerKeyFile);
+
+  const originalName = decodeUtf8FileName(req.file.originalname);
+  const answerKeyFile = {
+    filename: req.file.filename,
+    originalName,
+    mimeType: req.file.mimetype,
+    uploadedAt: new Date().toISOString(),
+  };
+
+  if (WORD_MIME_TYPES.includes(req.file.mimetype)) {
+    try {
+      const fileBuffer = fs.readFileSync(path.join(ANSWER_KEY_DIR, req.file.filename));
+      const ext = path.extname(originalName) || '.docx';
+      const pdfBuffer = await wmfConvertService.convertDocumentToPdfBuffer(fileBuffer, ext);
+      if (pdfBuffer) {
+        const previewPdfFilename = `${uuidv4()}.pdf`;
+        fs.writeFileSync(path.join(ANSWER_KEY_DIR, previewPdfFilename), pdfBuffer);
+        answerKeyFile.previewPdfFilename = previewPdfFilename;
+      }
+    } catch (err) {
+      console.error('Lỗi tạo bản xem trước PDF cho file đáp án Word:', err.message);
+    }
+  }
+
+  dataAccess.updateById('exams', exam.id, { answerKeyFile });
+  return res.json({ answerKeyFile });
+}
+
+// [Giáo viên] Gỡ file đáp án chi tiết khỏi đề thi
+function deleteAnswerKey(req, res) {
+  const exam = dataAccess.findById('exams', req.params.examId);
+  if (!exam || exam.createdBy !== req.user.id) {
+    return res.status(404).json({ message: 'Không tìm thấy đề thi' });
+  }
+  removeAnswerKeyFilesFromDisk(exam.answerKeyFile);
+  dataAccess.updateById('exams', exam.id, { answerKeyFile: null });
+  return res.json({ ok: true });
+}
+
+// Tải/Xem file đáp án chi tiết - CÔNG KHAI (không yêu cầu đăng nhập) để học
+// sinh quét mã QR mở trực tiếp bằng điện thoại mà không cần đăng nhập lại
+// trên máy đó. An toàn vì tên file trên đĩa là UUID ngẫu nhiên (không đoán
+// được nếu không có đúng link), giống hệt cơ chế file đính kèm chat.
+// Chế độ xem (?inline=1): nếu file gốc là Word, ưu tiên trả về bản PDF xem
+// trước đã tạo sẵn lúc upload (trình duyệt hiển thị PDF trực tiếp được).
+function downloadAnswerKey(req, res) {
+  const exam = dataAccess.findById('exams', req.params.examId);
+  if (!exam || !exam.answerKeyFile || !exam.answerKeyFile.filename) {
+    return res.status(404).json({ message: 'Đề thi này chưa có file đáp án chi tiết' });
+  }
+  const { filename, previewPdfFilename, mimeType, originalName } = exam.answerKeyFile;
+
+  if (req.query.inline === '1') {
+    const useFilename = previewPdfFilename || filename;
+    const useMime = previewPdfFilename ? 'application/pdf' : mimeType;
+    const filePath = path.join(ANSWER_KEY_DIR, useFilename);
+    if (!fs.existsSync(filePath)) {
+      return res.status(404).json({ message: 'Tệp đáp án đã bị xoá khỏi máy chủ' });
+    }
+    res.setHeader('Content-Type', useMime || 'application/octet-stream');
+    return res.sendFile(filePath);
+  }
+
+  const filePath = path.join(ANSWER_KEY_DIR, filename);
+  if (!fs.existsSync(filePath)) {
+    return res.status(404).json({ message: 'Tệp đáp án đã bị xoá khỏi máy chủ' });
+  }
+  return res.download(filePath, originalName || filename);
+}
 
 // Tạo đề thi mới (có thể kèm danh sách học sinh được giao ngay)
 function createExam(req, res) {
@@ -234,6 +356,7 @@ function getSubmissionDetailForTeacher(req, res) {
       selectedAnswer: ans ? ans.selectedAnswer : null,
       isCorrect: ans ? ans.isCorrect : false,
       tags: q.tags || [],
+      diagram: q.diagram || null,
     };
   });
 
@@ -392,4 +515,7 @@ module.exports = {
   updateQuestion,
   deleteQuestion,
   assignExam,
+  uploadAnswerKey,
+  deleteAnswerKey,
+  downloadAnswerKey,
 };

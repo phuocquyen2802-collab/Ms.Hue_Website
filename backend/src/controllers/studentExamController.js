@@ -152,6 +152,7 @@ function getSubmissionDetail(req, res) {
       content: question.content,
       options: question.options || [],
       tags: question.tags || [],
+      diagram: question.diagram || null,
     };
   });
 

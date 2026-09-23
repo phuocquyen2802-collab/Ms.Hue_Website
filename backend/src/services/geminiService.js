@@ -89,6 +89,42 @@ HÃY TRẢ VỀ DUY NHẤT MỘT OBJECT JSON THEO ĐÚNG CẤU TRÚC SAU (KHÔNG
       ],
       "correctAnswer": "A",
       "tags": ["Phương trình lượng giác"]
+    },
+    {
+      "content": "Cho hàm số $y = x^3 - 3x + 2$ có đồ thị như hình vẽ. Hàm số nghịch biến trên khoảng nào dưới đây?",
+      "diagram": { "type": "function-graph", "expression": "x^3 - 3*x + 2", "domain": [-3, 3] },
+      "options": [
+        { "key": "A", "text": "$(-1; 1)$" },
+        { "key": "B", "text": "$(-\\\\infty; -1)$" },
+        { "key": "C", "text": "$(1; +\\\\infty)$" },
+        { "key": "D", "text": "$(-1; 0)$" }
+      ],
+      "correctAnswer": "A",
+      "tags": ["Khảo sát hàm số"]
+    },
+    {
+      "content": "Cho hàm số $y = f(x)$ có bảng biến thiên như hình vẽ. Hàm số đạt cực đại tại điểm nào?",
+      "diagram": { "type": "variation-table", "points": ["-\\\\infty", "0", "2", "+\\\\infty"], "signs": ["+", "-", "+"], "values": ["-\\\\infty", "4", "0", "+\\\\infty"] },
+      "options": [
+        { "key": "A", "text": "$x = 0$" },
+        { "key": "B", "text": "$x = 2$" },
+        { "key": "C", "text": "$x = 4$" },
+        { "key": "D", "text": "$x = -\\\\infty$" }
+      ],
+      "correctAnswer": "A",
+      "tags": ["Khảo sát hàm số"]
+    },
+    {
+      "content": "Cho hình chóp $S.ABCD$ có đáy $ABCD$ là hình vuông, $SA \\\\perp (ABCD)$. Gọi $O$ là giao điểm của $AC$ và $BD$. Khẳng định nào sau đây đúng?",
+      "diagram": { "type": "solid-geometry", "shape": "pyramid4", "baseLabels": ["A", "B", "C", "D"], "apexLabel": "S", "extraPoints": [{ "name": "O", "type": "intersection", "points": ["A", "C", "B", "D"] }] },
+      "options": [
+        { "key": "A", "text": "$BD \\\\perp (SAC)$" },
+        { "key": "B", "text": "$BD \\\\perp (SAB)$" },
+        { "key": "C", "text": "$BD \\\\perp SC$" },
+        { "key": "D", "text": "$BD \\\\perp SA$" }
+      ],
+      "correctAnswer": "A",
+      "tags": ["Hình học không gian"]
     }
   ]
 }
@@ -97,9 +133,23 @@ QUY TẮC SỐNG CÒN BẮT BUỘC:
 1. PHÂN LOẠI BÀI TẬP THEO CHỦ ĐỀ:
    - Trong mỗi phần tử 'exercises', trường 'tags' BẮT BUỘC chứa đúng tên chuyên đề tương ứng (ví dụ: ['Phương trình lượng giác'], ['Phương trình mũ và lôgarit'], ['Cấp số cộng và cấp số nhân'], ['Khảo sát hàm số']).
    - Tên chuyên đề trong 'tags' phải khớp với tên chuyên đề trong 'steps' để hệ thống nhóm bài tập theo từng chuyên đề.
-2. TUYỆT ĐỐI KHÔNG THAM CHIẾU HÌNH ẢNH / HÌNH VẼ KHÔNG TỒN TẠI:
-   - NGHIÊM CẤM các câu hỏi chứa cụm từ: "như hình vẽ", "cho đồ thị như hình", "bảng biến thiên như hình", "như hình bên", "đồ thị dưới đây".
-   - Tất cả câu hỏi phải là bài toán giải tích/đại số CÓ CÔNG THỨC RÕ RÀNG tự giải được (Ví dụ: "Cho hàm số $y = x^3 - 3x^2 + 2$. Điểm cực đại của đồ thị hàm số là:", "Tìm tiệm cận đứng của đồ thị hàm số $y = \\\\frac{2x-1}{x+1}$ là:").
+2. HÌNH ẢNH/HÌNH VẼ - CHỈ ĐƯỢC DÙNG 3 LOẠI HÌNH CÓ CẤU TRÚC SAU (do hệ thống tự vẽ lại chính xác từ dữ liệu bạn cung cấp, KHÔNG phải bạn tự vẽ ảnh):
+   a) ĐỒ THỊ HÀM SỐ - thêm trường 'diagram' dạng:
+      "diagram": { "type": "function-graph", "expression": "<biểu thức theo x, cú pháp: + - * / ^, ngoặc, sin cos tan sqrt abs ln log exp, hằng số pi>", "domain": [xMin, xMax] }
+      - 'expression' PHẢI khớp CHÍNH XÁC với hàm số $y = ...$ đã nêu trong 'content' (không được vẽ hàm khác).
+      - CHỈ dùng cho hàm số vẽ được trong mặt phẳng 2D bằng 1 biểu thức theo x (đa thức, phân thức, lượng giác cơ bản) - KHÔNG dùng cho hàm có tham số ẩn (m, a, b...) hoặc hàm cần vẽ nhiều nhánh phức tạp.
+   b) BẢNG BIẾN THIÊN - thêm trường 'diagram' dạng:
+      "diagram": { "type": "variation-table", "points": ["-\\\\infty", "x1", "x2", ..., "+\\\\infty"], "signs": ["+", "-", ...], "values": ["-\\\\infty", "y1", "y2", ..., "+\\\\infty"] }
+      - 'points' và 'values' PHẢI có ĐÚNG cùng độ dài; 'signs' PHẢI có độ dài ÍT HƠN 'points' đúng 1 (số dấu = số khoảng giữa các mốc).
+      - Các mốc 'points' PHẢI xếp theo thứ tự tăng dần, thường bắt đầu bằng "-\\\\infty" và kết thúc bằng "+\\\\infty".
+   c) HÌNH HỌC KHÔNG GIAN CƠ BẢN (hình chóp/lăng trụ) - thêm trường 'diagram' dạng:
+      "diagram": { "type": "solid-geometry", "shape": "pyramid3"|"pyramid4"|"prism3"|"prism4", "baseLabels": ["A","B","C"] hoặc ["A","B","C","D"], "apexLabel": "S" (bắt buộc với pyramid3/pyramid4, bỏ qua với prism), "topLabels": ["A'","B'",...] (tuỳ chọn, chỉ dùng cho prism3/prism4, mặc định tự thêm dấu ' nếu bỏ trống), "extraPoints": [{ "name": "M", "type": "midpoint", "points": ["A","D"] }, { "name": "O", "type": "intersection", "points": ["A","C","B","D"] }] (tuỳ chọn, dùng khi đề có nhắc trung điểm/giao điểm 2 đường chéo đáy) }
+      - 'shape' = "pyramid3"/"pyramid4": hình chóp đáy tam giác/tứ giác (đỉnh 'apexLabel'). 'shape' = "prism3"/"prism4": hình lăng trụ đứng đáy tam giác/tứ giác (kể cả hình hộp chữ nhật/hình lập phương, dùng "prism4").
+      - 'baseLabels' PHẢI khớp ĐÚNG tên các đỉnh đáy đã nêu trong 'content' (ví dụ content nói "$S.ABCD$" thì baseLabels = ["A","B","C","D"], apexLabel = "S").
+      - CHỈ dùng cho hình chóp/lăng trụ ĐƠN GIẢN có thể mô tả bằng đúng các trường trên - KHÔNG dùng cho hình phức tạp hơn (đa diện lồng nhau, hình cầu/nón/trụ tròn xoay, khối đa diện ghép nhiều khối).
+   - CHỈ thêm trường 'diagram' khi câu hỏi THẬT SỰ cần và đúng 1 trong 3 dạng trên - các chủ đề khác không vẽ được bằng 3 dạng này (lượng giác, mũ-logarit, cấp số, hình cầu/nón/trụ tròn xoay, hệ trục Oxyz...) thì KHÔNG có trường 'diagram', chỉ mô tả bằng lời/công thức như bình thường.
+   - QUAN TRỌNG: nếu câu hỏi gốc học sinh làm sai (trong DANH SÁCH CÂU HỎI CỤ THỂ bên dưới, nếu có) có kèm hình vẽ minh hoạ, hãy XÁC ĐỊNH LOẠI HÌNH đó dựa vào chính nội dung văn bản của câu hỏi gốc (ví dụ câu gốc ghi "Cho hình chóp $S.ABCD$..." nghĩa là có hình chóp tứ giác) rồi DÙNG ĐÚNG loại 'diagram' tương ứng (a/b/c) cho bài tập tương tự bạn sinh ra - KHÔNG bỏ qua hình chỉ vì chủ đề không phải Khảo sát hàm số.
+   - NGHIÊM CẤM mọi hình thức khác: KHÔNG được viết "như hình vẽ" mà không có trường 'diagram' đi kèm đúng cấu trúc trên, KHÔNG được mô tả hình học không gian/hình vẽ tự do bằng lời rồi bảo học sinh tự hình dung, KHÔNG được chèn mã vẽ vector/SVG path/toạ độ rác vào 'content'.
 3. ĐỀ BÀI CÂU HỎI VÀ ĐÁP ÁN PHẢI CHUẨN XÁC VÀ ĐẦY ĐỦ CÔNG THỨC TOÁN:
    - Trong mỗi phần tử 'exercises', trường 'content' BẮT BUỘC PHẢI CHỨA PHƯƠNG TRÌNH / BIỂU THỨC / HÀM SỐ CỤ THỂ bọc trong $...$.
    - Ví dụ đúng: 'Tổng các nghiệm của phương trình $9^x - 4 \\\\cdot 3^x + 3 = 0$ là:'
@@ -127,6 +177,20 @@ function safeJsonParse(rawText) {
     .replace(/^```\s*/i, '')
     .replace(/```\s*$/i, '')
     .trim();
+
+  // QUAN TRỌNG - sửa TRƯỚC khi parse (không phải chỉ khi parse báo lỗi):
+  // \b \f \r \t đều là escape HỢP LỆ của JSON, nên nếu Gemini lỡ dùng 1 dấu
+  // \ cho lệnh LaTeX bắt đầu đúng các chữ này (\right, \rho, \tan, \tau,
+  // \to, \frac, \forall, \beta, \begin...), JSON.parse sẽ ÂM THẦM "nuốt"
+  // nó thành ký tự điều khiển (KHÔNG báo lỗi) - ví dụ "\right)" bị hiểu
+  // thành ký tự CR + "ight)", mất chữ "r" - nên toàn bộ cơ chế sửa lỗi ở
+  // các bước try/catch bên dưới KHÔNG BAO GIỜ được chạy tới (vì JSON.parse
+  // "thành công" ngay từ đầu, chỉ là sai nội dung). Escape JSON thật luôn
+  // đứng 1 mình (theo sau là dấu " hoặc \), còn lệnh LaTeX luôn có thêm chữ
+  // cái ngay sau - dùng đặc điểm này để phân biệt, escape kép (\\) an toàn
+  // cho trường hợp có chữ cái theo sau. KHÔNG đụng \n (dùng cho xuống dòng
+  // thật trong nội dung) và \u (escape Unicode).
+  cleaned = cleaned.replace(/(?<!\\)\\([bfrt])(?=[a-zA-Z])/g, '\\\\$1');
 
   // Thử parse chuẩn trước
   try {
@@ -258,7 +322,7 @@ async function generateRoadmapAndExercises(studentName, weakTags = [], wrongQues
           generationConfig: {
             responseMimeType: 'application/json',
             temperature: 0.4,
-            maxOutputTokens: 8192,
+            maxOutputTokens: 32768,
           },
         }),
       });

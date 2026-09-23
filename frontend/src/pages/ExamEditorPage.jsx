@@ -2,6 +2,7 @@ import React, { useEffect, useState, useMemo } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import api from '../services/api';
 import { renderMath } from '../utils/mathRender';
+import QuestionDiagram from '../components/QuestionDiagram';
 import {
   FORMULA_SIZE_PRESETS,
   valignForHeightEm,
@@ -47,6 +48,7 @@ export default function ExamEditorPage() {
   // Form nhập từ file Word (.docx)
   const [parsedQuestions, setParsedQuestions] = useState([]);
   const [uploadingWord, setUploadingWord] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
   const [importingWord, setImportingWord] = useState(false);
   const [importMessage, setImportMessage] = useState('');
 
@@ -93,6 +95,18 @@ export default function ExamEditorPage() {
     if (!file) return;
     setImportMessage('');
     setUploadingWord(true);
+    setUploadProgress(0);
+
+    let simulateInterval = null;
+    function startSimulatedProgress() {
+      simulateInterval = setInterval(() => {
+        setUploadProgress((prev) => {
+          if (prev >= 92) return prev;
+          const step = prev < 60 ? 4 : prev < 80 ? 2 : 0.5;
+          return Math.min(92, prev + step);
+        });
+      }, 350);
+    }
 
     try {
       if (file.name.endsWith('.docx')) {
@@ -101,6 +115,14 @@ export default function ExamEditorPage() {
 
         const res = await api.post(`/exams/${examId}/import-preview`, formData, {
           headers: { 'Content-Type': 'multipart/form-data' },
+          onUploadProgress: (evt) => {
+            if (!evt.total) return;
+            const uploadPercent = Math.round((evt.loaded / evt.total) * 30);
+            setUploadProgress((prev) => Math.max(prev, uploadPercent));
+            if (evt.loaded >= evt.total && !simulateInterval) {
+              startSimulatedProgress();
+            }
+          },
         });
 
         const serverQuestions = res.data.questions || [];
@@ -119,13 +141,16 @@ export default function ExamEditorPage() {
 
         setParsedQuestions(mapped);
         setImportMessage(`✓ Đã phân tích thành công ${mapped.length} câu hỏi từ file Word! Hãy kiểm tra chủ đề và đáp án bên dưới trước khi lưu.`);
+        setUploadProgress(100);
       } else {
         setImportMessage('⚠️ Vui lòng chọn file Word (.docx) để hệ thống nhận diện câu hỏi và công thức toán.');
       }
     } catch (err) {
       setImportMessage(`⚠️ Lỗi khi đọc file Word: ` + (err.response?.data?.message || err.message));
     } finally {
+      if (simulateInterval) clearInterval(simulateInterval);
       setUploadingWord(false);
+      setTimeout(() => setUploadProgress(0), 600);
     }
   }
 
@@ -185,7 +210,6 @@ export default function ExamEditorPage() {
   const [resizeTarget, setResizeTarget] = useState(null); // { source: 'saved'|'preview', questionId|previewIdx, field, optionKey, imgIndex }
   const [customEmValue, setCustomEmValue] = useState('');
   const [resizeScope, setResizeScope] = useState('target'); // 'target' | 'question' | 'all'
-  const [isMultiFormulaSelect, setIsMultiFormulaSelect] = useState(false);
   const [selectedFormulaKeys, setSelectedFormulaKeys] = useState([]); // 'preview_${idx}_...' or 'saved_${qId}_...'
   const [batchCustomEmValue, setBatchCustomEmValue] = useState('');
 
@@ -256,7 +280,7 @@ export default function ExamEditorPage() {
         const key = source === 'saved'
           ? `saved_${questionId}_${field}_${optionKey}_${imgIndex}`
           : `preview_${previewIdx}_${field}_${optionKey}_${imgIndex}`;
-        const currentSize = img.style.height || '1.8em';
+        const currentSize = img.style.height || '1.55em';
         img.setAttribute('title', `📐 Cỡ hiện tại: ${currentSize} (Bấm để chọn/bỏ chọn)`);
         if (selectedFormulaKeys.includes(key)) {
           img.classList.add('formula-selected');
@@ -649,7 +673,7 @@ export default function ExamEditorPage() {
       <div className="container">
         <div className="empty-state">
           <div className="empty-state-icon">⏳</div>
-          <div className="empty-state-title">Đang tải đề thi...</div>
+          <div className="empty-state-title">Đang tải đề thi…</div>
         </div>
       </div>
     );
@@ -724,7 +748,7 @@ export default function ExamEditorPage() {
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
             <button
               type="button"
-              className={`btn ${isEditMode ? 'secondary' : 'btn-primary'}`}
+              className={`btn ${isEditMode ? 'secondary' : ''}`}
               onClick={() => setIsEditMode(!isEditMode)}
               style={
                 isEditMode
@@ -827,15 +851,22 @@ export default function ExamEditorPage() {
                   style={{ padding: '8px 12px', fontSize: 13, flex: 1, minWidth: 240 }}
                   disabled={uploadingWord}
                 />
-                {uploadingWord && (
-                  <span style={{ fontSize: 13, color: 'var(--primary)', fontWeight: 600 }}>
-                    ⏳ Đang xử lý file. Vui lòng đợi giây lát
-                  </span>
-                )}
               </div>
               <small style={{ color: 'var(--text-muted)', display: 'block', marginTop: 4 }}>
                 Hệ thống tự động nhận diện tiêu đề chủ đề, công thức MathType và bảng đáp án.
               </small>
+
+              {uploadingWord && (
+                <div style={{ marginTop: 10 }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12.5, fontWeight: 600, color: 'var(--primary)', marginBottom: 5 }}>
+                    <span>⏳ Đang xử lí file. Vui lòng đợi giây lát ...</span>
+                    <span>{Math.round(uploadProgress)}%</span>
+                  </div>
+                  <div className="progress-bar-wrapper" style={{ maxWidth: '100%', height: 8 }}>
+                    <div className="progress-bar-fill" style={{ width: `${uploadProgress}%`, background: 'var(--primary)', transition: 'width 0.3s ease' }} />
+                  </div>
+                </div>
+              )}
             </div>
 
             {importMessage && (
@@ -871,7 +902,7 @@ export default function ExamEditorPage() {
                     disabled={importingWord}
                     style={{ background: 'linear-gradient(135deg, #10b981, #059669)', color: '#fff', fontWeight: 700 }}
                   >
-                    {importingWord ? 'Đang nạp...' : `✓ Nạp tất cả ${parsedQuestions.length} câu vào đề`}
+                    {importingWord ? 'Đang nạp…' : `✓ Nạp tất cả ${parsedQuestions.length} câu vào đề`}
                   </button>
                 </div>
 
@@ -1033,7 +1064,7 @@ export default function ExamEditorPage() {
                           marginTop: idx > 0 ? 14 : 0,
                           marginBottom: 4,
                           padding: '9px 16px',
-                          background: 'linear-gradient(135deg, #2563eb 0%, #3b82f6 100%)',
+                          background: 'var(--ink)',
                           color: '#fff',
                           borderRadius: 'var(--radius-md)',
                           display: 'flex',
@@ -1092,9 +1123,9 @@ export default function ExamEditorPage() {
                               style={{
                                 margin: 0,
                                 fontSize: 12,
-                                background: '#eff6ff',
-                                color: '#1d4ed8',
-                                border: '1px solid #bfdbfe',
+                                background: 'var(--gold-soft)',
+                                color: 'var(--primary)',
+                                border: '1px solid var(--primary-border)',
                               }}
                             >
                               🏷️ {q.tags.join(', ')}
@@ -1132,6 +1163,8 @@ export default function ExamEditorPage() {
                         dangerouslySetInnerHTML={{ __html: renderMath(q.content) }}
                         onClick={(e) => isEditMode && handleContentClick(e, { source: 'saved', questionId: q.id }, 'content', null)}
                       />
+
+                      <QuestionDiagram diagram={q.diagram} />
 
                       {/* 4 Phương án A, B, C, D */}
                       <div
@@ -1263,7 +1296,7 @@ export default function ExamEditorPage() {
           onClick={() => setShowAssignModal(false)}
         >
           <div
-            className="card"
+            className="card form-panel"
             style={{
               width: '100%',
               maxWidth: 620,
@@ -1278,11 +1311,12 @@ export default function ExamEditorPage() {
               <div>
                 <h2 style={{ margin: 0, fontSize: 18 }}>🚀 Giao đề thi cho Học sinh / Lớp</h2>
                 <p style={{ margin: '4px 0 0 0', fontSize: 12.5, color: 'var(--text-muted)' }}>
-                  Đã chọn: <strong style={{ color: 'var(--primary)' }}>{selectedStudents.length}/{students.length} học sinh</strong>
+                  Upload thành công <strong style={{ color: 'var(--primary)' }}>{selectedStudents.length}/{students.length} học sinh</strong>
                 </p>
               </div>
               <button
                 type="button"
+                aria-label="Đóng"
                 style={{ background: 'none', border: 'none', fontSize: 20, cursor: 'pointer', color: 'var(--text-muted)' }}
                 onClick={() => setShowAssignModal(false)}
               >
@@ -1355,9 +1389,11 @@ export default function ExamEditorPage() {
                 <span className="search-icon">🔍</span>
                 <input
                   type="text"
-                  placeholder="Tìm theo tên học sinh..."
+                  placeholder="Tìm theo tên học sinh…"
+                  aria-label="Tìm học sinh theo tên"
                   value={assignSearch}
                   onChange={(e) => setAssignSearch(e.target.value)}
+                  spellCheck={false}
                   style={{ padding: '6px 10px 6px 30px', fontSize: 13 }}
                 />
               </div>
@@ -1460,7 +1496,7 @@ export default function ExamEditorPage() {
                   fontWeight: 700,
                 }}
               >
-                {assigning ? 'Đang lưu...' : `✓ Xác nhận giao cho ${selectedStudents.length} học sinh`}
+                {assigning ? 'Đang lưu…' : `✓ Xác nhận giao cho ${selectedStudents.length} học sinh`}
               </button>
             </div>
           </div>
@@ -1553,7 +1589,7 @@ export default function ExamEditorPage() {
                             to={`/teacher/exams/${examId}/submissions/${sub.id}`}
                             className="btn sm"
                             style={{
-                              background: 'linear-gradient(135deg, #2563eb, #1d4ed8)',
+                              background: 'var(--primary)',
                               color: '#ffffff',
                               fontWeight: 600,
                               fontSize: 12,
@@ -1607,6 +1643,7 @@ export default function ExamEditorPage() {
               <h2>Sửa thông tin đề thi</h2>
               <button
                 type="button"
+                aria-label="Đóng"
                 style={{ background: 'none', border: 'none', fontSize: 20, cursor: 'pointer', color: 'var(--text-muted)' }}
                 onClick={() => setShowEditExamModal(false)}
               >
@@ -1614,26 +1651,30 @@ export default function ExamEditorPage() {
               </button>
             </div>
 
-            <form onSubmit={handleSaveEditExam}>
+            <form className="form-panel" onSubmit={handleSaveEditExam}>
               <div className="form-group">
-                <label>
+                <label htmlFor="editor-exam-title">
                   Tên đề thi <span style={{ color: 'var(--danger)' }}>*</span>
                 </label>
                 <input
+                  id="editor-exam-title"
                   type="text"
                   value={editExamForm.title}
                   onChange={(e) => setEditExamForm({ ...editExamForm, title: e.target.value })}
+                  autoComplete="off"
                   required
                 />
               </div>
 
               <div className="form-row">
                 <div className="form-group">
-                  <label>
+                  <label htmlFor="editor-exam-duration">
                     Thời gian (phút) <span style={{ color: 'var(--danger)' }}>*</span>
                   </label>
                   <input
+                    id="editor-exam-duration"
                     type="number"
+                    inputMode="numeric"
                     min={1}
                     max={180}
                     value={editExamForm.durationMinutes}
@@ -1642,8 +1683,9 @@ export default function ExamEditorPage() {
                   />
                 </div>
                 <div className="form-group">
-                  <label>Trạng thái</label>
+                  <label htmlFor="editor-exam-status">Trạng thái</label>
                   <select
+                    id="editor-exam-status"
                     value={editExamForm.status}
                     onChange={(e) => setEditExamForm({ ...editExamForm, status: e.target.value })}
                   >
@@ -1654,22 +1696,27 @@ export default function ExamEditorPage() {
               </div>
 
               <div className="form-group">
-                <label>Mô tả ngắn</label>
+                <label htmlFor="editor-exam-description">Mô tả ngắn</label>
                 <textarea
+                  id="editor-exam-description"
                   rows={2}
                   value={editExamForm.description}
                   onChange={(e) => setEditExamForm({ ...editExamForm, description: e.target.value })}
                 />
               </div>
 
-              {editExamError && <p className="error-text">⚠️ {editExamError}</p>}
+              {editExamError && (
+                <p className="error-text" role="alert" aria-live="polite">
+                  <span aria-hidden="true">⚠️</span> {editExamError}
+                </p>
+              )}
 
               <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10, marginTop: 14 }}>
                 <button type="button" className="btn secondary" onClick={() => setShowEditExamModal(false)}>
                   Huỷ
                 </button>
                 <button className="btn" type="submit" disabled={savingExam}>
-                  {savingExam ? 'Đang lưu...' : 'Lưu'}
+                  {savingExam ? 'Đang lưu…' : 'Lưu'}
                 </button>
               </div>
             </form>
@@ -1683,14 +1730,14 @@ export default function ExamEditorPage() {
           <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
             <span style={{ fontSize: 15 }}>📐</span>
             <span style={{ fontWeight: 700, fontSize: 13, color: '#1e293b' }}>
-              Đã chọn <strong style={{ color: '#2563eb' }}>{selectedFormulaKeys.length}</strong> CT
+              Đã chọn <strong style={{ color: 'var(--primary)' }}>{selectedFormulaKeys.length}</strong> CT
             </span>
             {selectedFormulaSizes.length > 0 && (
               <span
                 style={{
-                  background: '#eff6ff',
-                  color: '#1d4ed8',
-                  border: '1px solid #bfdbfe',
+                  background: 'var(--gold-soft)',
+                  color: 'var(--primary)',
+                  border: '1px solid var(--primary-border)',
                   padding: '2px 8px',
                   borderRadius: 12,
                   fontSize: 11.5,
@@ -1760,7 +1807,7 @@ export default function ExamEditorPage() {
               type="submit"
               className="btn sm"
               style={{
-                background: '#2563eb',
+                background: 'var(--primary)',
                 color: '#ffffff',
                 border: 'none',
                 borderRadius: 20,
@@ -1768,7 +1815,7 @@ export default function ExamEditorPage() {
                 fontSize: 12.5,
                 fontWeight: 700,
                 cursor: 'pointer',
-                boxShadow: '0 2px 6px rgba(37, 99, 235, 0.25)',
+                boxShadow: '0 2px 6px rgba(138, 97, 31, 0.3)',
               }}
               disabled={!batchCustomEmValue}
             >

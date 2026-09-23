@@ -2,6 +2,7 @@ import React, { useEffect, useState, useMemo } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import api from '../services/api';
 import { renderMath } from '../utils/mathRender';
+import QuestionDiagram from '../components/QuestionDiagram';
 
 export default function TeacherSubmissionDetailPage() {
   const { examId, submissionId } = useParams();
@@ -580,39 +581,48 @@ export default function TeacherSubmissionDetailPage() {
                         <label style={{ display: 'block', fontSize: 12, fontWeight: 700, color: '#1e40af', marginBottom: 4 }}>
                           📘 Lý thuyết & Công thức trọng tâm:
                         </label>
-                        <textarea
-                          rows={2}
-                          value={step.theory || ''}
-                          onChange={(e) => handleStepChange(idx, 'theory', e.target.value)}
-                          placeholder="Tóm tắt công thức trọng tâm..."
-                          style={{ width: '100%', padding: '6px 10px', fontSize: 13, borderRadius: 6, border: '1px solid #bfdbfe' }}
-                        />
+                        <div className="formula-edit-box" style={{ minHeight: 60 }}>
+                          <div className="formula-edit-box-preview" dangerouslySetInnerHTML={{ __html: renderMath(step.theory) }} />
+                          <textarea
+                            rows={2}
+                            value={step.theory || ''}
+                            onChange={(e) => handleStepChange(idx, 'theory', e.target.value)}
+                            placeholder="Tóm tắt công thức trọng tâm..."
+                            className="formula-edit-box-input"
+                          />
+                        </div>
                       </div>
 
                       <div>
                         <label style={{ display: 'block', fontSize: 12, fontWeight: 700, color: '#c2410c', marginBottom: 4 }}>
                           ⚠️ Bẫy trắc nghiệm / Lỗi sai hay gặp:
                         </label>
-                        <textarea
-                          rows={2}
-                          value={step.commonMistake || ''}
-                          onChange={(e) => handleStepChange(idx, 'commonMistake', e.target.value)}
-                          placeholder="Chỉ ra các bẫy hoặc lỗi học sinh hay mắc..."
-                          style={{ width: '100%', padding: '6px 10px', fontSize: 13, borderRadius: 6, border: '1px solid #fed7aa' }}
-                        />
+                        <div className="formula-edit-box" style={{ minHeight: 60 }}>
+                          <div className="formula-edit-box-preview" dangerouslySetInnerHTML={{ __html: renderMath(step.commonMistake) }} />
+                          <textarea
+                            rows={2}
+                            value={step.commonMistake || ''}
+                            onChange={(e) => handleStepChange(idx, 'commonMistake', e.target.value)}
+                            placeholder="Chỉ ra các bẫy hoặc lỗi học sinh hay mắc..."
+                            className="formula-edit-box-input"
+                          />
+                        </div>
                       </div>
 
                       <div>
                         <label style={{ display: 'block', fontSize: 12, fontWeight: 700, color: '#047857', marginBottom: 4 }}>
                           ✅ Hướng dẫn ôn tập / Hành động:
                         </label>
-                        <textarea
-                          rows={2}
-                          value={step.action || ''}
-                          onChange={(e) => handleStepChange(idx, 'action', e.target.value)}
-                          placeholder="Hành động cụ thể để khắc phục..."
-                          style={{ width: '100%', padding: '6px 10px', fontSize: 13, borderRadius: 6, border: '1px solid #a7f3d0' }}
-                        />
+                        <div className="formula-edit-box" style={{ minHeight: 60 }}>
+                          <div className="formula-edit-box-preview" dangerouslySetInnerHTML={{ __html: renderMath(step.action) }} />
+                          <textarea
+                            rows={2}
+                            value={step.action || ''}
+                            onChange={(e) => handleStepChange(idx, 'action', e.target.value)}
+                            placeholder="Hành động cụ thể để khắc phục..."
+                            className="formula-edit-box-input"
+                          />
+                        </div>
                       </div>
                     </div>
                   ))}
@@ -828,14 +838,17 @@ export default function TeacherSubmissionDetailPage() {
 
                                   <div>
                                     <label style={{ display: 'block', fontWeight: 700, fontSize: 12, color: '#475569', marginBottom: 4 }}>
-                                      Đề bài câu hỏi:
+                                      Đề bài câu hỏi: <span style={{ fontWeight: 500, color: '#94a3b8' }}>(gõ mã LaTeX, ví dụ $x^2$)</span>
                                     </label>
-                                    <textarea
-                                      rows={2}
-                                      value={ex.content || ''}
-                                      onChange={(e) => handleExerciseChange(origIdx, 'content', e.target.value)}
-                                      style={{ width: '100%', padding: '6px 10px', fontSize: 13.5, borderRadius: 6, border: '1px solid #cbd5e1' }}
-                                    />
+                                    <div className="formula-edit-box" style={{ minHeight: 60 }}>
+                                      <div className="formula-edit-box-preview" style={{ fontSize: 14 }} dangerouslySetInnerHTML={{ __html: renderMath(ex.content) }} />
+                                      <textarea
+                                        rows={2}
+                                        value={ex.content || ''}
+                                        onChange={(e) => handleExerciseChange(origIdx, 'content', e.target.value)}
+                                        className="formula-edit-box-input"
+                                      />
+                                    </div>
                                   </div>
 
                                   <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
@@ -886,6 +899,8 @@ export default function TeacherSubmissionDetailPage() {
                                 </div>
                               )}
 
+                              <QuestionDiagram diagram={ex.diagram} />
+
                               {/* Danh sách 4 đáp án dạng DỌC (1 cột full-width) */}
                               <div style={{ display: 'flex', flexDirection: 'column', gap: 7, marginTop: 10 }}>
                                 {(ex.options || []).map((opt) => (
@@ -907,12 +922,19 @@ export default function TeacherSubmissionDetailPage() {
                                       {opt.key}.
                                     </strong>{' '}
                                     {isEditing ? (
-                                      <input
-                                        type="text"
-                                        value={opt.text || ''}
-                                        onChange={(e) => handleOptionChange(origIdx, opt.key, e.target.value)}
-                                        style={{ flex: 1, padding: '5px 10px', fontSize: 13, borderRadius: 6, border: '1px solid #cbd5e1', marginLeft: 6 }}
-                                      />
+                                      <div className="formula-edit-box" style={{ flex: 1, marginLeft: 6 }}>
+                                        <div
+                                          className="formula-edit-box-preview"
+                                          style={{ fontSize: 13 }}
+                                          dangerouslySetInnerHTML={{ __html: renderMath(opt.text) }}
+                                        />
+                                        <input
+                                          type="text"
+                                          value={opt.text || ''}
+                                          onChange={(e) => handleOptionChange(origIdx, opt.key, e.target.value)}
+                                          className="formula-edit-box-input"
+                                        />
+                                      </div>
                                     ) : (
                                       <span style={{ flex: 1, fontSize: 14, lineHeight: 1.6 }} dangerouslySetInnerHTML={{ __html: renderMath(opt.text) }} />
                                     )}
@@ -1163,6 +1185,8 @@ export default function TeacherSubmissionDetailPage() {
                       className="question-content"
                       dangerouslySetInnerHTML={{ __html: renderMath(ans.content) }}
                     />
+
+                    <QuestionDiagram diagram={ans.diagram} />
 
                     {/* 4 Phương án */}
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginTop: 8 }}>

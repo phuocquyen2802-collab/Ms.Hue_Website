@@ -1,6 +1,82 @@
 import { useEffect, useState } from 'react';
 import api from '../services/api';
 import { renderMath } from '../utils/mathRender';
+import QuestionDiagram from '../components/QuestionDiagram';
+
+// Nhóm các câu hỏi AI sinh theo đúng chuyên đề trong lộ trình (tái sử dụng
+// cho cả khối xem trước trên trang và khối xuất PDF, tránh lặp code).
+function buildTopicGroups(p) {
+  const stepTopics = (p.roadmap?.steps || []).map((s) => s.tag || s.title).filter(Boolean);
+  const topicMap = new Map();
+  p.exercises.forEach((ex, origIdx) => {
+    const topic = (ex.tags && ex.tags.length > 0 && ex.tags[0]) || 'Chuyên đề ôn tập bổ trợ';
+    if (!topicMap.has(topic)) topicMap.set(topic, []);
+    topicMap.get(topic).push({ ...ex, origIdx });
+  });
+  const groups = [];
+  stepTopics.forEach((t) => {
+    if (topicMap.has(t)) {
+      groups.push({ topic: t, items: topicMap.get(t) });
+      topicMap.delete(t);
+    }
+  });
+  for (const [topic, items] of topicMap.entries()) {
+    groups.push({ topic, items });
+  }
+  return groups;
+}
+
+function ExerciseGroups({ proposal }) {
+  const groups = buildTopicGroups(proposal);
+  return groups.map((grp, gIdx) => (
+    <div key={gIdx} style={{ background: '#ffffff', borderRadius: 8, border: '1px solid #e2e8f0', padding: 12, marginBottom: 12 }}>
+      <div style={{ fontWeight: 800, fontSize: 13, color: '#6d28d9', marginBottom: 10, display: 'flex', alignItems: 'center', gap: 6 }}>
+        <span style={{ background: '#ede9fe', padding: '2px 8px', borderRadius: 4, fontSize: 11.5 }}>
+          Chủ đề {gIdx + 1}
+        </span>
+        <span>{grp.topic} ({grp.items.length} câu)</span>
+      </div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+        {grp.items.map((ex, qIdx) => (
+          <div key={qIdx} style={{ padding: 10, background: '#f8fafc', borderRadius: 6, border: '1px solid #f1f5f9' }}>
+            <div style={{ fontWeight: 600, marginBottom: 8, fontSize: 13, lineHeight: 1.6 }}>
+              <strong style={{ color: '#5b21b6', marginRight: 6 }}>Câu {qIdx + 1}:</strong>
+              <span dangerouslySetInnerHTML={{ __html: renderMath(ex.content) }} />
+            </div>
+            <QuestionDiagram diagram={ex.diagram} />
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+              {ex.options.map((opt) => (
+                <div
+                  key={opt.key}
+                  className={`option-row ${opt.key === ex.correctAnswer ? 'correct' : ''}`}
+                  style={{
+                    margin: 0,
+                    padding: '8px 14px',
+                    fontSize: 13,
+                    width: '100%',
+                    minHeight: 40,
+                    display: 'flex',
+                    alignItems: 'center',
+                  }}
+                >
+                  <strong style={{ minWidth: 24, color: opt.key === ex.correctAnswer ? '#047857' : '#475569' }}>
+                    {opt.key}.
+                  </strong>{' '}
+                  <span style={{ flex: 1, lineHeight: 1.5 }} dangerouslySetInnerHTML={{ __html: renderMath(opt.text) }} />
+                  {opt.key === ex.correctAnswer && (
+                    <span style={{ marginLeft: 'auto', fontWeight: 700, fontSize: 11.5, color: '#047857' }}>
+                      ✓ Đúng
+                    </span>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  ));
+}
 
 export default function GeneratedExercisesListPage() {
   const [proposals, setProposals] = useState([]);
@@ -8,6 +84,21 @@ export default function GeneratedExercisesListPage() {
   const [loading, setLoading] = useState(true);
   const [selectedRejectProposal, setSelectedRejectProposal] = useState(null);
   const [actionLoading, setActionLoading] = useState(false);
+  const [printProposal, setPrintProposal] = useState(null);
+
+  // In PDF: trình duyệt tự "In > Lưu dưới dạng PDF" - không cần thư viện nào,
+  // luôn khớp CHÍNH XÁC với công thức/hình vẽ đã render trên trang (không
+  // phải render lại bằng công cụ khác nên không rủi ro lệch định dạng.
+  useEffect(() => {
+    if (!printProposal) return;
+    const timer = setTimeout(() => window.print(), 150);
+    const onAfterPrint = () => setPrintProposal(null);
+    window.addEventListener('afterprint', onAfterPrint);
+    return () => {
+      clearTimeout(timer);
+      window.removeEventListener('afterprint', onAfterPrint);
+    };
+  }, [printProposal]);
 
   async function loadData() {
     setLoading(true);
@@ -151,74 +242,8 @@ export default function GeneratedExercisesListPage() {
                     <summary style={{ cursor: 'pointer', fontWeight: 700, color: 'var(--primary)', fontSize: 13.5 }}>
                       🎯 Xem trước {p.exercises.length} câu hỏi AI đã sinh (Phân theo chuyên đề)
                     </summary>
-                    <div style={{ marginTop: 12, display: 'flex', flexDirection: 'column', gap: 14 }}>
-                      {(() => {
-                        const stepTopics = (p.roadmap?.steps || []).map((s) => s.tag || s.title).filter(Boolean);
-                        const topicMap = new Map();
-                        p.exercises.forEach((ex, origIdx) => {
-                          const topic = (ex.tags && ex.tags.length > 0 && ex.tags[0]) || 'Chuyên đề ôn tập bổ trợ';
-                          if (!topicMap.has(topic)) topicMap.set(topic, []);
-                          topicMap.get(topic).push({ ...ex, origIdx });
-                        });
-                        const groups = [];
-                        stepTopics.forEach((t) => {
-                          if (topicMap.has(t)) {
-                            groups.push({ topic: t, items: topicMap.get(t) });
-                            topicMap.delete(t);
-                          }
-                        });
-                        for (const [topic, items] of topicMap.entries()) {
-                          groups.push({ topic, items });
-                        }
-
-                        return groups.map((grp, gIdx) => (
-                          <div key={gIdx} style={{ background: '#ffffff', borderRadius: 8, border: '1px solid #e2e8f0', padding: 12 }}>
-                            <div style={{ fontWeight: 800, fontSize: 13, color: '#6d28d9', marginBottom: 10, display: 'flex', alignItems: 'center', gap: 6 }}>
-                              <span style={{ background: '#ede9fe', padding: '2px 8px', borderRadius: 4, fontSize: 11.5 }}>
-                                Chủ đề {gIdx + 1}
-                              </span>
-                              <span>{grp.topic} ({grp.items.length} câu)</span>
-                            </div>
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                              {grp.items.map((ex, qIdx) => (
-                                <div key={qIdx} style={{ padding: 10, background: '#f8fafc', borderRadius: 6, border: '1px solid #f1f5f9' }}>
-                                  <div style={{ fontWeight: 600, marginBottom: 8, fontSize: 13, lineHeight: 1.6 }}>
-                                    <strong style={{ color: '#5b21b6', marginRight: 6 }}>Câu {qIdx + 1}:</strong>
-                                    <span dangerouslySetInnerHTML={{ __html: renderMath(ex.content) }} />
-                                  </div>
-                                  <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                                    {ex.options.map((opt) => (
-                                      <div
-                                        key={opt.key}
-                                        className={`option-row ${opt.key === ex.correctAnswer ? 'correct' : ''}`}
-                                        style={{
-                                          margin: 0,
-                                          padding: '8px 14px',
-                                          fontSize: 13,
-                                          width: '100%',
-                                          minHeight: 40,
-                                          display: 'flex',
-                                          alignItems: 'center',
-                                        }}
-                                      >
-                                        <strong style={{ minWidth: 24, color: opt.key === ex.correctAnswer ? '#047857' : '#475569' }}>
-                                          {opt.key}.
-                                        </strong>{' '}
-                                        <span style={{ flex: 1, lineHeight: 1.5 }} dangerouslySetInnerHTML={{ __html: renderMath(opt.text) }} />
-                                        {opt.key === ex.correctAnswer && (
-                                          <span style={{ marginLeft: 'auto', fontWeight: 700, fontSize: 11.5, color: '#047857' }}>
-                                            ✓ Đúng
-                                          </span>
-                                        )}
-                                      </div>
-                                    ))}
-                                  </div>
-                                </div>
-                              ))}
-                            </div>
-                          </div>
-                        ));
-                      })()}
+                    <div style={{ marginTop: 12 }}>
+                      <ExerciseGroups proposal={p} />
                     </div>
                   </details>
 
@@ -228,6 +253,9 @@ export default function GeneratedExercisesListPage() {
                     </button>
                     <button className="btn outline-danger sm" onClick={() => setSelectedRejectProposal(p)}>
                       ✕ Từ chối
+                    </button>
+                    <button className="btn sm secondary" onClick={() => setPrintProposal(p)} style={{ marginLeft: 'auto' }}>
+                      🖨️ Xuất PDF
                     </button>
                   </div>
                 </div>
@@ -468,6 +496,21 @@ export default function GeneratedExercisesListPage() {
               </button>
             </div>
           </div>
+        </div>
+      )}
+
+      {/* Khối chỉ hiện khi in (window.print) - ẩn hoàn toàn trên màn hình bình
+          thường bằng CSS trong index.css (.print-only). Tách riêng khỏi khối
+          xem trước bên trên để không bị cắt giữa chừng bởi kích thước cố định
+          của <details>/scroll, và không in kèm giao diện quản lý (nút bấm...). */}
+      {printProposal && (
+        <div className="print-only">
+          <h2 style={{ fontSize: 18, marginBottom: 4 }}>Bài tập ôn tập bổ trợ - AI sinh</h2>
+          <p style={{ fontSize: 13, color: '#475569', marginBottom: 16 }}>
+            Học sinh: {getStudent(printProposal.studentId)?.name || printProposal.studentId}
+            {' • '}Chuyên đề trọng tâm: {printProposal.weakTags.join(', ')}
+          </p>
+          <ExerciseGroups proposal={printProposal} />
         </div>
       )}
     </div>

@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import api from '../services/api';
 import { renderMath } from '../utils/mathRender';
+import QuestionDiagram from '../components/QuestionDiagram';
 
 export default function ExamPage() {
   const { examId } = useParams();
@@ -17,6 +18,11 @@ export default function ExamPage() {
 
   function selectAnswer(questionId, key) {
     setAnswers((prev) => ({ ...prev, [questionId]: key }));
+  }
+
+  function scrollToQuestion(idx) {
+    const el = document.getElementById(`exam-question-${idx}`);
+    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
 
   async function handleSubmit() {
@@ -63,6 +69,26 @@ export default function ExamPage() {
   const answeredCount = Object.keys(answers).length;
   const totalCount = exam.questions.length;
   const progressPercent = totalCount > 0 ? Math.round((answeredCount / totalCount) * 100) : 0;
+
+  // Tính trước số thứ tự câu hỏi THEO TỪNG CHỦ ĐỀ (mỗi chủ đề bắt đầu lại từ
+  // Câu 1, giống hệt cách hiển thị trong danh sách câu hỏi bên dưới) - dùng
+  // chung cho cả danh sách câu hỏi và bảng điều hướng, để số thứ tự luôn
+  // khớp nhau giữa 2 nơi.
+  const questionsWithMeta = (() => {
+    let currentTopicName = null;
+    let qNumInTopic = 0;
+    return exam.questions.map((q) => {
+      const topicName = q.tags?.[0] || 'Kiến thức chung';
+      const isNewTopic = topicName !== currentTopicName;
+      if (isNewTopic) {
+        currentTopicName = topicName;
+        qNumInTopic = 1;
+      } else {
+        qNumInTopic += 1;
+      }
+      return { question: q, topicName, isNewTopic, displayQNum: qNumInTopic };
+    });
+  })();
 
   return (
     <div className="container" style={{ maxWidth: 860 }}>
@@ -141,20 +167,8 @@ export default function ExamPage() {
       {/* Questions list */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
         {(() => {
-          let currentTopicName = null;
-          let qNumInTopic = 0;
-
-          return exam.questions.map((q, idx) => {
+          return questionsWithMeta.map(({ question: q, topicName, isNewTopic, displayQNum }, idx) => {
             const selected = answers[q.id];
-            const topicName = q.tags?.[0] || 'Kiến thức chung';
-            const isNewTopic = topicName !== currentTopicName;
-            if (isNewTopic) {
-              currentTopicName = topicName;
-              qNumInTopic = 1;
-            } else {
-              qNumInTopic += 1;
-            }
-            const displayQNum = qNumInTopic;
 
             return (
               <React.Fragment key={q.id}>
@@ -164,7 +178,7 @@ export default function ExamPage() {
                       marginTop: idx > 0 ? 10 : 0,
                       marginBottom: -6,
                       padding: '10px 16px',
-                      background: 'linear-gradient(135deg, #2563eb 0%, #3b82f6 100%)',
+                      background: 'var(--ink)',
                       color: '#fff',
                       borderRadius: 'var(--radius-md)',
                       display: 'flex',
@@ -182,7 +196,11 @@ export default function ExamPage() {
                   </div>
                 )}
 
-                <div className="card" style={{ borderColor: selected ? 'var(--primary-border)' : 'var(--border-color)', margin: 0 }}>
+                <div
+                  id={`exam-question-${idx}`}
+                  className="card"
+                  style={{ borderColor: selected ? 'var(--primary-border)' : 'var(--border-color)', margin: 0, scrollMarginTop: 20 }}
+                >
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
                     <span style={{ fontWeight: 800, color: 'var(--primary)', fontSize: 15 }}>
                       Câu {displayQNum}:
@@ -198,6 +216,8 @@ export default function ExamPage() {
                     style={{ fontSize: 15, fontWeight: 600, color: 'var(--text-main)', marginBottom: 14, lineHeight: 1.6 }}
                     dangerouslySetInnerHTML={{ __html: renderMath(q.content) }}
                   />
+
+                  <QuestionDiagram diagram={q.diagram} />
 
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                     {q.options.map((opt) => {
@@ -246,6 +266,52 @@ export default function ExamPage() {
           {submitting ? 'Đang chấm điểm & nộp bài...' : '✓ Nộp bài thi ngay'}
         </button>
       </div>
+
+      {/* Bảng điều hướng câu hỏi - hiện cố định bên phải trên màn hình rộng.
+          Nhóm theo chủ đề + đánh số Câu 1, 2, 3... trong TỪNG chủ đề, khớp
+          đúng với số hiển thị ở danh sách câu hỏi bên trái. */}
+      <aside className="exam-question-nav" aria-label="Danh sách câu hỏi">
+        <div className="exam-question-nav-title">Danh sách câu hỏi</div>
+        <div className="exam-question-nav-body">
+          {(() => {
+            let currentTopicName = null;
+            const groups = [];
+            questionsWithMeta.forEach(({ question: q, topicName, displayQNum }, idx) => {
+              if (topicName !== currentTopicName) {
+                currentTopicName = topicName;
+                groups.push({ topicName, items: [] });
+              }
+              groups[groups.length - 1].items.push({ q, displayQNum, idx });
+            });
+
+            return groups.map((group) => (
+              <div key={group.topicName} className="exam-question-nav-group">
+                <div className="exam-question-nav-group-title">{group.topicName}</div>
+                <div className="exam-question-nav-grid">
+                  {group.items.map(({ q, displayQNum, idx }) => {
+                    const isAnswered = Boolean(answers[q.id]);
+                    return (
+                      <button
+                        key={q.id}
+                        type="button"
+                        className={`exam-question-nav-item${isAnswered ? ' answered' : ''}`}
+                        onClick={() => scrollToQuestion(idx)}
+                        aria-label={`Câu ${displayQNum} - ${group.topicName}${isAnswered ? ' - đã làm' : ' - chưa làm'}`}
+                      >
+                        {displayQNum}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            ));
+          })()}
+        </div>
+        <div className="exam-question-nav-legend">
+          <span><i className="exam-question-nav-dot done" aria-hidden="true" /> Đã làm ({answeredCount})</span>
+          <span><i className="exam-question-nav-dot pending" aria-hidden="true" /> Chưa làm ({totalCount - answeredCount})</span>
+        </div>
+      </aside>
     </div>
   );
 }

@@ -18,5 +18,75 @@
     "attachment": null,
     "createdAt": "2026-09-10T01:45:05.728Z",
     "read": true
+  },
+  {
+    "id": "4021ea84-bf1a-4a96-a5d1-2c10ce6eb211",
+    "senderId": "u-teacher-1",
+    "receiverId": "u-fcf462ed-d7e1-4589-821a-e05639277d2e",
+    "text": "hI EM",
+    "image": null,
+    "attachment": null,
+    "createdAt": "2026-09-17T07:02:11.601Z",
+    "read": true
+  },
+  {
+    "id": "67e8e2c6-e147-4dc3-a4e2-dcff5fdbabf5",
+    "senderId": "u-fcf462ed-d7e1-4589-821a-e05639277d2e",
+    "receiverId": "u-teacher-1",
+    "text": "Hi anh có việc gì không ạ",
+    "image": null,
+    "attachment": null,
+    "createdAt": "2026-09-17T07:02:21.178Z",
+    "read": true
+  },
+  {
+    "id": "ef42dbfb-698e-49f3-8589-ca86ff41061e",
+    "senderId": "u-teacher-1",
+    "receiverId": "u-fcf462ed-d7e1-4589-821a-e05639277d2e",
+    "text": "Không có gì nhé !",
+    "image": null,
+    "attachment": null,
+    "createdAt": "2026-09-17T07:02:27.061Z",
+    "read": true
+  },
+  {
+    "id": "0fdd75a3-5be8-4bad-937f-dcc4e9a9c41f",
+    "senderId": "u-fcf462ed-d7e1-4589-821a-e05639277d2e",
+    "receiverId": "u-teacher-1",
+    "text": "Ok anh",
+    "image": null,
+    "attachment": null,
+    "createdAt": "2026-09-17T07:02:30.202Z",
+    "read": true
+  },
+  {
+    "id": "08968de2-5aa1-433f-8454-e27c6cd037ab",
+    "senderId": "u-teacher-1",
+    "receiverId": "u-fcf462ed-d7e1-4589-821a-e05639277d2e",
+    "text": "Ok em",
+    "image": null,
+    "attachment": null,
+    "createdAt": "2026-09-17T07:02:33.634Z",
+    "read": true
+  },
+  {
+    "id": "26859108-ba64-453f-9a86-4f52973c22c5",
+    "senderId": "u-fcf462ed-d7e1-4589-821a-e05639277d2e",
+    "receiverId": "u-teacher-1",
+    "text": "😃OKi",
+    "image": null,
+    "attachment": null,
+    "createdAt": "2026-09-17T07:02:41.913Z",
+    "read": true
+  },
+  {
+    "id": "0443e3a8-e6aa-48d4-b3b7-4f5070a2d92b",
+    "senderId": "u-teacher-1",
+    "receiverId": "u-98741842-4faa-4754-9ac8-e0e46af5d42f",
+    "text": "Hi",
+    "image": null,
+    "attachment": null,
+    "createdAt": "2026-09-21T14:39:31.677Z",
+    "read": true
   }
 ]

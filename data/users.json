@@ -7,36 +7,16 @@
     "role": "teacher",
     "className": null,
     "createdAt": "2026-09-01T00:00:00.000Z",
-    "lastActiveAt": null
+    "lastActiveAt": "2026-09-21T15:47:02.539Z"
   },
   {
-    "id": "u-fcf462ed-d7e1-4589-821a-e05639277d2e",
+    "id": "u-98741842-4faa-4754-9ac8-e0e46af5d42f",
     "name": "Nguyễn Phước Quyền",
     "email": "phuocquyen@gmail.com",
-    "passwordHash": "$2a$10$d13Hodamv1DcWV/Rrizh/e4/cI3Lv3PLA3NH9L3973kKTZPFvfQA6",
+    "passwordHash": "$2a$10$dOhDdYBg43a16ZsnzHd.NOaZnK5rorWj9es4Tx9ajf6045H4BcTru",
     "role": "student",
     "className": "12A2",
-    "createdAt": "2026-09-09T02:33:30.565Z",
-    "lastActiveAt": "2026-09-10T04:44:58.129Z"
-  },
-  {
-    "id": "u-8db0edf9-a2ee-49f9-aa1b-ad63d0530c4c",
-    "name": "Nguyễn Kim Chi",
-    "email": "kimchi@gmail.com",
-    "passwordHash": "$2a$10$C8pb9Hj1m0UhBes.IEW.qOlMZRhVaw79jOPFimJnMT8p1m.y1e7qK",
-    "role": "student",
-    "className": "12A1",
-    "createdAt": "2026-09-09T02:34:02.744Z",
-    "lastActiveAt": null
-  },
-  {
-    "id": "u-211ae8c4-f8e4-44e6-818a-24ca3aac8f39",
-    "name": "Nguyễn Phước Quý",
-    "email": "phuocquy@gmail.com",
-    "passwordHash": "$2a$10$TwaRSKwDvMdI3AJfCte63.HGNtbyVYGfjm5lXMzgKQ5DjhbHzsEfa",
-    "role": "student",
-    "className": "12A1",
-    "createdAt": "2026-09-09T03:10:54.451Z",
-    "lastActiveAt": "2026-09-09T09:37:50.997Z"
+    "createdAt": "2026-09-21T14:38:10.307Z",
+    "lastActiveAt": "2026-09-21T15:47:14.634Z"
   }
 ]

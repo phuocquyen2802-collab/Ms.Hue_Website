@@ -1,0 +1,405 @@
+<title>Định dạng đề thi Word</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --navy:#1e293b; --navy-2:#334155; --paper:#fdfbf6; --paper-2:#f6f2e8;
+    --ink:#1f2430; --muted:#64748b; --border:#e2e2d8;
+    --gold:#c98a2c; --gold-soft:#f3e4c6; --gold-text:#8a611f;
+    --ok:#166534; --ok-bg:#e9f7ef; --ok-border:#bfe6cc;
+    --bad:#991b1b; --bad-bg:#fef2f2; --bad-border:#fecaca;
+    --blue:#1d4ed8; --blue-bg:#eff6ff; --blue-border:#bfdbfe;
+    --mono: 'Consolas','SFMono-Regular',Menlo,monospace;
+    /* Georgia/Times New Roman KHÔNG hỗ trợ đủ dấu tổ hợp tiếng Việt (ấ, ầ,
+       ẩ, ẫ, ậ...) trên nhiều hệ render, gây hiển thị dấu bị tách rời khỏi
+       chữ cái - dùng Noto Serif (phủ đầy đủ Unicode tiếng Việt) làm chính. */
+    --serif: 'Noto Serif', Georgia, 'Times New Roman', serif;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --paper:#161a22; --paper-2:#1d222c; --ink:#e6e8ee; --muted:#93a0b4;
+      --border:#2b3140; --navy:#e6e8ee; --navy-2:#c7cede;
+      --ok-bg:#0f2419; --ok-border:#1e4030; --bad-bg:#2a1414; --bad-border:#5c2323;
+      --blue-bg:#111d33; --blue-border:#274270; --gold-soft:#3a2f16;
+    }
+  }
+  :root[data-theme="dark"]{
+    --paper:#161a22; --paper-2:#1d222c; --ink:#e6e8ee; --muted:#93a0b4;
+    --border:#2b3140; --navy:#e6e8ee; --navy-2:#c7cede;
+    --ok-bg:#0f2419; --ok-border:#1e4030; --bad-bg:#2a1414; --bad-border:#5c2323;
+    --blue-bg:#111d33; --blue-border:#274270; --gold-soft:#3a2f16;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0; background:var(--paper); color:var(--ink);
+    font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;
+    line-height:1.6;
+  }
+  .wrap{ max-width:1180px; margin:0 auto; padding:28px 16px 80px; }
+  header.top{ text-align:center; margin-bottom:26px; }
+  header.top h1{
+    font-family:var(--serif); font-size:clamp(22px,3.6vw,32px); margin:0 0 8px;
+    color:var(--navy); text-wrap:balance;
+  }
+  header.top p{ margin:0; color:var(--muted); font-size:14.5px; max-width:720px; margin:0 auto; text-wrap:balance;}
+
+  .theme-btn{
+    position:fixed; top:14px; right:14px; z-index:50;
+    background:var(--paper-2); border:1px solid var(--border); color:var(--ink);
+    border-radius:8px; padding:7px 12px; font-size:12.5px; cursor:pointer;
+  }
+  .theme-btn:focus-visible{ outline:2px solid var(--gold); outline-offset:2px; }
+
+  /* ---- pipeline ---- */
+  .pipeline{
+    display:flex; flex-wrap:wrap; gap:10px; justify-content:center;
+    margin:0 0 30px;
+  }
+  .pipe-step{
+    flex:1 1 200px; max-width:240px; background:var(--paper-2); border:1px solid var(--border);
+    border-radius:12px; padding:14px 14px 12px; text-align:center; position:relative;
+  }
+  .pipe-step .n{
+    width:26px; height:26px; border-radius:50%; background:var(--navy); color:var(--paper);
+    display:flex; align-items:center; justify-content:center; font-weight:700; font-size:13px;
+    margin:0 auto 8px;
+  }
+  .pipe-step h3{ margin:0 0 4px; font-size:13.5px; color:var(--navy-2); }
+  .pipe-step p{ margin:0; font-size:12px; color:var(--muted); }
+  .pipe-arrow{
+    display:flex; align-items:center; justify-content:center; color:var(--muted); font-size:20px;
+    flex:0 0 auto;
+  }
+  @media (max-width:760px){ .pipe-arrow{ transform:rotate(90deg); } }
+
+  /* ---- tabs for two-column layout ---- */
+  .layout{ display:grid; grid-template-columns: minmax(0,1.15fr) minmax(0,1fr); gap:22px; align-items:start; }
+  @media (max-width:920px){ .layout{ grid-template-columns:1fr; } }
+
+  .doc-mock{
+    background:#fff; color:#1a1a1a; border:1px solid var(--border); border-radius:10px;
+    box-shadow:0 6px 18px rgba(0,0,0,0.06);
+    padding:26px 26px 30px; font-family:var(--serif); font-size:14.5px;
+  }
+  :root[data-theme="dark"] .doc-mock, @media (prefers-color-scheme: dark){ .doc-mock{ } }
+  .doc-mock .zone{
+    display:block; border-radius:6px; padding:2px 4px; margin: 2px -4px; cursor:pointer;
+    transition: background-color .15s ease, box-shadow .15s ease;
+    position:relative;
+  }
+  .doc-mock .zone:hover, .doc-mock .zone.active{ box-shadow:0 0 0 2px var(--zc,#94a3b8) inset; }
+  .doc-mock .zone[data-zone="topic"]{ --zc:#7c3aed; background:#f5f0ff; font-weight:700; }
+  .doc-mock .zone[data-zone="qnum"]{ --zc:#1d4ed8; }
+  .doc-mock .zone[data-zone="qnum"] b{ background:#dbeafe; padding:1px 3px; border-radius:4px; }
+  .doc-mock .zone[data-zone="formula"]{ --zc:#c98a2c; }
+  .doc-mock .zone[data-zone="formula"] em.f{ background:#fbf0da; border:1px dashed #c98a2c; padding:0 5px; border-radius:4px; font-style:normal; color:#8a611f; font-size:13px;}
+  .doc-mock .zone[data-zone="option"]{ --zc:#166534; }
+  .doc-mock .zone[data-zone="option"] b{ background:#dcfce7; padding:1px 4px; border-radius:4px; }
+  .doc-mock .zone[data-zone="answerhead"]{ --zc:#991b1b; background:#fef2f2; font-weight:700; text-align:center; }
+  .doc-mock .zone[data-zone="answertable"]{ --zc:#991b1b; }
+  table.ans-table{ border-collapse:collapse; margin:8px auto 2px; font-size:13.5px; }
+  table.ans-table td, table.ans-table th{ border:1px solid #999; padding:4px 10px; text-align:center; }
+  .doc-mock .indent{ margin-left:20px; }
+  .doc-mock hr.sep{ border:none; border-top:1px dashed #cbd5e1; margin:16px 0; }
+
+  .legend-col{ position:sticky; top:16px; display:flex; flex-direction:column; gap:10px; }
+  .rule-card{
+    background:var(--paper-2); border:1px solid var(--border); border-left:4px solid var(--zc,#94a3b8);
+    border-radius:8px; padding:12px 14px; font-size:13px; transition:box-shadow .15s ease;
+  }
+  .rule-card.active{ box-shadow:0 0 0 2px var(--zc,#94a3b8); }
+  .rule-card h4{ margin:0 0 4px; font-size:13.5px; color:var(--navy); display:flex; align-items:center; gap:6px; }
+  .rule-card h4 .dot{ width:9px; height:9px; border-radius:50%; background:var(--zc,#94a3b8); flex-shrink:0; }
+  .rule-card p{ margin:0 0 4px; color:var(--muted); }
+  .rule-card code{ background:rgba(0,0,0,0.06); padding:1px 5px; border-radius:4px; font-family:var(--mono); font-size:12px; }
+  :root[data-theme="dark"] .rule-card code, @media (prefers-color-scheme: dark){ .rule-card code{ background:rgba(255,255,255,0.09); } }
+
+  section.block{ margin-top:44px; }
+  section.block h2{
+    font-family:var(--serif); font-size:20px; color:var(--navy); margin:0 0 6px;
+    padding-bottom:8px; border-bottom:1.5px solid var(--border);
+  }
+  section.block > p.lead{ color:var(--muted); font-size:13.5px; margin:0 0 18px; max-width:760px; }
+
+  .grid2{ display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+  @media (max-width:760px){ .grid2{ grid-template-columns:1fr; } }
+  .card{ border-radius:10px; padding:14px 16px; font-size:13.5px; border:1px solid; }
+  .card.ok{ background:var(--ok-bg); border-color:var(--ok-border); }
+  .card.bad{ background:var(--bad-bg); border-color:var(--bad-border); }
+  .card h4{ margin:0 0 8px; font-size:13.5px; display:flex; align-items:center; gap:6px; }
+  .card.ok h4{ color:var(--ok); }
+  .card.bad h4{ color:var(--bad); }
+  .card pre{ margin:0; white-space:pre-wrap; font-family:var(--mono); font-size:12.5px; line-height:1.55; background:rgba(255,255,255,0.5); padding:8px 10px; border-radius:6px; }
+  :root[data-theme="dark"] .card pre, @media (prefers-color-scheme: dark){ .card pre{ background:rgba(0,0,0,0.2); } }
+  .card .note{ margin-top:6px; color:var(--muted); font-size:12.5px; }
+
+  .accordion-item{ border:1px solid var(--border); border-radius:10px; margin-bottom:10px; overflow:hidden; background:var(--paper-2); }
+  .accordion-item button.acc-trigger{
+    width:100%; text-align:left; background:none; border:none; padding:13px 16px; cursor:pointer;
+    display:flex; justify-content:space-between; align-items:center; gap:10px; font-size:13.5px; font-weight:600; color:var(--ink);
+  }
+  .accordion-item button.acc-trigger:focus-visible{ outline:2px solid var(--gold); outline-offset:-2px; }
+  .accordion-item .chev{ transition:transform .18s ease; color:var(--muted); flex-shrink:0; }
+  .accordion-item[data-open="true"] .chev{ transform:rotate(180deg); }
+  .accordion-body{ max-height:0; overflow:hidden; transition:max-height .22s ease; }
+  .accordion-body .inner{ padding:0 16px 15px; font-size:13px; color:var(--muted); }
+  .accordion-body .inner code{ background:rgba(0,0,0,0.06); padding:1px 5px; border-radius:4px; font-family:var(--mono); font-size:12px; color:var(--ink); }
+  :root[data-theme="dark"] .accordion-body .inner code, @media (prefers-color-scheme: dark){ .accordion-body .inner code{ background:rgba(255,255,255,0.09); } }
+
+  .badge{ display:inline-block; font-size:11px; font-weight:700; padding:2px 8px; border-radius:999px; background:var(--gold-soft); color:var(--gold-text); margin-left:6px; }
+
+  footer.foot{ margin-top:50px; text-align:center; font-size:12px; color:var(--muted); }
+
+  @media print{
+    .theme-btn{ display:none; }
+    .legend-col{ position:static; }
+    .accordion-body{ max-height:none !important; }
+  }
+</style>
+<button class="theme-btn" id="themeBtn" type="button" aria-label="Đổi giao diện sáng/tối">🌗 Đổi giao diện</button>
+
+<div class="wrap">
+  <header class="top">
+    <h1>📄 Định dạng file Word chuẩn để upload đề thi</h1>
+    <p>Hệ thống đọc file <strong>.docx</strong> và tự tách câu hỏi, đáp án A/B/C/D, công thức, chủ đề — rồi <strong>tự đối chiếu bảng đáp án và điền sẵn đáp án đúng</strong>. Soạn đúng theo cấu trúc dưới đây để việc tách tự động chính xác gần như tuyệt đối, hạn chế phải sửa tay.</p>
+  </header>
+
+  <div class="pipeline" role="list" aria-label="Quy trình upload đề thi">
+    <div class="pipe-step" role="listitem"><div class="n">1</div><h3>Soạn file Word</h3><p>Theo đúng cấu trúc: Chủ đề → Câu hỏi → 4 đáp án → Bảng đáp án</p></div>
+    <div class="pipe-arrow" aria-hidden="true">→</div>
+    <div class="pipe-step" role="listitem"><div class="n">2</div><h3>Upload lên website</h3><p>Trang "Quản lý bài tập" của giáo viên</p></div>
+    <div class="pipe-arrow" aria-hidden="true">→</div>
+    <div class="pipe-step" role="listitem"><div class="n">3</div><h3>Hệ thống tự tách</h3><p>Tách câu hỏi/đáp án, đối chiếu bảng đáp án, tự điền đáp án đúng</p></div>
+    <div class="pipe-arrow" aria-hidden="true">→</div>
+    <div class="pipe-step" role="listitem"><div class="n">4</div><h3>Giáo viên kiểm tra</h3><p>Rà lại cảnh báo (nếu có) rồi lưu đề chính thức</p></div>
+  </div>
+
+  <section class="block">
+    <h2>1. Cấu trúc file mẫu (bấm vào từng phần để xem quy tắc)</h2>
+    <p class="lead">Di chuột / bấm vào từng đoạn được tô màu bên trái để xem quy tắc tách tương ứng bên phải. Trên điện thoại, quy tắc sẽ hiện ngay bên dưới đoạn văn bản.</p>
+
+    <div class="layout">
+      <div class="doc-mock" id="docMock">
+        <span class="zone" data-zone="topic" tabindex="0">CHỦ ĐỀ 1: PHƯƠNG TRÌNH LƯỢNG GIÁC</span>
+
+        <div class="indent">
+          <p class="zone" data-zone="qnum" tabindex="0"><b>Câu 1.</b> Nghiệm của phương trình <span class="zone" data-zone="formula" tabindex="0"><em class="f">công thức chèn bằng Equation Editor / MathType</em></span> là:</p>
+          <p class="zone" data-zone="option" tabindex="0"><b>A.</b> đáp án A &nbsp;&nbsp; <b>B.</b> đáp án B &nbsp;&nbsp; <b>C.</b> đáp án C &nbsp;&nbsp; <b>D.</b> đáp án D</p>
+
+          <p class="zone" data-zone="qnum" tabindex="0"><b>Câu 2.</b> ... nội dung câu hỏi ...</p>
+          <p class="zone" data-zone="option" tabindex="0"><b>A.</b> ... &nbsp; <b>B.</b> ... &nbsp; <b>C.</b> ... &nbsp; <b>D.</b> ...</p>
+
+          <p style="color:#94a3b8;">(tiếp tục Câu 3, Câu 4, ... trong cùng chủ đề)</p>
+        </div>
+
+        <p class="zone" data-zone="answerhead" tabindex="0">BẢNG ĐÁP ÁN</p>
+        <div class="zone" data-zone="answertable" tabindex="0">
+          <table class="ans-table">
+            <tr><td>1</td><td>2</td><td>3</td><td>4</td></tr>
+            <tr><td>D</td><td>A</td><td>C</td><td>B</td></tr>
+          </table>
+        </div>
+
+        <hr class="sep">
+
+        <span class="zone" data-zone="topic" tabindex="0">CHỦ ĐỀ 2: KHẢO SÁT HÀM SỐ</span>
+        <div class="indent">
+          <p class="zone" data-zone="qnum" tabindex="0"><b>Câu 1.</b> ... (đánh số lại từ 1 cho chủ đề mới) ...</p>
+          <p class="zone" data-zone="option" tabindex="0"><b>A.</b> ... &nbsp; <b>B.</b> ... &nbsp; <b>C.</b> ... &nbsp; <b>D.</b> ...</p>
+        </div>
+        <p class="zone" data-zone="answerhead" tabindex="0">ĐÁP ÁN</p>
+        <p class="zone" data-zone="answertable" tabindex="0" style="text-align:center;">1-D&nbsp;&nbsp;&nbsp;2-B</p>
+      </div>
+
+      <div class="legend-col" id="legendCol">
+        <div class="rule-card" data-zone="topic" style="--zc:#7c3aed;">
+          <h4><span class="dot"></span>Tiêu đề chủ đề</h4>
+          <p>Dòng bắt đầu bằng 1 trong các từ: <code>CHỦ ĐỀ</code>, <code>CHUYÊN ĐỀ</code>, <code>DẠNG TOÁN</code>, <code>DẠNG</code>, <code>PHẦN</code>, <code>BÀI</code> (có thể kèm số + dấu <code>:</code> hoặc <code>.</code>).</p>
+          <p>Toàn bộ câu hỏi phía sau, cho tới tiêu đề chủ đề tiếp theo, sẽ được gắn <strong>tag</strong> theo đúng tên chủ đề này (dùng để nhóm bài tập, thống kê điểm yếu theo chuyên đề).</p>
+        </div>
+
+        <div class="rule-card" data-zone="qnum" style="--zc:#1d4ed8;">
+          <h4><span class="dot"></span>Bắt đầu 1 câu hỏi</h4>
+          <p>Đoạn văn (không phải bảng) phải bắt đầu bằng đúng chữ <code>Câu &lt;số&gt;</code> (không phân biệt hoa/thường), ví dụ: <code>Câu 1.</code>, <code>Câu 12:</code>, <code>Câu 3</code>.</p>
+          <p>Nội dung câu hỏi = toàn bộ văn bản từ sau "Câu N." cho tới marker đáp án <code>A.</code> đầu tiên.</p>
+          <p><strong>Số thứ tự đánh lại từ 1</strong> ở mỗi chủ đề mới — hệ thống dùng đúng số này để khớp với bảng đáp án của chủ đề đó.</p>
+        </div>
+
+        <div class="rule-card" data-zone="formula" style="--zc:#c98a2c;">
+          <h4><span class="dot"></span>Công thức Toán</h4>
+          <p>Phải chèn bằng <strong>Insert → Equation</strong> (Equation Editor/MathType cũ vẫn dùng tốt) — hệ thống tự nhận diện và chuyển thành ảnh sắc nét, tự canh cỡ chữ khớp với chữ thường.</p>
+          <p>Không gõ công thức bằng ký tự thường (ví dụ gõ tay <code>x^2</code>, <code>can(x)</code>) vì sẽ hiển thị sai định dạng.</p>
+        </div>
+
+        <div class="rule-card" data-zone="option" style="--zc:#166534;">
+          <h4><span class="dot"></span>4 đáp án A/B/C/D</h4>
+          <p>Mỗi đáp án bắt đầu bằng chữ cái <code>A.</code> <code>B.</code> <code>C.</code> <code>D.</code> — nên <strong>in đậm (bold)</strong> chữ cái + dấu chấm để nhận diện chắc chắn nhất (nếu không in đậm, hệ thống vẫn cố nhận diện nhưng dễ sai nếu nội dung đáp án chứa chữ cái đứng đầu trùng ngẫu nhiên).</p>
+          <p>4 đáp án có thể nằm cùng 1 dòng hoặc mỗi đáp án 1 dòng, miễn đúng thứ tự A→B→C→D và đủ 4 đáp án.</p>
+        </div>
+
+        <div class="rule-card" data-zone="answerhead" style="--zc:#991b1b;">
+          <h4><span class="dot"></span>Tiêu đề bảng đáp án</h4>
+          <p>Dòng chứa 1 trong các cụm: <code>BẢNG ĐÁP ÁN</code>, <code>ĐÁP ÁN</code>, <code>HƯỚNG DẪN GIẢI</code>, <code>LỜI GIẢI</code> — báo hiệu phần sau là đáp án, không phải câu hỏi mới.</p>
+          <p>Đặt bảng đáp án <strong>ngay sau các câu hỏi của cùng 1 chủ đề</strong>, trước khi sang chủ đề kế tiếp.</p>
+        </div>
+
+        <div class="rule-card" data-zone="answertable" style="--zc:#991b1b;">
+          <h4><span class="dot"></span>Nội dung bảng đáp án</h4>
+          <p>Hỗ trợ <strong>4 kiểu trình bày</strong> (xem chi tiết ở mục 2 bên dưới): văn bản liền <code>1-D 2.B</code>, bảng 2 hàng ngang, bảng 2 cột dọc, hoặc bảng nhiều cột xen kẽ.</p>
+          <p>Số đáp án nên khớp đúng số câu hỏi trong chủ đề đó — nếu lệch, hệ thống vẫn nhập được đề nhưng sẽ cảnh báo để giáo viên kiểm tra tay.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="block">
+    <h2>2. Kiểu bảng đáp án được hỗ trợ</h2>
+    <p class="lead">Chọn 1 trong 4 kiểu dưới đây cho bảng đáp án của mỗi chủ đề — không cần theo đúng 1 kiểu cố định cho cả file, mỗi chủ đề có thể dùng kiểu khác nhau.</p>
+    <div class="grid2">
+      <div class="card ok">
+        <h4>✓ Văn bản liền, cách nhau bằng dấu . - : hoặc khoảng trắng</h4>
+        <pre>1-D   2-A   3-C   4-B
+1.D 2.A 3.C 4.B
+Câu 1: D, Câu 2: A, Câu 3: C</pre>
+      </div>
+      <div class="card ok">
+        <h4>✓ Bảng 2 hàng ngang (số trên, chữ dưới)</h4>
+        <pre>┌────┬────┬────┬────┐
+│ 1  │ 2  │ 3  │ 4  │
+├────┼────┼────┼────┤
+│ D  │ A  │ C  │ B  │
+└────┴────┴────┴────┘</pre>
+      </div>
+      <div class="card ok">
+        <h4>✓ Bảng 2 cột dọc</h4>
+        <pre>┌────────┬────┐
+│ Câu 1  │ D  │
+│ Câu 2  │ A  │
+│ Câu 3  │ C  │
+└────────┴────┘</pre>
+      </div>
+      <div class="card ok">
+        <h4>✓ Bảng nhiều cột xen kẽ (số, chữ, số, chữ...)</h4>
+        <pre>┌───┬───┬───┬───┬───┬───┐
+│ 1 │ D │ 2 │ A │ 3 │ C │
+└───┴───┴───┴───┴───┴───┘</pre>
+      </div>
+    </div>
+  </section>
+
+  <section class="block">
+    <h2>3. Lỗi thường gặp — vì sao câu hỏi/đáp án bị tách sai</h2>
+    <p class="lead">Đây là những nguyên nhân phổ biến nhất khiến hệ thống tách sai hoặc báo cảnh báo cần sửa tay. Bấm vào từng dòng để xem cách khắc phục.</p>
+    <div id="accordion"></div>
+  </section>
+
+  <footer class="foot">Tài liệu tham khảo nội bộ cho giáo viên khi soạn đề Word để upload — dựa trên đúng logic tách câu hỏi hiện tại của hệ thống.</footer>
+</div>
+
+<script>
+(function(){
+  // ---- chuẩn hoá lại Unicode tiếng Việt về dạng NFC (dựng sẵn/tổ hợp) ----
+  // Một số tầng lưu trữ/hiển thị (đặc biệt trên macOS hoặc khi nội dung đi
+  // qua vài lớp xử lý văn bản) có thể chuyển dấu tiếng Việt từ dạng NFC
+  // (1 ký tự đã ghép dấu, ví dụ "ề") sang dạng NFD (ký tự gốc + dấu tổ hợp
+  // rời, ví dụ "e" + dấu mũ + dấu huyền) - font/trình duyệt không ghép được
+  // dấu tổ hợp rời sẽ hiển thị dấu bị tách rời, lệch vị trí. Quét lại TOÀN
+  // BỘ text node và ép về NFC ngay khi tải để không phụ thuộc vào việc tầng
+  // hiển thị bên ngoài có tự chuẩn hoá đúng hay không.
+  var walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT, null, false);
+  var textNode;
+  while ((textNode = walker.nextNode())) {
+    var normalized = textNode.nodeValue.normalize('NFC');
+    if (normalized !== textNode.nodeValue) textNode.nodeValue = normalized;
+  }
+  if (document.title) document.title = document.title.normalize('NFC');
+
+  // ---- theme toggle ----
+  var themeBtn = document.getElementById('themeBtn');
+  function applyTheme(t){ document.documentElement.setAttribute('data-theme', t); try{ localStorage.setItem('ddft_theme', t); }catch(e){} }
+  var saved = null; try{ saved = localStorage.getItem('ddft_theme'); }catch(e){}
+  if (saved) applyTheme(saved);
+  themeBtn.addEventListener('click', function(){
+    var cur = document.documentElement.getAttribute('data-theme');
+    var next = cur === 'dark' ? 'light' : (cur === 'light' ? 'dark' : (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'light' : 'dark'));
+    applyTheme(next);
+  });
+
+  // ---- zone <-> rule-card linking ----
+  var zones = Array.prototype.slice.call(document.querySelectorAll('.doc-mock .zone'));
+  var cards = Array.prototype.slice.call(document.querySelectorAll('.rule-card'));
+  function clearActive(){
+    zones.forEach(function(z){ z.classList.remove('active'); });
+    cards.forEach(function(c){ c.classList.remove('active'); });
+  }
+  function activate(zoneName){
+    clearActive();
+    zones.forEach(function(z){ if (z.getAttribute('data-zone') === zoneName) z.classList.add('active'); });
+    cards.forEach(function(c){ if (c.getAttribute('data-zone') === zoneName) c.classList.add('active'); });
+  }
+  zones.forEach(function(z){
+    z.addEventListener('mouseenter', function(){ activate(z.getAttribute('data-zone')); });
+    z.addEventListener('focus', function(){ activate(z.getAttribute('data-zone')); });
+    z.addEventListener('click', function(){ activate(z.getAttribute('data-zone')); });
+  });
+  document.getElementById('docMock').addEventListener('mouseleave', clearActive);
+
+  // ---- accordion (common mistakes) ----
+  var items = [
+    {
+      q: 'Hệ thống báo "Không tách được đủ 4 đáp án A/B/C/D, vui lòng nhập tay"',
+      a: 'Thường do 4 đáp án không bắt đầu đúng bằng chữ cái + dấu chấm/hai chấm/ngoặc (ví dụ gõ "Đáp án A:" thay vì "A."), hoặc thiếu 1 trong 4 đáp án, hoặc đáp án nằm trong <strong>bảng (table)</strong> — hệ thống chỉ nhận diện đáp án A/B/C/D trong đoạn văn thường, không nhận trong ô bảng. Hãy in đậm chữ cái đáp án (<code>&lt;b&gt;A.&lt;/b&gt;</code>) để tăng độ chính xác.'
+    },
+    {
+      q: 'Hệ thống báo "Bảng đáp án chủ đề có N đáp án nhưng tách được M câu hỏi"',
+      a: 'Số lượng đáp án trong "BẢNG ĐÁP ÁN"/"ĐÁP ÁN" của 1 chủ đề không khớp với số câu hỏi (đánh số Câu 1, 2, 3...) mà hệ thống đếm được trong chính chủ đề đó. Kiểm tra lại xem có sót câu, đánh số nhảy cóc, hoặc đáp án dư/thiếu.'
+    },
+    {
+      q: 'Công thức Toán bị mất, hiện cảnh báo "Có công thức chưa chuyển đổi được"',
+      a: 'Công thức không phải dạng ảnh WMF/EMF mà Word xuất ra được (thường do máy chủ chưa cài LibreOffice, hoặc công thức chèn bằng cách dán ảnh chụp màn hình thay vì Insert → Equation). Hãy chèn lại bằng đúng công cụ Equation/MathType trong Word.'
+    },
+    {
+      q: 'Câu hỏi bị dính qua chủ đề khác / chủ đề không được tách đúng',
+      a: 'Tiêu đề chủ đề phải nằm trên 1 đoạn văn RIÊNG (không nằm chung dòng với câu hỏi), và phải bắt đầu đúng bằng 1 trong các từ khoá: CHỦ ĐỀ, CHUYÊN ĐỀ, DẠNG TOÁN, DẠNG, PHẦN, BÀI.'
+    },
+    {
+      q: 'Đáp án đúng bị điền sai câu',
+      a: 'Do số thứ tự trong bảng đáp án không khớp với số thứ tự "Câu N." tương ứng trong cùng chủ đề (hệ thống khớp theo đúng số, không khớp theo vị trí xuất hiện). Đảm bảo đánh số câu hỏi liên tục 1, 2, 3... trong mỗi chủ đề và bảng đáp án cũng đánh đúng số đó.'
+    },
+    {
+      q: 'Hình vẽ/đồ thị bị hiển thị quá to hoặc quá nhỏ',
+      a: 'Ảnh hình vẽ/đồ thị (không phải công thức) nên có kích thước đủ lớn và rõ nét khi chèn vào Word (khuyến nghị rộng và cao đều trên 150px sau khi chèn) để hệ thống phân biệt đúng với ảnh công thức nhỏ. Nếu hình hiển thị chưa đúng, giáo viên vẫn có thể chỉnh sửa/thay ảnh khác ở bước duyệt đề trước khi lưu chính thức.'
+    }
+  ];
+  var acc = document.getElementById('accordion');
+  items.forEach(function(item, i){
+    var wrap = document.createElement('div');
+    wrap.className = 'accordion-item';
+    wrap.setAttribute('data-open', 'false');
+    var btn = document.createElement('button');
+    btn.className = 'acc-trigger';
+    btn.type = 'button';
+    btn.setAttribute('aria-expanded', 'false');
+    var bodyId = 'acc-body-' + i;
+    btn.setAttribute('aria-controls', bodyId);
+    btn.innerHTML = '<span>' + item.q + '</span><span class="chev" aria-hidden="true">▾</span>';
+    var body = document.createElement('div');
+    body.className = 'accordion-body';
+    body.id = bodyId;
+    var inner = document.createElement('div');
+    inner.className = 'inner';
+    inner.innerHTML = item.a;
+    body.appendChild(inner);
+    btn.addEventListener('click', function(){
+      var isOpen = wrap.getAttribute('data-open') === 'true';
+      wrap.setAttribute('data-open', String(!isOpen));
+      btn.setAttribute('aria-expanded', String(!isOpen));
+      body.style.maxHeight = isOpen ? '0px' : (inner.scrollHeight + 20) + 'px';
+    });
+    wrap.appendChild(btn);
+    wrap.appendChild(body);
+    acc.appendChild(wrap);
+  });
+})();
+</script>

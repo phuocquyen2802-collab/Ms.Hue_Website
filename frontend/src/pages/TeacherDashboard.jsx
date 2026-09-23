@@ -138,9 +138,11 @@ export default function TeacherDashboard() {
               <span className="search-icon">🔍</span>
               <input
                 type="text"
-                placeholder="Tìm tên, email..."
+                placeholder="Tìm tên, email…"
+                aria-label="Tìm học sinh theo tên hoặc email"
                 value={studentSearch}
                 onChange={(e) => setStudentSearch(e.target.value)}
+                spellCheck={false}
                 style={{ padding: '8px 12px 8px 32px', height: 38 }}
               />
             </div>
@@ -163,7 +165,7 @@ export default function TeacherDashboard() {
         {loading ? (
           <div className="empty-state">
             <div className="empty-state-icon">⏳</div>
-            <div className="empty-state-title">Đang tải danh sách...</div>
+            <div className="empty-state-title">Đang tải danh sách…</div>
           </div>
         ) : filteredStudents.length === 0 ? (
           <div className="empty-state">
@@ -195,6 +197,7 @@ export default function TeacherDashboard() {
                         <td>
                           <input
                             type="text"
+                            aria-label="Họ và tên"
                             value={editForm.name}
                             onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
                             autoFocus
@@ -203,6 +206,7 @@ export default function TeacherDashboard() {
                         <td className="nowrap">
                           <input
                             type="text"
+                            aria-label="Lớp học"
                             value={editForm.className}
                             onChange={(e) => setEditForm({ ...editForm, className: e.target.value })}
                           />
@@ -225,10 +229,15 @@ export default function TeacherDashboard() {
                   return (
                     <tr key={s.id}>
                       <td>
-                        <div className="table-avatar-cell">
+                        <Link
+                          to={`/teacher/analytics?studentId=${s.id}`}
+                          className="table-avatar-cell"
+                          style={{ textDecoration: 'none' }}
+                          title="Xem kết quả bài làm của học sinh này"
+                        >
                           <div className="table-avatar">{initial}</div>
                           <span style={{ fontWeight: 600, color: 'var(--text-main)' }}>{s.name}</span>
-                        </div>
+                        </Link>
                       </td>
                       <td className="nowrap">
                         <span className="tag-badge" style={{ margin: 0 }}>
@@ -304,6 +313,7 @@ export default function TeacherDashboard() {
               <h2>Thêm học sinh mới</h2>
               <button
                 type="button"
+                aria-label="Đóng"
                 style={{ background: 'none', border: 'none', fontSize: 20, cursor: 'pointer', color: 'var(--text-muted)' }}
                 onClick={() => setShowAddModal(false)}
               >
@@ -311,60 +321,74 @@ export default function TeacherDashboard() {
               </button>
             </div>
 
-            <form onSubmit={handleAddStudent}>
+            <form className="form-panel" onSubmit={handleAddStudent}>
               <div className="form-group">
-                <label>Họ và tên học sinh <span style={{ color: 'var(--danger)' }}>*</span></label>
+                <label htmlFor="add-student-name">Họ và tên học sinh <span style={{ color: 'var(--danger)' }}>*</span></label>
                 <input
+                  id="add-student-name"
                   type="text"
-                  placeholder="VD: Nguyễn Văn An"
+                  placeholder="Nguyễn Văn An…"
                   value={newStudent.name}
                   onChange={(e) => setNewStudent({ ...newStudent, name: e.target.value })}
+                  autoComplete="name"
                   required
                 />
               </div>
 
               <div className="form-row">
                 <div className="form-group">
-                  <label>Email / Tên đăng nhập <span style={{ color: 'var(--danger)' }}>*</span></label>
+                  <label htmlFor="add-student-email">Email / Tên đăng nhập <span style={{ color: 'var(--danger)' }}>*</span></label>
                   <input
+                    id="add-student-email"
                     type="email"
-                    placeholder="VD: an.nguyen@gmail.com"
+                    placeholder="an.nguyen@email.com…"
                     value={newStudent.email}
                     onChange={(e) => setNewStudent({ ...newStudent, email: e.target.value })}
+                    autoComplete="email"
+                    spellCheck={false}
                     required
                   />
                 </div>
                 <div className="form-group">
-                  <label>Lớp học</label>
+                  <label htmlFor="add-student-class">Lớp học</label>
                   <input
+                    id="add-student-class"
                     type="text"
-                    placeholder="VD: 12A1"
+                    placeholder="12A1…"
                     value={newStudent.className}
                     onChange={(e) => setNewStudent({ ...newStudent, className: e.target.value })}
+                    autoComplete="off"
+                    spellCheck={false}
                   />
                 </div>
               </div>
 
               <div className="form-group">
-                <label>Mật khẩu <span style={{ color: 'var(--danger)' }}>*</span></label>
+                <label htmlFor="add-student-password">Mật khẩu <span style={{ color: 'var(--danger)' }}>*</span></label>
                 <input
+                  id="add-student-password"
                   type="password"
-                  placeholder="Tối thiểu 6 ký tự"
+                  placeholder="Tối thiểu 6 ký tự…"
                   value={newStudent.password}
                   onChange={(e) => setNewStudent({ ...newStudent, password: e.target.value })}
+                  autoComplete="new-password"
                   minLength={6}
                   required
                 />
               </div>
 
-              {addError && <p className="error-text">⚠️ {addError}</p>}
+              {addError && (
+                <p className="error-text" role="alert" aria-live="polite">
+                  <span aria-hidden="true">⚠️</span> {addError}
+                </p>
+              )}
 
               <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10, marginTop: 14 }}>
                 <button type="button" className="btn secondary" onClick={() => setShowAddModal(false)}>
                   Huỷ
                 </button>
                 <button className="btn" type="submit" disabled={adding}>
-                  {adding ? 'Đang tạo...' : 'Thêm học sinh'}
+                  {adding ? 'Đang tạo…' : 'Thêm học sinh'}
                 </button>
               </div>
             </form>

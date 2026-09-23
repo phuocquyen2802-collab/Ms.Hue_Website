@@ -1,0 +1,38 @@
+[
+  {
+    "id": "e-f37f131a-3053-4315-bc50-e4f7ec1d174e",
+    "title": "Đề chuẩn 1",
+    "description": "",
+    "createdBy": "u-teacher-1",
+    "assignedTo": [
+      "u-fcf462ed-d7e1-4589-821a-e05639277d2e"
+    ],
+    "durationMinutes": 15,
+    "status": "assigned",
+    "createdAt": "2026-09-17T03:58:55.966Z"
+  },
+  {
+    "id": "e-61ee9bfc-9f6e-4819-bd6a-220b75e19ab3",
+    "title": "Bài tập tiếp theo cho đề \"Đề chuẩn 1\" - Nguyễn Phước Quyền",
+    "description": "Đề tự động sinh dựa trên các chủ đề yếu: KHẢO SÁT HÀM SỐ",
+    "createdBy": "u-teacher-1",
+    "assignedTo": [
+      "u-fcf462ed-d7e1-4589-821a-e05639277d2e"
+    ],
+    "durationMinutes": 12,
+    "status": "assigned",
+    "createdAt": "2026-09-17T04:07:10.219Z"
+  },
+  {
+    "id": "e-8d613cb2-5068-419e-b0c8-3fb613617d35",
+    "title": "Đề chuẩn 2",
+    "description": "",
+    "createdBy": "u-teacher-1",
+    "assignedTo": [
+      "u-fcf462ed-d7e1-4589-821a-e05639277d2e"
+    ],
+    "durationMinutes": 15,
+    "status": "assigned",
+    "createdAt": "2026-09-17T04:44:05.065Z"
+  }
+]

@@ -1,24 +1,35 @@
 [
   {
-    "id": "s-41613ac9-1444-43ac-9ef6-e53cba40b609",
-    "examId": "e-b04323df-e3d3-4416-95ea-6e7a4410e680",
-    "studentId": "u-8db0edf9-a2ee-49f9-aa1b-ad63d0530c4c",
-    "totalQuestions": 34,
-    "correctCount": 27,
-    "score": 7.9,
+    "id": "s-21420709-36c9-4e8a-8ad8-ea1606dcbca3",
+    "examId": "e-cb9c66e6-5653-49b0-85f2-5baecf837c64",
+    "studentId": "u-98741842-4faa-4754-9ac8-e0e46af5d42f",
+    "totalQuestions": 25,
+    "correctCount": 20,
+    "score": 8,
     "attempt": 1,
     "status": "graded",
-    "submittedAt": "2026-09-10T02:45:57.044Z"
+    "submittedAt": "2026-09-21T14:48:06.105Z"
   },
   {
-    "id": "s-899b85bd-a133-44aa-ab93-d5ef2a0eed7f",
-    "examId": "e-6f635f77-f2aa-4f66-bfff-e6dc2ea8959c",
-    "studentId": "u-fcf462ed-d7e1-4589-821a-e05639277d2e",
-    "totalQuestions": 28,
-    "correctCount": 20,
-    "score": 7.1,
+    "id": "s-25486d87-0d84-4160-b244-9a01535a6640",
+    "examId": "e-b26bab22-9fcc-45da-9db5-994790e09082",
+    "studentId": "u-98741842-4faa-4754-9ac8-e0e46af5d42f",
+    "totalQuestions": 18,
+    "correctCount": 15,
+    "score": 8.3,
     "attempt": 1,
     "status": "graded",
-    "submittedAt": "2026-09-10T03:19:09.501Z"
+    "submittedAt": "2026-09-21T15:07:06.218Z"
+  },
+  {
+    "id": "s-d4bf6d21-cfc2-4921-a450-ff3bbc9297b5",
+    "examId": "e-7a671e9b-f807-4243-848c-c83c5412a3af",
+    "studentId": "u-98741842-4faa-4754-9ac8-e0e46af5d42f",
+    "totalQuestions": 9,
+    "correctCount": 4,
+    "score": 4.4,
+    "attempt": 1,
+    "status": "graded",
+    "submittedAt": "2026-09-21T15:11:07.956Z"
   }
 ]

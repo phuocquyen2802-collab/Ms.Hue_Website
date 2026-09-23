@@ -3,60 +3,12 @@ import { useAuth } from '../context/AuthContext';
 import api from '../services/api';
 import { renderMath } from '../utils/mathRender';
 
-const SUGGESTED_PROMPTS = [
-  {
-    category: '📐 Hình học không gian',
-    prompts: [
-      'Cách xác định góc giữa đường thẳng và mặt phẳng trong không gian?',
-      'Công thức tính khoảng cách từ một điểm đến mặt phẳng và bài tập mẫu?',
-      'Phương pháp tọa độ hóa Oxyz để giải bài toán khối đa diện.',
-    ],
-  },
-  {
-    category: '📈 Khảo sát hàm số & Đồ thị',
-    prompts: [
-      'Cách tìm nhanh tiệm cận đứng và tiệm cận ngang của hàm phân thức bậc 1 / bậc 1 và bậc 2 / bậc 1.',
-      'Điều kiện để hàm số bậc ba $y = ax^3 + bx^2 + cx + d$ có 2 điểm cực trị cùng dấu.',
-      'Tìm giá trị lớn nhất và nhỏ nhất của hàm số chứa dấu giá trị tuyệt đối.',
-    ],
-  },
-  {
-    category: '🔢 Mũ & Logarit',
-    prompts: [
-      'Các phương pháp giải phương trình mũ: đặt ẩn phụ, logarit hóa, hàm số.',
-      'Tìm tập xác định và tập giá trị của hàm số $y = \\log_a(f(x))$.',
-      'Bài toán lãi suất ngân hàng và tăng trưởng liên tục lớp 12.',
-    ],
-  },
-  {
-    category: '💡 Mẹo Casio & Đề trắc nghiệm',
-    prompts: [
-      'Hướng dẫn bấm máy tính Casio 580VNX tính tích phân và diện tích hình phẳng.',
-      'Hãy tạo 3 câu trắc nghiệm mức độ Vận dụng về nguyên hàm - tích phân kèm lời giải chi tiết.',
-      'Mẹo thử nghiệm trắc nghiệm số phức và Max-Min môđun bằng số học.',
-    ],
-  },
-];
-
-const MATH_SHORTCUTS = [
-  { label: '$x$', insert: '$x$', title: 'Công thức inline' },
-  { label: '$$\\dots$$', insert: '$$\n\\dots\n$$', title: 'Công thức khối' },
-  { label: '\\frac{a}{b}', insert: '\\frac{a}{b}', title: 'Phân số' },
-  { label: '\\sqrt{x}', insert: '\\sqrt{x}', title: 'Căn bậc hai' },
-  { label: '\\int_{a}^{b}', insert: '\\int_{a}^{b} f(x) dx', title: 'Tích phân' },
-  { label: '\\lim', insert: '\\lim_{x \\to x_0} f(x)', title: 'Giới hạn' },
-  { label: '\\log_a b', insert: '\\log_{a}(b)', title: 'Logarit' },
-  { label: '\\vec{u}', insert: '\\vec{u}', title: 'Vectơ' },
-  { label: '\\in', insert: '\\in', title: 'Thuộc' },
-  { label: '\\Delta', insert: '\\Delta', title: 'Delta' },
-];
-
 export default function AiAssistantPage() {
   const { user } = useAuth();
   const [messages, setMessages] = useState([
     {
       role: 'assistant',
-      content: `Xin chào ${user?.name ? `**${user.name}**` : ''}! 👋\n\nTôi là **Trợ lý AI Toán 12 (Google Gemini)**. Tôi có thể giúp bạn:\n- 💡 **Giải chi tiết từng bước** các bài toán THPT Quốc gia (Đại số, Hình học Oxyz, Giải tích).\n- 📚 **Tóm tắt và củng cố lý thuyết trọng tâm** theo chương trình SGK mới.\n- ⚙️ **Hướng dẫn mẹo bấm máy tính Casio 580VNX / 880BTG**.\n- 📝 **Tạo đề thi và câu hỏi phân hóa** theo từng mức độ (Nhận biết, Thông hiểu, Vận dụng, Vận dụng cao).\n\nHãy nhập câu hỏi hoặc chọn các chủ đề gợi ý bên dưới để bắt đầu nhé! ✨`,
+      content: `Xin chào ${user?.name ? `**${user.name}**` : ''}! 👋\n\nTôi là **Trợ lý AI Toán 12 (Google Gemini)**. Tôi có thể giúp bạn:\n- 💡 **Giải chi tiết từng bước** các bài toán THPT Quốc gia (Đại số, Hình học Oxyz, Giải tích).\n- 📚 **Tóm tắt và củng cố lý thuyết trọng tâm** theo chương trình SGK mới.\n- ⚙️ **Hướng dẫn mẹo bấm máy tính Casio 580VNX / 880BTG**.\n- 📝 **Tạo đề thi và câu hỏi phân hóa** theo từng mức độ (Nhận biết, Thông hiểu, Vận dụng, Vận dụng cao).\n\nHãy nhập câu hỏi bên dưới để bắt đầu nhé! ✨`,
       timestamp: new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }),
     },
   ]);
@@ -129,11 +81,6 @@ export default function AiAssistantPage() {
       e.preventDefault();
       handleSend();
     }
-  };
-
-  const handleInsertShortcut = (formula) => {
-    setInputText((prev) => prev + formula);
-    textareaRef.current?.focus();
   };
 
   const handleClearChat = () => {
@@ -473,117 +420,7 @@ export default function AiAssistantPage() {
             </div>
           )}
 
-          {/* Suggested Prompts (Khi chưa chat nhiều) */}
-          {messages.length <= 1 && (
-            <div style={{ marginTop: 10 }}>
-              <div
-                style={{
-                  fontSize: 13,
-                  fontWeight: 600,
-                  color: '#64748b',
-                  marginBottom: 12,
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 6,
-                }}
-              >
-                <span>💡</span> Gợi ý chủ đề thường gặp:
-              </div>
-              <div
-                style={{
-                  display: 'grid',
-                  gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))',
-                  gap: 10,
-                }}
-              >
-                {SUGGESTED_PROMPTS.map((group, gIdx) => (
-                  <div
-                    key={gIdx}
-                    style={{
-                      background: '#ffffff',
-                      border: '1px solid #e2e8f0',
-                      borderRadius: 10,
-                      padding: 12,
-                      boxShadow: '0 1px 3px rgba(0,0,0,0.02)',
-                    }}
-                  >
-                    <div style={{ fontSize: 13, fontWeight: 700, color: '#334155', marginBottom: 8 }}>
-                      {group.category}
-                    </div>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                      {group.prompts.map((promptText, pIdx) => (
-                        <button
-                          key={pIdx}
-                          onClick={() => handleSend(promptText)}
-                          style={{
-                            textAlign: 'left',
-                            background: '#f8fafc',
-                            border: '1px solid #edf2f7',
-                            padding: '6px 10px',
-                            borderRadius: 6,
-                            fontSize: 12.5,
-                            color: '#475569',
-                            cursor: 'pointer',
-                            transition: 'all 0.15s ease',
-                          }}
-                          onMouseEnter={(e) => {
-                            e.currentTarget.style.background = '#eef2ff';
-                            e.currentTarget.style.color = '#4338ca';
-                            e.currentTarget.style.borderColor = '#c7d2fe';
-                          }}
-                          onMouseLeave={(e) => {
-                            e.currentTarget.style.background = '#f8fafc';
-                            e.currentTarget.style.color = '#475569';
-                            e.currentTarget.style.borderColor = '#edf2f7';
-                          }}
-                        >
-                          {promptText}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
           <div ref={chatEndRef} />
-        </div>
-
-        {/* Math Formula Shortcuts Bar */}
-        <div
-          style={{
-            padding: '6px 16px',
-            background: '#ffffff',
-            borderTop: '1px solid #e2e8f0',
-            display: 'flex',
-            alignItems: 'center',
-            gap: 6,
-            overflowX: 'auto',
-            flexShrink: 0,
-          }}
-        >
-          <span style={{ fontSize: 11, color: '#94a3b8', fontWeight: 600, flexShrink: 0 }}>Chèn nhanh:</span>
-          {MATH_SHORTCUTS.map((sc, i) => (
-            <button
-              key={i}
-              onClick={() => handleInsertShortcut(sc.insert)}
-              title={sc.title}
-              style={{
-                background: '#f1f5f9',
-                border: '1px solid #cbd5e1',
-                borderRadius: 4,
-                padding: '2px 8px',
-                fontSize: 12,
-                cursor: 'pointer',
-                fontFamily: 'KaTeX_Math, monospace, serif',
-                whiteSpace: 'nowrap',
-                color: '#334155',
-              }}
-            >
-              {sc.label}
-            </button>
-          ))}
         </div>
 
         {/* Input Bar Area */}

@@ -1,0 +1,592 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tổng hợp chức năng Giáo viên &amp; Học sinh</title>
+<style>
+  :root{
+    --bg:#f4f6fb; --card:#ffffff; --ink:#1e2433; --sub:#5b667a; --line:#d7dceb;
+    --gv:#1e3a8a; --gv-bg:#eaf1ff; --gv-line:#bcd4fb;
+    --hs:#0f7a4a; --hs-bg:#e8f8ef; --hs-line:#b7e6cb;
+    --warn:#b45309; --warn-bg:#fff6e6; --warn-line:#fcd9a0;
+    --danger:#b91c1c; --danger-bg:#fdecec; --danger-line:#f7c6c6;
+    --ai:#7c3aed; --ai-bg:#f3ecff; --ai-line:#ddcbfb;
+    --done-bg:#e8f8ef; --done:#0f7a4a;
+    --mock-bg:#fff6e6; --mock:#b45309;
+    --broken-bg:#fdecec; --broken:#b91c1c;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:"Segoe UI",system-ui,-apple-system,Arial,sans-serif;font-size:14px;line-height:1.55;}
+  header{position:sticky;top:0;z-index:50;background:linear-gradient(135deg,#1e3a8a,#2563eb);color:#fff;padding:16px 20px;box-shadow:0 2px 10px rgba(0,0,0,.12);}
+  header h1{margin:0 0 4px;font-size:19px;}
+  header p{margin:0;font-size:12.5px;opacity:.9;}
+  .toolbar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-top:12px;}
+  .search-box{flex:1;min-width:200px;position:relative;}
+  .search-box input{width:100%;padding:8px 12px 8px 30px;border-radius:8px;border:none;font-size:13px;}
+  .search-box::before{content:'🔍';position:absolute;left:9px;top:50%;transform:translateY(-50%);font-size:12px;}
+  .tabs{display:flex;flex-wrap:wrap;gap:6px;}
+  .tab-btn{border:1px solid rgba(255,255,255,.4);background:rgba(255,255,255,.08);color:#fff;padding:7px 14px;border-radius:999px;font-size:12.5px;font-weight:600;cursor:pointer;}
+  .tab-btn:hover{background:rgba(255,255,255,.2);}
+  .tab-btn.active{background:#fff;color:var(--gv);}
+  .print-btn{margin-left:auto;border:1px solid rgba(255,255,255,.5);background:rgba(255,255,255,.12);color:#fff;padding:7px 14px;border-radius:8px;font-size:12.5px;font-weight:600;cursor:pointer;}
+
+  main{max-width:1180px;margin:0 auto;padding:20px 16px 60px;}
+  .panel{display:none;}
+  .panel.active{display:block;}
+
+  .card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:18px 20px;margin-bottom:18px;box-shadow:0 1px 3px rgba(20,30,60,.05);}
+  .card h2{margin:0 0 10px;font-size:16.5px;}
+  .card h3{margin:18px 0 8px;font-size:14.5px;}
+  .lead{color:var(--sub);font-size:13.5px;}
+
+  .role-chip{display:inline-flex;align-items:center;gap:6px;font-size:11.5px;font-weight:700;padding:3px 10px;border-radius:999px;}
+  .role-chip.gv{background:var(--gv-bg);color:var(--gv);border:1px solid var(--gv-line);}
+  .role-chip.hs{background:var(--hs-bg);color:var(--hs);border:1px solid var(--hs-line);}
+
+  /* Nhóm chức năng - lưới thẻ đơn giản cho tab Tổng quan */
+  .group-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;margin-top:10px;}
+  .group-card{border-radius:10px;padding:14px;border:1.5px solid var(--line);}
+  .group-card.gv{background:var(--gv-bg);border-color:var(--gv-line);}
+  .group-card.hs{background:var(--hs-bg);border-color:var(--hs-line);}
+  .group-card b{display:block;margin-bottom:6px;font-size:13.5px;}
+  .group-card ul{margin:0;padding-left:18px;font-size:12.5px;color:var(--sub);}
+  .group-card.gv b{color:var(--gv);}
+  .group-card.hs b{color:var(--hs);}
+
+  /* Bảng chức năng */
+  .table-wrap{overflow-x:auto;border:1px solid var(--line);border-radius:10px;}
+  table.func-table{width:100%;border-collapse:collapse;font-size:12.5px;min-width:980px;}
+  table.func-table th{background:#eef1f8;text-align:left;padding:9px 10px;font-size:11.5px;text-transform:uppercase;letter-spacing:.02em;color:var(--sub);border-bottom:1px solid var(--line);position:sticky;top:0;}
+  table.func-table td{padding:9px 10px;border-bottom:1px solid #ecefF6;vertical-align:top;}
+  table.func-table tr:last-child td{border-bottom:none;}
+  table.func-table tr.row-hidden{display:none;}
+  table.func-table code{background:#f1f3f9;padding:1px 5px;border-radius:4px;font-size:11.5px;}
+  .status-pill{display:inline-block;padding:2px 8px;border-radius:999px;font-size:11px;font-weight:700;white-space:nowrap;}
+  .status-pill.done{background:var(--done-bg);color:var(--done);}
+  .status-pill.mock{background:var(--mock-bg);color:var(--mock);}
+  .status-pill.broken{background:var(--broken-bg);color:var(--broken);}
+  .group-tag{display:inline-block;font-size:11px;font-weight:700;color:var(--sub);}
+
+  /* Sơ đồ luồng (flow) */
+  .flow{display:flex;flex-direction:column;align-items:center;gap:2px;margin:14px 0 20px;}
+  .node{width:100%;max-width:560px;border-radius:10px;padding:10px 14px;font-size:12.8px;line-height:1.5;border:1px solid var(--line);background:#fff;}
+  .node b.step{display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;border-radius:50%;background:var(--ink);color:#fff;font-size:10.5px;font-weight:700;margin-right:7px;}
+  .n-start{background:var(--ink);color:#fff;text-align:center;font-weight:700;border:none;}
+  .n-page{background:var(--gv-bg);border-color:var(--gv-line);}
+  .n-page.hs{background:var(--hs-bg);border-color:var(--hs-line);}
+  .n-action{background:#fff;}
+  .n-decision{background:var(--warn-bg);border-color:var(--warn-line);}
+  .n-result{background:var(--done-bg);border-color:#bbe8cc;text-align:center;font-weight:700;}
+  .n-ai{background:var(--ai-bg);border-color:var(--ai-line);}
+  .arrow{width:2px;height:16px;background:#aab2c5;position:relative;}
+  .arrow::after{content:'';position:absolute;left:-4px;bottom:-1px;border:5px solid transparent;border-top-color:#aab2c5;}
+  .branch{display:flex;gap:14px;justify-content:center;flex-wrap:wrap;width:100%;margin-top:2px;}
+  .branch-col{display:flex;flex-direction:column;align-items:center;gap:4px;flex:1;min-width:220px;max-width:480px;}
+  .branch-tag{font-size:10.5px;font-weight:700;padding:2px 9px;border-radius:999px;}
+  .tag-yes{background:var(--done-bg);color:var(--done);}
+  .tag-no{background:var(--broken-bg);color:var(--broken);}
+
+  /* Swimlane */
+  .swimlane{border:1px solid var(--line);border-radius:10px;overflow:hidden;margin-top:12px;}
+  .swimlane-head{display:grid;grid-template-columns:1fr 90px 1fr;}
+  .swimlane-head div{padding:9px 12px;font-weight:700;font-size:12.5px;text-align:center;}
+  .swimlane-head .gv-h{background:var(--gv-bg);color:var(--gv);}
+  .swimlane-head .hs-h{background:var(--hs-bg);color:var(--hs);}
+  .swimlane-head .mid-h{background:#eef1f8;color:var(--sub);font-size:11px;}
+  .swimlane-row{display:grid;grid-template-columns:1fr 90px 1fr;border-top:1px solid var(--line);}
+  .swimlane-row > div{padding:12px;font-size:12.5px;}
+  .swimlane-row .gv-c{background:#fbfdff;border-right:1px dashed var(--line);}
+  .swimlane-row .hs-c{background:#fbfffc;}
+  .swimlane-row .mid-c{display:flex;align-items:center;justify-content:center;color:#94a3b8;font-size:18px;}
+  .swimlane-row .mid-c small{display:block;font-size:9.5px;color:var(--sub);text-align:center;margin-top:2px;}
+
+  /* Điểm cần xác nhận */
+  .issue{border-left:4px solid var(--warn);background:var(--warn-bg);border-radius:6px;padding:10px 14px;margin-bottom:10px;font-size:13px;}
+  .issue.danger{border-left-color:var(--danger);background:var(--danger-bg);}
+  .issue b{display:block;margin-bottom:3px;}
+  details.audit{border:1px solid var(--line);border-radius:8px;margin-bottom:8px;}
+  details.audit summary{cursor:pointer;padding:9px 12px;font-weight:700;font-size:13px;background:#f7f9fd;}
+  details.audit .audit-body{padding:10px 14px;font-size:12px;color:var(--sub);}
+  details.audit code{display:block;background:#f1f3f9;padding:4px 8px;border-radius:5px;margin:3px 0;font-size:11.5px;}
+
+  .toc{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:16px;}
+  .toc a{font-size:12px;padding:5px 10px;border-radius:999px;background:#eef1f8;color:var(--ink);text-decoration:none;border:1px solid var(--line);}
+  .toc a:hover{background:#e2e7f5;}
+
+  footer{text-align:center;font-size:11.5px;color:var(--sub);padding:20px 16px;}
+
+  @media (max-width:700px){
+    table.func-table{min-width:820px;}
+    .swimlane-head, .swimlane-row{grid-template-columns:1fr 60px 1fr;}
+  }
+
+  @media print{
+    header{position:static;background:#fff !important;color:#000 !important;box-shadow:none;}
+    header .tabs, header .print-btn, header .search-box{display:none;}
+    .panel{display:block !important;page-break-before:always;}
+    .panel:first-child{page-break-before:auto;}
+    body{background:#fff;}
+    .card{box-shadow:none;border:1px solid #ccc;}
+    a{color:inherit;text-decoration:none;}
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>📘 Tổng hợp chức năng — Giáo viên &amp; Học sinh</h1>
+  <p>Đối chiếu trực tiếp từ mã nguồn hệ thống Ôn tập Toán 12 (không suy đoán) — dùng để nắm nhanh chức năng, cách thao tác và mối liên hệ 2 vai trò.</p>
+  <div class="toolbar">
+    <div class="search-box"><input type="text" id="searchInput" placeholder="Tìm chức năng, tên nút, đường dẫn…"></div>
+    <div class="tabs" id="tabs">
+      <button class="tab-btn active" data-tab="overview">Tổng quan</button>
+      <button class="tab-btn" data-tab="teacher">Giáo viên</button>
+      <button class="tab-btn" data-tab="student">Học sinh</button>
+      <button class="tab-btn" data-tab="flow">Luồng phối hợp</button>
+      <button class="tab-btn" data-tab="issues">Điểm cần xác nhận</button>
+    </div>
+    <button class="print-btn" onclick="window.print()">🖨️ In / Lưu PDF</button>
+  </div>
+</header>
+
+<main>
+
+<!-- ============ TAB: TỔNG QUAN ============ -->
+<div class="panel active" id="overview">
+  <div class="card">
+    <h2>Phạm vi tài liệu</h2>
+    <p class="lead">
+      Hệ thống có 2 vai trò: <span class="role-chip gv">👨‍🏫 Giáo viên</span> và <span class="role-chip hs">🧑‍🎓 Học sinh</span>
+      (không có "quản trị viên"). Nội dung dưới đây lấy trực tiếp từ mã nguồn hiện tại; chỗ nào chưa chắc chắn được ghi riêng ở tab
+      <b>"Điểm cần xác nhận"</b>.
+    </p>
+
+    <h3>Nhóm chức năng — Giáo viên</h3>
+    <div class="group-grid">
+      <div class="group-card gv">
+        <b>👥 Quản lý học sinh</b>
+        <ul><li>Thêm / sửa / xoá tài khoản học sinh</li><li>Tìm kiếm, lọc theo lớp</li></ul>
+      </div>
+      <div class="group-card gv">
+        <b>📝 Quản lý bài tập / đề thi</b>
+        <ul><li>Tạo đề (nhập tay hoặc nhập từ Word)</li><li>Sửa câu hỏi, đáp án, cỡ công thức</li><li>Giao đề / giao lại đề</li></ul>
+      </div>
+      <div class="group-card gv">
+        <b>📊 Giám sát chất lượng &amp; AI</b>
+        <ul><li>Xem điểm, chuyên đề yếu theo học sinh/lớp</li><li>Sinh lộ trình + bài tập AI</li><li>Duyệt / từ chối đề xuất AI</li></ul>
+      </div>
+      <div class="group-card gv">
+        <b>💬 Nhắn tin với học sinh</b>
+        <ul><li>Chat trực tiếp qua lại với từng học sinh</li><li>Thấy ai đang online</li></ul>
+      </div>
+      <div class="group-card gv">
+        <b>⚙️ Cài đặt &amp; Trợ lý AI</b>
+        <ul><li>Đổi mật khẩu</li><li>Chat hỏi-đáp AI Gemini (khác chat với học sinh)</li></ul>
+      </div>
+    </div>
+
+    <h3>Nhóm chức năng — Học sinh</h3>
+    <div class="group-grid">
+      <div class="group-card hs">
+        <b>🏠 Luyện đề</b>
+        <ul><li>Xem đề được giao</li><li>Làm bài, nộp bài</li><li>Làm lại đề đã làm</li></ul>
+      </div>
+      <div class="group-card hs">
+        <b>📈 Kết quả của tôi</b>
+        <ul><li>Xem điểm, đúng/sai từng câu</li><li>Xem chuyên đề còn yếu</li><li>Xem lộ trình ôn tập AI (nếu đã được duyệt)</li></ul>
+      </div>
+      <div class="group-card hs">
+        <b>💬 Nhắn tin với giáo viên</b>
+        <ul><li>Chat trực tiếp qua lại với giáo viên</li></ul>
+      </div>
+      <div class="group-card hs">
+        <b>⚙️ Cài đặt &amp; Trợ lý AI</b>
+        <ul><li>Đổi mật khẩu</li><li>Chat hỏi-đáp AI Gemini (khác chat với giáo viên)</li></ul>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ TAB: GIÁO VIÊN ============ -->
+<div class="panel" id="teacher">
+  <div class="card">
+    <h2><span class="role-chip gv">👨‍🏫 Giáo viên</span> Bảng chức năng đầy đủ</h2>
+    <div class="toc">
+      <a href="#gv-hs">👥 Quản lý học sinh</a>
+      <a href="#gv-exam">📝 Quản lý bài tập</a>
+      <a href="#gv-analytics">📊 Giám sát &amp; AI</a>
+      <a href="#gv-chat">💬 Nhắn tin</a>
+      <a href="#gv-settings">⚙️ Cài đặt &amp; Trợ lý AI</a>
+    </div>
+    <div class="table-wrap">
+      <table class="func-table" id="teacherTable">
+        <thead>
+          <tr><th>STT</th><th>Nhóm</th><th>Chức năng</th><th>Mục đích</th><th>Trang / route</th><th>Cách thao tác</th><th>Kết quả</th><th>Trạng thái</th></tr>
+        </thead>
+        <tbody>
+          <tr id="gv-hs"><td>1</td><td class="group-tag">👥 Quản lý học sinh</td><td>Thêm tài khoản học sinh</td><td>Cấp tài khoản cho học sinh mới</td><td><code>/teacher</code> (TeacherDashboard)</td><td>Nút <b>"+ Thêm học sinh"</b> → điền Họ tên, Email/Tên đăng nhập, Lớp, Mật khẩu</td><td>Tài khoản học sinh mới xuất hiện trong danh sách</td><td><span class="status-pill done">Đã hoàn thiện</span></td></tr>
+          <tr><td>2</td><td class="group-tag">👥 Quản lý học sinh</td><td>Sửa thông tin học sinh</td><td>Cập nhật tên/lớp</td><td><code>/teacher</code></td><td>Nút <b>"Sửa"</b> trên từng dòng → sửa trực tiếp → <b>"Lưu"</b></td><td>Thông tin học sinh cập nhật</td><td><span class="status-pill done">Đã hoàn thiện</span></td></tr>
+          <tr><td>3</td><td class="group-tag">👥 Quản lý học sinh</td><td>Xoá tài khoản học sinh</td><td>Gỡ học sinh khỏi hệ thống</td><td><code>/teacher</code></td><td>Nút <b>"Xoá"</b> → xác nhận hộp thoại</td><td>Tài khoản bị xoá</td><td><span class="status-pill done">Đã hoàn thiện</span></td></tr>
+          <tr><td>4</td><td class="group-tag">👥 Quản lý học sinh</td><td>Tìm kiếm / lọc học sinh</td><td>Quản lý nhanh danh sách đông</td><td><code>/teacher</code></td><td>Ô tìm theo tên/email + dropdown lọc lớp</td><td>Danh sách lọc theo điều kiện</td><td><span class="status-pill done">Đã hoàn thiện</span></td></tr>
+
+          <tr id="gv-exam"><td>5</td><td class="group-tag">📝 Quản lý bài tập</td><td>Tạo đề thi mới</td><td>Soạn đề trắc nghiệm cho học sinh</td><td><code>/teacher/exams</code> (TeacherExamsPage)</td><td>Nút <b>"+ Tạo đề thi mới"</b> → nhập tên đề, thời gian, mô tả</td><td>Đề mới được tạo (chưa giao nếu chưa chọn học sinh)</td><td><span class="status-pill done">Đã hoàn thiện</span></td></tr>
+          <tr><td>6</td><td class="group-tag">📝 Quản lý bài tập</td><td>Nhập câu hỏi từ file Word</td><td>Tự động bóc tách câu hỏi + công thức MathType</td><td><code>/teacher/exams</code>, <code>/teacher/exams/:id</code></td><td>Ô upload <b>"Upload file word tại đây (.docx)"</b> → xem trước → <b>"Nạp tất cả N câu vào đề"</b></td><td>Câu hỏi + ảnh công thức được thêm vào đề</td><td><span class="status-pill done">Đã hoàn thiện</span></td></tr>
+          <tr><td>7</td><td class="group-tag">📝 Quản lý bài tập</td><td>Chỉnh cỡ công thức thủ công</td><td>Sửa công thức bị lệch cỡ khi tự động nhận diện</td><td><code>/teacher/exams</code>, <code>/teacher/exams/:id</code></td><td>Bấm vào ảnh công thức → chọn nhiều → áp cỡ (preset hoặc nhập số em)</td><td>Công thức hiển thị đúng cỡ mong muốn</td><td><span class="status-pill done">Đã hoàn thiện</span></td></tr>
+          <tr><td>8</td><td class="group-tag">📝 Quản lý bài tập</td><td>Giao đề cho học sinh</td><td>Chỉ định ai được làm đề này</td><td><code>/teacher/exams</code> (lúc tạo), <code>/teacher/exams/:id</code> (giao lại)</td><td>Tick chọn học sinh/lớp → <b>"🚀 Tạo bài tập"</b> hoặc <b>"🚀 Giao lại đề cho học sinh"</b></td><td>Đề xuất hiện trong "Luyện đề" của học sinh được chọn</td><td><span class="status-pill done">Đã hoàn thiện</span></td></tr>
+          <tr><td>9</td><td class="group-tag">📝 Quản lý bài tập</td><td>Sửa / xoá câu hỏi trong đề</td><td>Chỉnh sửa nội dung đề sau khi tạo</td><td><code>/teacher/exams/:id</code></td><td><b>"✏️ Chỉnh sửa đề"</b> → sửa/ <b>"🗑️ Xoá câu này"</b></td><td>Nội dung đề cập nhật ngay</td><td><span class="status-pill done">Đã hoàn thiện</span></td></tr>
+          <tr><td>10</td><td class="group-tag">📝 Quản lý bài tập</td><td>Sửa thông tin đề / xoá đề</td><td>Đổi tên, thời gian, trạng thái hoặc xoá hẳn đề</td><td><code>/teacher/exams</code>, <code>/teacher/exams/:id</code></td><td><b>"Sửa"</b> / <b>"⚙️ Sửa tên &amp; thời gian đề"</b> / icon 🗑️ xoá đề</td><td>Đề cập nhật hoặc bị xoá khỏi hệ thống</td><td><span class="status-pill done">Đã hoàn thiện</span></td></tr>
+          <tr><td>11</td><td class="group-tag">📝 Quản lý bài tập</td><td>Xem danh sách bài nộp theo đề</td><td>Theo dõi ai đã nộp, điểm bao nhiêu</td><td><code>/teacher/exams/:id</code></td><td>Nút <b>"📥 Bài nộp (n)"</b></td><td>Danh sách bài nộp + điểm hiện ra</td><td><span class="status-pill done">Đã hoàn thiện</span></td></tr>
+
+          <tr id="gv-analytics"><td>12</td><td class="group-tag">📊 Giám sát &amp; AI</td><td>Xem điểm &amp; chuyên đề yếu theo học sinh</td><td>Đánh giá tình hình học tập từng em</td><td><code>/teacher/analytics</code> (TeacherAnalyticsPage)</td><td>Chọn lớp (pill) → chọn học sinh (dropdown)</td><td>Hiện điểm TB, danh sách chuyên đề hay sai</td><td><span class="status-pill done">Đã hoàn thiện</span></td></tr>
+          <tr><td>13</td><td class="group-tag">📊 Giám sát &amp; AI</td><td>Xem theo từng lần làm bài</td><td>So sánh tiến bộ qua các lần làm lại</td><td><code>/teacher/analytics</code></td><td>Bấm dòng "Lần N" / <b>"🌐 Xem tổng hợp tất cả lần"</b></td><td>Biểu đồ lọc theo đúng lần đã chọn</td><td><span class="status-pill done">Đã hoàn thiện</span></td></tr>
+          <tr><td>14</td><td class="group-tag">📊 Giám sát &amp; AI</td><td>Sinh lộ trình + bài tập AI</td><td>Tạo gợi ý ôn tập cá nhân hoá bằng Gemini</td><td>Từ <code>/teacher/analytics</code> → <b>"✨ Xem bài &amp; AI"</b></td><td>Bấm nút sinh AI (tuỳ chọn kèm bài tập luyện tập)</td><td>AI trả về tóm tắt + các bước lộ trình + câu hỏi tương tự (kèm hình vẽ đồ thị/bảng biến thiên nếu là dạng khảo sát hàm số)</td><td><span class="status-pill done">Đã hoàn thiện</span></td></tr>
+          <tr><td>15</td><td class="group-tag">📊 Giám sát &amp; AI</td><td>Sửa nội dung AI trước khi duyệt</td><td>Kiểm tra/điều chỉnh AI sinh chưa chuẩn</td><td>Trang chi tiết bài nộp</td><td>Bấm trực tiếp vào công thức đã render để bật ô gõ tại chỗ (click-to-edit), xem trước ngay</td><td>Nội dung được lưu lại trước khi duyệt</td><td><span class="status-pill done">Đã hoàn thiện</span></td></tr>
+          <tr><td>16</td><td class="group-tag">📊 Giám sát &amp; AI</td><td>Duyệt / Từ chối đề xuất AI</td><td>Quyết định có gửi cho học sinh hay không</td><td>Trang chi tiết bài nộp / chi tiết học sinh</td><td><b>"✓ Duyệt &amp; Giao cho học sinh"</b> hoặc <b>"Từ chối"</b> (xoá hẳn hoặc sinh lại)</td><td>Nếu duyệt kèm bài tập: tự tạo 1 đề thi mới và giao ngay cho đúng học sinh đó; lộ trình văn bản luôn hiển thị được cho học sinh</td><td><span class="status-pill done">Đã hoàn thiện</span></td></tr>
+
+          <tr id="gv-chat"><td>17</td><td class="group-tag">💬 Nhắn tin</td><td>Chat với học sinh</td><td>Trao đổi trực tiếp, không cần qua email/ngoài app</td><td>Mọi trang — nút nổi góc dưới phải</td><td>Bấm nút <b>"Học sinh"</b> → tìm/chọn 1 học sinh → gõ tin nhắn → <b>Gửi</b> (Enter)</td><td>Học sinh nhận tin ngay, có thể trả lời lại</td><td><span class="status-pill done">Đã hoàn thiện</span></td></tr>
+          <tr><td>18</td><td class="group-tag">💬 Nhắn tin</td><td>Thông báo (chuông 🔔)</td><td>Biết ngay khi có bài nộp mới</td><td>Mọi trang</td><td>Bấm biểu tượng 🔔</td><td>Danh sách gợi ý bài nộp/đề mới</td><td><span class="status-pill mock">Không lưu server, chỉ suy luận phía giao diện</span></td></tr>
+
+          <tr id="gv-settings"><td>19</td><td class="group-tag">⚙️ Cài đặt &amp; Trợ lý AI</td><td>Đổi mật khẩu</td><td>Bảo mật tài khoản</td><td><code>/settings</code></td><td>Tab "Tài khoản cá nhân" → nhập mật khẩu cũ + mới</td><td>Mật khẩu cập nhật</td><td><span class="status-pill done">Đã hoàn thiện</span></td></tr>
+          <tr><td>20</td><td class="group-tag">⚙️ Cài đặt &amp; Trợ lý AI</td><td>Thêm học sinh nhanh (trong Cài đặt)</td><td>Thêm học sinh không cần rời trang đang làm việc</td><td><code>/settings</code> (tab "Thêm tài khoản học sinh")</td><td>Giống mục 1 — form thêm học sinh</td><td>Tài khoản mới được tạo</td><td><span class="status-pill mock">Trùng chức năng #1</span></td></tr>
+          <tr><td>21</td><td class="group-tag">⚙️ Cài đặt &amp; Trợ lý AI</td><td>Trợ lý AI Gemini (chat AI, khác chat với học sinh)</td><td>Hỏi đáp Toán tự do</td><td><code>/teacher/ai-assistant</code></td><td>Nhập câu hỏi → <b>"Gửi"</b></td><td>AI trả lời trong khung chat (không lưu server)</td><td><span class="status-pill done">Đã hoàn thiện</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- ============ TAB: HỌC SINH ============ -->
+<div class="panel" id="student">
+  <div class="card">
+    <h2><span class="role-chip hs">🧑‍🎓 Học sinh</span> Bảng chức năng đầy đủ</h2>
+    <div class="toc">
+      <a href="#hs-exam">🏠 Luyện đề</a>
+      <a href="#hs-result">📈 Kết quả của tôi</a>
+      <a href="#hs-chat">💬 Nhắn tin</a>
+      <a href="#hs-settings">⚙️ Cài đặt &amp; Trợ lý AI</a>
+    </div>
+    <div class="table-wrap">
+      <table class="func-table" id="studentTable">
+        <thead>
+          <tr><th>STT</th><th>Nhóm</th><th>Chức năng</th><th>Mục đích</th><th>Trang / route</th><th>Cách thao tác</th><th>Kết quả</th><th>Trạng thái</th></tr>
+        </thead>
+        <tbody>
+          <tr id="hs-exam"><td>1</td><td class="group-tag">🏠 Luyện đề</td><td>Xem danh sách đề được giao</td><td>Biết mình cần làm bài nào</td><td><code>/student</code> (StudentDashboard)</td><td>Xem thẻ tổng số/đã làm/chưa làm + danh sách đề</td><td>Danh sách đề hiển thị đầy đủ</td><td><span class="status-pill done">Đã hoàn thiện</span></td></tr>
+          <tr><td>2</td><td class="group-tag">🏠 Luyện đề</td><td>Làm bài thi</td><td>Trả lời trắc nghiệm</td><td><code>/student/exams/:examId</code> (ExamPage)</td><td>Bấm <b>"Bắt đầu làm bài"</b> → chọn đáp án từng câu → dùng bảng "Danh sách câu hỏi" bên phải để theo dõi tiến độ/nhảy nhanh tới câu</td><td>Đáp án được ghi nhận theo thời gian thực</td><td><span class="status-pill done">Đã hoàn thiện</span></td></tr>
+          <tr><td>3</td><td class="group-tag">🏠 Luyện đề</td><td>Nộp bài</td><td>Kết thúc và chấm điểm ngay</td><td><code>/student/exams/:examId</code></td><td>Nút <b>"✓ Nộp bài thi ngay"</b> (nhắc nếu chưa làm hết)</td><td>Tự động chấm điểm, chuyển sang trang Kết quả</td><td><span class="status-pill done">Đã hoàn thiện</span></td></tr>
+          <tr><td>4</td><td class="group-tag">🏠 Luyện đề</td><td>Làm lại đề đã làm</td><td>Luyện tập nhiều lần để cải thiện điểm</td><td><code>/student</code> → <code>/student/exams/:examId</code></td><td>Nút <b>"🔄 Làm lại"</b></td><td>Tạo thêm 1 lượt làm mới, giữ lại lịch sử các lần trước</td><td><span class="status-pill done">Đã hoàn thiện</span></td></tr>
+          <tr><td>5</td><td class="group-tag">🏠 Luyện đề</td><td>Xem lịch sử các lần làm 1 đề</td><td>So sánh điểm qua từng lần</td><td><code>/student</code></td><td>Nút <b>"📋 Lịch sử (n lần làm)"</b></td><td>Danh sách các lần làm hiện ra ngay tại chỗ</td><td><span class="status-pill done">Đã hoàn thiện</span></td></tr>
+
+          <tr id="hs-result"><td>6</td><td class="group-tag">📈 Kết quả của tôi</td><td>Xem điểm &amp; đúng/sai từng câu</td><td>Biết mình đúng/sai chỗ nào ngay sau khi nộp</td><td><code>/student/submissions/:id</code> (ResultPage)</td><td>Tự động chuyển tới sau khi nộp bài</td><td>Hiện điểm, đúng/sai từng câu, đáp án đúng</td><td><span class="status-pill done">Đã hoàn thiện</span></td></tr>
+          <tr><td>7</td><td class="group-tag">📈 Kết quả của tôi</td><td>Xem chuyên đề còn yếu (tổng hợp)</td><td>Biết nên ôn tập phần nào</td><td><code>/student/weak-topics</code> (StudentWeakTopicsPage)</td><td>Chọn đề/lần làm (pill) trên trang "Kết quả của tôi"</td><td>Danh sách % sai theo từng chuyên đề</td><td><span class="status-pill done">Đã hoàn thiện</span></td></tr>
+          <tr><td>8</td><td class="group-tag">📈 Kết quả của tôi</td><td>Xem lộ trình ôn tập AI</td><td>Có hướng dẫn ôn tập cá nhân hoá</td><td><code>/student/weak-topics</code></td><td>Xem trực tiếp nếu giáo viên đã duyệt (nếu chưa duyệt sẽ báo "Đang chờ duyệt")</td><td>Hiện tóm tắt + từng bước lý thuyết/lỗi hay sai/hành động khắc phục</td><td><span class="status-pill done">Đã hoàn thiện</span></td></tr>
+          <tr><td>9</td><td class="group-tag">📈 Kết quả của tôi</td><td>Làm bài tập tương tự do AI sinh</td><td>Luyện đúng dạng bài còn yếu (có kèm hình vẽ nếu là khảo sát hàm số)</td><td>Xuất hiện lại trong <code>/student</code> (Luyện đề)</td><td>Sau khi giáo viên duyệt, đề mới tự xuất hiện — thao tác giống mục 2</td><td>Học sinh làm như 1 đề bình thường</td><td><span class="status-pill done">Đã hoàn thiện</span></td></tr>
+
+          <tr id="hs-chat"><td>10</td><td class="group-tag">💬 Nhắn tin</td><td>Chat với giáo viên</td><td>Hỏi bài/trao đổi trực tiếp với giáo viên</td><td>Mọi trang — nút nổi góc dưới phải</td><td>Bấm nút <b>"Giáo viên"</b>/"Tin nhắn" → gõ tin nhắn → <b>Gửi</b> (Enter)</td><td>Giáo viên nhận tin ngay, có thể trả lời lại</td><td><span class="status-pill done">Đã hoàn thiện</span></td></tr>
+          <tr><td>11</td><td class="group-tag">💬 Nhắn tin</td><td>Thông báo (chuông 🔔)</td><td>Biết ngay khi có đề/lộ trình mới</td><td>Mọi trang</td><td>Bấm biểu tượng 🔔</td><td>Danh sách gợi ý đề/lộ trình mới</td><td><span class="status-pill mock">Không lưu server, chỉ suy luận phía giao diện</span></td></tr>
+
+          <tr id="hs-settings"><td>12</td><td class="group-tag">⚙️ Cài đặt &amp; Trợ lý AI</td><td>Đổi mật khẩu</td><td>Bảo mật tài khoản</td><td><code>/settings</code></td><td>Tab "Tài khoản cá nhân" → nhập mật khẩu cũ + mới</td><td>Mật khẩu cập nhật</td><td><span class="status-pill done">Đã hoàn thiện</span></td></tr>
+          <tr><td>13</td><td class="group-tag">⚙️ Cài đặt &amp; Trợ lý AI</td><td>Trợ lý AI Gemini (chat AI, khác chat với giáo viên)</td><td>Hỏi đáp Toán tự do</td><td><code>/student/ai-assistant</code></td><td>Nhập câu hỏi → <b>"Gửi"</b></td><td>AI trả lời trực tiếp (không lưu server)</td><td><span class="status-pill done">Đã hoàn thiện</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- ============ TAB: LUỒNG PHỐI HỢP ============ -->
+<div class="panel" id="flow">
+  <div class="card">
+    <h2>🔗 Luồng sử dụng chính (từng vai trò)</h2>
+    <p class="lead">Mỗi sơ đồ là 1 hành trình độc lập, đi từ điểm bắt đầu tới kết quả cuối, đúng tên trang/nút trong code.</p>
+
+    <h3><span class="role-chip gv">Giáo viên</span> (a) Tạo và giao đề thi</h3>
+    <div class="flow">
+      <div class="node n-start">Giáo viên đăng nhập</div>
+      <div class="arrow"></div>
+      <div class="node n-page"><b class="step">1</b>Vào <b>"📝 Quản lý bài tập"</b> (<code>/teacher/exams</code>)</div>
+      <div class="arrow"></div>
+      <div class="node n-action"><b class="step">2</b>Bấm <b>"+ Tạo đề thi mới"</b> → nhập tên đề, thời gian, mô tả</div>
+      <div class="arrow"></div>
+      <div class="node n-decision"><b class="step">3</b>❓ Nhập câu hỏi tay hay upload file Word?</div>
+      <div class="branch">
+        <div class="branch-col">
+          <span class="branch-tag" style="background:var(--ai-bg);color:var(--ai);">Upload Word</span>
+          <div class="node n-action">Chọn file <code>.docx</code> → xem trước câu hỏi + công thức đã bóc tách → chỉnh cỡ công thức nếu lệch</div>
+        </div>
+        <div class="branch-col">
+          <span class="branch-tag" style="background:var(--gv-bg);color:var(--gv);">Nhập tay</span>
+          <div class="node n-action">Nhập trực tiếp câu hỏi/đáp án trong form</div>
+        </div>
+      </div>
+      <div class="arrow"></div>
+      <div class="node n-page"><b class="step">4</b>Tick chọn học sinh/lớp nhận đề</div>
+      <div class="arrow"></div>
+      <div class="node n-decision"><b class="step">5</b>❓ Đã chọn học sinh chưa?</div>
+      <div class="branch">
+        <div class="branch-col"><span class="branch-tag tag-no">Chưa</span><div class="node n-action">Nút "Tạo bài tập" <b>chưa hiện ra</b></div></div>
+        <div class="branch-col"><span class="branch-tag tag-yes">Rồi</span><div class="node n-action">Bấm <b>"🚀 Tạo bài tập"</b></div></div>
+      </div>
+      <div class="arrow"></div>
+      <div class="node n-result">Đề được tạo và giao ngay cho học sinh đã chọn</div>
+    </div>
+
+    <h3><span class="role-chip gv">Giáo viên</span> (b) Duyệt bài tập AI cho học sinh yếu</h3>
+    <div class="flow">
+      <div class="node n-start">Học sinh đã nộp ít nhất 1 bài</div>
+      <div class="arrow"></div>
+      <div class="node n-page"><b class="step">1</b>Vào <b>"📊 Giám sát chất lượng"</b> (<code>/teacher/analytics</code>) → chọn học sinh</div>
+      <div class="arrow"></div>
+      <div class="node n-action"><b class="step">2</b>Bấm <b>"✨ Xem bài &amp; AI"</b> ở đúng lần nộp cần xử lý</div>
+      <div class="arrow"></div>
+      <div class="node n-ai"><b class="step">3</b>🤖 Bấm sinh AI (tuỳ chọn kèm bài tập luyện tập) → Gemini trả về tóm tắt + các bước lộ trình + câu hỏi tương tự</div>
+      <div class="arrow"></div>
+      <div class="node n-action"><b class="step">4</b>Kiểm tra/sửa nội dung (bấm trực tiếp vào công thức để sửa tại chỗ)</div>
+      <div class="arrow"></div>
+      <div class="node n-decision"><b class="step">5</b>❓ Duyệt hay từ chối?</div>
+      <div class="branch">
+        <div class="branch-col"><span class="branch-tag tag-no">Từ chối</span><div class="node n-action">Xoá hẳn hoặc gọi AI sinh lại bản mới</div></div>
+        <div class="branch-col"><span class="branch-tag tag-yes">Duyệt</span><div class="node n-action">Bấm <b>"✓ Duyệt &amp; Giao cho học sinh"</b></div></div>
+      </div>
+      <div class="arrow"></div>
+      <div class="node n-result">Lộ trình hiện trong "Kết quả của tôi" của học sinh; nếu có kèm bài tập → tự tạo 1 đề mới và giao luôn cho đúng học sinh đó</div>
+    </div>
+
+    <h3><span class="role-chip hs">Học sinh</span> (c) Làm bài và xem kết quả</h3>
+    <div class="flow">
+      <div class="node n-start">Học sinh đăng nhập</div>
+      <div class="arrow"></div>
+      <div class="node n-page hs"><b class="step">1</b>Vào <b>"🏠 Luyện đề"</b> (<code>/student</code>)</div>
+      <div class="arrow"></div>
+      <div class="node n-action"><b class="step">2</b>Bấm <b>"Bắt đầu làm bài"</b> (hoặc <b>"🔄 Làm lại"</b> nếu đã làm rồi)</div>
+      <div class="arrow"></div>
+      <div class="node n-page hs"><b class="step">3</b>Chọn đáp án từng câu, theo dõi tiến độ qua bảng "Danh sách câu hỏi"</div>
+      <div class="arrow"></div>
+      <div class="node n-action"><b class="step">4</b>Bấm <b>"✓ Nộp bài thi ngay"</b></div>
+      <div class="arrow"></div>
+      <div class="node n-result">Hệ thống tự chấm điểm ngay, chuyển sang trang Kết quả (đúng/sai từng câu)</div>
+    </div>
+
+    <h3><span class="role-chip hs">Học sinh</span> (d) Xem lộ trình ôn tập AI</h3>
+    <div class="flow">
+      <div class="node n-start">Giáo viên đã duyệt ít nhất 1 lộ trình cho học sinh này</div>
+      <div class="arrow"></div>
+      <div class="node n-page hs"><b class="step">1</b>Vào <b>"📈 Kết quả của tôi"</b> (<code>/student/weak-topics</code>)</div>
+      <div class="arrow"></div>
+      <div class="node n-action"><b class="step">2</b>Chọn đề/lần làm cần xem</div>
+      <div class="arrow"></div>
+      <div class="node n-decision"><b class="step">3</b>❓ Lộ trình đã được duyệt chưa?</div>
+      <div class="branch">
+        <div class="branch-col"><span class="branch-tag tag-no">Chưa</span><div class="node n-action">Hiện "Đang chờ Giáo viên phê duyệt"</div></div>
+        <div class="branch-col"><span class="branch-tag tag-yes">Rồi</span><div class="node n-ai">🤖 Hiện tóm tắt + từng bước: Lý thuyết / Lỗi hay mắc / Hành động khắc phục</div></div>
+      </div>
+      <div class="arrow"></div>
+      <div class="node n-result">Nếu giáo viên có kèm bài tập → đề luyện tập mới đã nằm sẵn trong "Luyện đề" để làm</div>
+    </div>
+
+    <h3>💬 (e) Nhắn tin qua lại giữa Giáo viên và Học sinh</h3>
+    <div class="flow">
+      <div class="node n-start">Cả 2 bên đã đăng nhập (không cần cùng lúc)</div>
+      <div class="arrow"></div>
+      <div class="node n-action"><b class="step">1</b>Bấm nút chat nổi góc dưới phải (nhãn <b>"Học sinh"</b> nếu là giáo viên, <b>"Giáo viên"</b>/"Tin nhắn" nếu là học sinh)</div>
+      <div class="arrow"></div>
+      <div class="branch">
+        <div class="branch-col">
+          <span class="branch-tag" style="background:var(--gv-bg);color:var(--gv);">Giáo viên</span>
+          <div class="node n-page">Tìm/chọn 1 học sinh trong danh sách (ô "Tìm tên, lớp...")</div>
+        </div>
+        <div class="branch-col">
+          <span class="branch-tag" style="background:var(--hs-bg);color:var(--hs);">Học sinh</span>
+          <div class="node n-page hs">Mở thẳng khung chat với giáo viên</div>
+        </div>
+      </div>
+      <div class="arrow"></div>
+      <div class="node n-action"><b class="step">2</b>Gõ tin nhắn (hoặc gửi kèm ảnh/file) → <b>Gửi</b> (Enter)</div>
+      <div class="arrow"></div>
+      <div class="node n-result">Bên còn lại nhận tin ngay và trả lời lại — 2 chiều, cùng 1 khung chat</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>🔀 Mối liên hệ Giáo viên ↔ Học sinh (đã xác minh trong code)</h2>
+    <div class="swimlane">
+      <div class="swimlane-head"><div class="gv-h">👨‍🏫 Giáo viên</div><div class="mid-h"></div><div class="hs-h">🧑‍🎓 Học sinh</div></div>
+
+      <div class="swimlane-row">
+        <div class="gv-c"><b>Tạo đề + giao đề</b><br>Quản lý bài tập → chọn học sinh → "Tạo bài tập" / "Giao lại đề"</div>
+        <div class="mid-c">→<small>assignedTo</small></div>
+        <div class="hs-c"><b>Thấy đề trong "Luyện đề"</b><br>Đề chỉ hiện với học sinh có tên trong danh sách được giao</div>
+      </div>
+
+      <div class="swimlane-row">
+        <div class="gv-c"><b>Xem bài nộp</b><br>Giám sát chất lượng / chi tiết đề / chi tiết bài nộp</div>
+        <div class="mid-c">←<small>submission</small></div>
+        <div class="hs-c"><b>Nộp bài thi</b><br>"✓ Nộp bài thi ngay" trên trang làm bài</div>
+      </div>
+
+      <div class="swimlane-row">
+        <div class="gv-c"><b>Duyệt lộ trình + bài tập AI</b><br>"✓ Duyệt &amp; Giao cho học sinh"</div>
+        <div class="mid-c">→<small>roadmap<br>+ đề mới</small></div>
+        <div class="hs-c"><b>Thấy lộ trình + đề luyện tập mới</b><br>"Kết quả của tôi" (lộ trình) và "Luyện đề" (đề mới tự động)</div>
+      </div>
+
+      <div class="swimlane-row">
+        <div class="gv-c"><b>💬 Nhắn tin qua lại</b><br>Nút chat nổi, chọn học sinh để chat</div>
+        <div class="mid-c">⇄<small>2 chiều</small></div>
+        <div class="hs-c"><b>💬 Nhắn tin qua lại</b><br>Nút chat nổi, mở thẳng khung chat với giáo viên</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ TAB: ĐIỂM CẦN XÁC NHẬN ============ -->
+<div class="panel" id="issues">
+  <div class="card">
+    <h2>⚠️ Điểm cần xác nhận lại</h2>
+
+    <div class="issue danger">
+      <b>🚫 Trang "Đề xuất Bài tập AI" (/teacher/generated-exercises) không có nút nào dẫn tới</b>
+      Việc duyệt bài tập AI thực tế đang làm qua trang chi tiết học sinh/bài nộp. Cần xác nhận: xoá trang này hay thêm đường vào?
+    </div>
+
+    <div class="issue">
+      <b>❓ Trang chi tiết học sinh (/teacher/students/:id) — chưa rõ có nút dẫn tới không</b>
+      Bấm vào tên 1 học sinh ở "Quản lý học sinh" thử xem có mở được trang này không.
+    </div>
+
+    <div class="issue">
+      <b>❓ Trang lịch sử 1 lần làm riêng (/student/history/:id) — có thể trùng trang Kết quả</b>
+      "Luyện đề" chỉ thấy dẫn tới trang Kết quả thường. Cần xác nhận có nút nào khác dẫn riêng tới trang này không.
+    </div>
+
+    <div class="issue">
+      <b>🔔 Thông báo (chuông) không lưu trên server</b>
+      Chỉ suy luận từ dữ liệu hiện có; trạng thái "đã đọc" lưu trong trình duyệt, đổi máy sẽ thấy lại như chưa đọc.
+    </div>
+
+    <div class="issue">
+      <b>👥 Quản lý học sinh trùng ở 2 nơi</b>
+      Thêm/sửa/xoá học sinh có cả ở "Quản lý học sinh" và tab "Thêm tài khoản học sinh" trong "Cài đặt" — chưa rõ có chủ đích hay dư thừa.
+    </div>
+
+    <div class="issue">
+      <b>📝 Trang đăng ký (/register) chuyển thẳng về đăng nhập</b>
+      Không thể tự đăng ký qua giao diện — chỉ giáo viên tạo tài khoản học sinh thủ công.
+    </div>
+
+    <h3 style="margin-top:22px;">📂 Đối chiếu mã nguồn (thu gọn theo nhóm)</h3>
+
+    <details class="audit">
+      <summary>Phân quyền &amp; routes</summary>
+      <div class="audit-body">
+        <code>backend/src/middleware/auth.js — verifyToken, requireRole(...)</code>
+        <code>backend/src/routes/teacherRoutes.js:17 — /api/teacher/* chỉ role teacher</code>
+        <code>backend/src/routes/studentRoutes.js:16 — /api/student/* chỉ role student</code>
+        <code>backend/src/routes/examRoutes.js:26 — /api/exams/* chỉ role teacher</code>
+        <code>frontend/src/components/ProtectedRoute.jsx:10-13</code>
+        <code>frontend/src/components/Sidebar.jsx — TEACHER_MENU / STUDENT_MENU</code>
+        <code>frontend/src/App.jsx — toàn bộ danh sách route</code>
+      </div>
+    </details>
+
+    <details class="audit">
+      <summary>Quản lý học sinh</summary>
+      <div class="audit-body">
+        <code>frontend/src/pages/TeacherDashboard.jsx</code>
+        <code>frontend/src/pages/SettingsPage.jsx</code>
+        <code>backend/src/controllers/... (route PUT/DELETE /teacher/students/:id)</code>
+      </div>
+    </details>
+
+    <details class="audit">
+      <summary>Quản lý bài tập / đề thi</summary>
+      <div class="audit-body">
+        <code>frontend/src/pages/TeacherExamsPage.jsx</code>
+        <code>frontend/src/pages/ExamEditorPage.jsx</code>
+        <code>backend/src/controllers/examController.js — createExam, getExamDetail, assignExam, getSubmissionDetailForTeacher</code>
+      </div>
+    </details>
+
+    <details class="audit">
+      <summary>Giám sát chất lượng &amp; AI</summary>
+      <div class="audit-body">
+        <code>frontend/src/pages/TeacherAnalyticsPage.jsx</code>
+        <code>frontend/src/pages/TeacherStudentDetailPage.jsx</code>
+        <code>frontend/src/pages/TeacherSubmissionDetailPage.jsx</code>
+        <code>frontend/src/pages/GeneratedExercisesListPage.jsx (không có lối vào UI)</code>
+        <code>backend/src/controllers/generatedExerciseController.js — generateForSubmission, approveGeneratedExercise, rejectGeneratedExercise</code>
+        <code>backend/src/services/geminiService.js</code>
+      </div>
+    </details>
+
+    <details class="audit">
+      <summary>Luyện đề &amp; Kết quả (học sinh)</summary>
+      <div class="audit-body">
+        <code>frontend/src/pages/StudentDashboard.jsx</code>
+        <code>frontend/src/pages/ExamPage.jsx</code>
+        <code>frontend/src/pages/ResultPage.jsx</code>
+        <code>frontend/src/pages/StudentWeakTopicsPage.jsx</code>
+        <code>frontend/src/pages/StudentHistoryDetailPage.jsx (chưa xác nhận có lối vào UI)</code>
+        <code>backend/src/controllers/studentExamController.js — listAssignedExams, getExamToDo, submitExam, getSubmissionDetail</code>
+      </div>
+    </details>
+
+    <details class="audit">
+      <summary>Cài đặt, Trợ lý AI, Nhắn tin, Thông báo (chung 2 vai trò)</summary>
+      <div class="audit-body">
+        <code>frontend/src/pages/SettingsPage.jsx</code>
+        <code>frontend/src/pages/AiAssistantPage.jsx</code>
+        <code>frontend/src/components/ChatWidget.jsx</code>
+        <code>frontend/src/components/NotificationBell.jsx (dữ liệu suy luận, không có bảng notification riêng)</code>
+        <code>backend/src/routes/ai.js, chatRoutes.js, meRoutes.js — chỉ verifyToken, không giới hạn role</code>
+      </div>
+    </details>
+  </div>
+</div>
+
+</main>
+
+<footer>Tài liệu tổng hợp từ mã nguồn dự án — không đại diện cho việc đã kiểm thử vận hành thực tế trên trình duyệt.</footer>
+
+<script>
+  // Chuyển tab
+  document.getElementById('tabs').addEventListener('click', (e) => {
+    const btn = e.target.closest('.tab-btn');
+    if (!btn) return;
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById(btn.dataset.tab).classList.add('active');
+    window.scrollTo({ top: 0, behavior: 'instant' });
+  });
+
+  // Cho phép mục lục (TOC) tự chuyển sang đúng tab trước khi cuộn tới neo
+  document.querySelectorAll('.toc a').forEach(a => {
+    a.addEventListener('click', () => {
+      // neo nằm trong tab hiện tại, không cần chuyển tab
+    });
+  });
+
+  // Tìm kiếm: lọc theo dòng trong 2 bảng (Giáo viên/Học sinh), tự chuyển sang tab tương ứng nếu cần
+  const searchInput = document.getElementById('searchInput');
+  searchInput.addEventListener('input', () => {
+    const q = searchInput.value.trim().toLowerCase();
+    ['teacherTable', 'studentTable'].forEach(id => {
+      const table = document.getElementById(id);
+      const rows = table.querySelectorAll('tbody tr');
+      let anyMatch = false;
+      rows.forEach(row => {
+        const text = row.innerText.toLowerCase();
+        const match = !q || text.includes(q);
+        row.classList.toggle('row-hidden', !match);
+        if (match) anyMatch = true;
+      });
+      if (q && anyMatch) {
+        const tabId = id === 'teacherTable' ? 'teacher' : 'student';
+        // Không tự ép chuyển tab để tránh gây khó chịu khi gõ - chỉ lọc dòng.
+      }
+    });
+  });
+</script>
+</body>
+</html>

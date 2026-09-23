@@ -124,7 +124,10 @@ async function convertDocxToHtml(docxBuffer, hashToPng) {
           const meta = await sharp(raw).metadata();
           const w = meta.width || 0;
           const h = meta.height || 0;
-          const isDiagram = (w >= 120 && h >= 80) || (w >= 180 && h >= 60) || (h >= 85) || (w * h >= 12000);
+          // Ngưỡng đồng bộ với `wmfConvertService.js` (xem giải thích chi tiết ở đó): cần CẢ 2
+          // chiều đủ lớn mới coi là hình vẽ thật, tránh nhận nhầm công thức cao/rộng 1 chiều
+          // (vectơ, toạ độ điểm) thành hình vẽ rồi hiển thị không giới hạn kích thước.
+          const isDiagram = (w >= 150 && h >= 100) || (w * h >= 40000);
           const bandCount = isDiagram ? 0 : await wmfConvertService.countInkBands(raw, w, h);
           const size = isDiagram ? null : wmfConvertService.computeFormulaSize(h, bandCount >= 2);
           const attrs = getFormulaAttrs({

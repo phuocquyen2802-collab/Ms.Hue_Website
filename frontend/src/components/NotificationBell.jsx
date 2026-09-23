@@ -190,13 +190,37 @@ export default function NotificationBell() {
     setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
   }
 
+  // Trước đây chỉ đánh dấu "đã đọc" khi bấm hẳn vào 1 thông báo cụ thể - nếu
+  // người dùng chỉ MỞ chuông ra xem lướt qua rồi đóng lại (không bấm vào),
+  // hệ thống vẫn coi là "chưa đọc", nên sang trang khác lại hiện y như cũ.
+  // Giờ tự đánh dấu đã đọc sau khi mở chuông 1.5 giây (đủ thời gian để thấy
+  // huy hiệu đỏ trước khi nó biến mất, giống Messenger/Gmail).
+  useEffect(() => {
+    if (!open || !user) return;
+    const timer = setTimeout(() => {
+      const readSet = loadReadSet(user.role, user.id);
+      let changed = false;
+      notifications.forEach((n) => {
+        if (!readSet.has(n.id)) {
+          readSet.add(n.id);
+          changed = true;
+        }
+      });
+      if (changed) {
+        saveReadSet(user.role, user.id, readSet);
+        setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
+      }
+    }, 1500);
+    return () => clearTimeout(timer);
+  }, [open, user, notifications]);
+
   if (!user) return null;
 
   const unreadCount = notifications.filter((n) => !n.read).length;
   const filteredList = tab === 'unread' ? notifications.filter((n) => !n.read) : notifications;
 
   return (
-    <div ref={wrapperRef} style={{ position: 'fixed', top: 16, right: 24, zIndex: 200 }}>
+    <div ref={wrapperRef} className="no-print" style={{ position: 'fixed', top: 16, right: 24, zIndex: 200 }}>
       {/* Bell Button */}
       <button
         type="button"
@@ -432,7 +456,7 @@ export default function NotificationBell() {
                     <div
                       style={{
                         fontSize: 12,
-                        color: n.read ? '#64748b' : '#2563eb',
+                        color: n.read ? '#64748b' : 'var(--primary)',
                         fontWeight: n.read ? 400 : 700,
                         marginTop: 4,
                         display: 'flex',
@@ -451,7 +475,7 @@ export default function NotificationBell() {
                         width: 10,
                         height: 10,
                         borderRadius: '50%',
-                        background: '#2563eb',
+                        background: 'var(--primary)',
                         flexShrink: 0,
                         marginLeft: 4,
                       }}

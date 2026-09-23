@@ -1,52 +1,29 @@
 [
   {
-    "id": "ge-f3f6c83a-27f9-4df8-ba44-227320aee065",
-    "studentId": "u-8db0edf9-a2ee-49f9-aa1b-ad63d0530c4c",
-    "sourceExamId": "e-b04323df-e3d3-4416-95ea-6e7a4410e680",
-    "sourceSubmissionId": "s-41613ac9-1444-43ac-9ef6-e53cba40b609",
-    "examId": null,
+    "id": "ge-5b21fd42-fee6-4af6-bd4e-f4bf0daef924",
+    "studentId": "u-98741842-4faa-4754-9ac8-e0e46af5d42f",
+    "sourceExamId": "e-cb9c66e6-5653-49b0-85f2-5baecf837c64",
+    "sourceSubmissionId": "s-21420709-36c9-4e8a-8ad8-ea1606dcbca3",
+    "examId": "e-a4fc650c-9fda-4ab2-a9b5-dca195f472fd",
     "weakTags": [
-      "KHẢO SÁT HÀM SỐ",
-      "CẤP SỐ CỘNG VÀ CẤP SỐ NHÂN",
       "PHƯƠNG TRÌNH LƯỢNG GIÁC"
     ],
-    "cacheKey": "submission-s-41613ac9-1444-43ac-9ef6-e53cba40b609_cap-so-cong-va-cap-so-nhan_khao-sat-ham-so_phuong-trinh-luong-giac",
+    "cacheKey": "submission-s-21420709-36c9-4e8a-8ad8-ea1606dcbca3_phuong-trinh-luong-giac",
     "roadmap": {
-      "summary": "Chào em Nguyễn Kim Chi, cô rất hiểu những khó khăn em đang gặp phải trong giai đoạn ôn thi THPT Quốc gia môn Toán. Dựa trên kết quả bài làm vừa qua, em đang bị hổng một số kiến thức nền tảng ở các chuyên đề: Phương trình lượng giác, Cấp số cộng và cấp số nhân, Phương trình mũ và lôgarit, cùng với phần Khảo sát hàm số (chiếm tỷ lệ sai khá cao). Đừng quá lo lắng em nhé, kỳ thi THPT Quốc gia vẫn còn thời gian để chúng ta lấp đầy những lỗ hổng này. Em cần tập trung ôn tập lại các công thức cơ bản, làm thật nhiều bài tập từ mức độ nhận biết đến vận dụng thấp, đồng thời chú ý rèn luyện kỹ năng đọc đồ thị và bảng biến thiên. Hãy kiên trì từng bước một, cô tin em sẽ tiến bộ vượt bậc!",
+      "summary": "Chào em Nguyễn Phước Quyền! Thầy rất hiểu những khó khăn mà em đang gặp phải với phần Phương trình lượng giác. Đây là một chuyên đề trọng điểm trong chương trình Toán 12 và thi THPT Quốc gia, đòi hỏi sự thành thạo về công thức biến đổi, công thức nghiệm cơ bản và kỹ năng xác định họ nghiệm. Việc em chưa hoàn thành tốt 5 câu hỏi vừa qua cho thấy ta cần củng cố lại toàn bộ nền tảng từ định nghĩa các hàm số lượng giác, cách giải phương trình cơ bản $\\sin x = m$, $\\cos x = m$, $\\tan x = m$, cho đến việc ghi nhớ chính xác chu kỳ tuần hoàn. Hãy kiên trì luyện tập theo lộ trình chi tiết dưới đây, từng bước một, thầy tin em sẽ nhanh chóng lấy lại tự tin và chinh phục hoàn toàn dạng toán này!",
       "steps": [
         {
           "order": 1,
           "tag": "Phương trình lượng giác",
-          "theory": "1. Các phương trình lượng giác cơ bản:\n- $\\sin x = m$ có nghiệm khi $|m| \\le 1$.\n\n- $\\cos x = m$ có nghiệm khi $|m| \\le 1$.\n\n- $\\tan x = m$ và $\\cot x = m$ luôn có nghiệm với mọi $m \\in \\mathbb{R}$.\n2. Công thức nghiệm:\n- $\\sin x = \\sin \\alpha \\Leftrightarrow \\left[\\begin{array}{l} x = \\alpha + k2\\pi \\\\ x = \\pi - \\alpha + k2\\pi \\end{array}\\right. (k \\in \\mathbb{Z})$.\n\n- $\\cos x = \\cos \\alpha \\Leftrightarrow x = \\pm \\alpha + k2\\pi (k \\in \\mathbb{Z})$.\n\n- $\\tan x = \\tan \\alpha \\Leftrightarrow x = \\alpha + k\\pi (k \\in \\mathbb{Z})$.",
-          "commonMistake": "- Lỗi 1: Quên đuôi chu kỳ $+k2\\pi$ hoặc nhầm lẫn với $+k\\pi$.\n- Lỗi 2: Thiếu trường hợp nghiệm $x = \\pi - \\alpha + k2\\pi$ đối với phương trình sin.",
-          "action": "Bước 1: Biến đổi phương trình về dạng tích hoặc dạng cơ bản.\nBước 2: Sử dụng công thức nghiệm đặc biệt hoặc góc bù, góc phụ để đưa về cùng một hàm số lượng giác.\nBước 3: Viết đầy đủ họ nghiệm kèm theo điều kiện $k \\in \\mathbb{Z}$."
-        },
-        {
-          "order": 2,
-          "tag": "Phương trình mũ và lôgarit",
-          "theory": "1. Phương trình mũ cơ bản: $a^x = b$ ($0 < a \\neq 1$).\n- Nếu $b \\le 0$: Phương trình vô nghiệm.\n- Nếu $b > 0$: $x = \\log_a b$.\n2. Phương trình lôgarit cơ bản: $\\log_a x = b$ ($0 < a \\neq 1$, $x > 0$).\n- Nghiệm của phương trình là $x = a^b$.\n3. Phương pháp giải:\n- Đưa về cùng cơ số: $a^{f(x)} = a^{g(x)} \\Leftrightarrow f(x) = g(x)$ (với $0 < a \\neq 1$).\n- Đặt ẩn phụ: Đặt $t = a^x$ (với $t > 0$) hoặc $t = \\log_a x$.",
-          "commonMistake": "- Lỗi 1: Quên đặt điều kiện xác định cho biểu thức dưới dấu lôgarit ($x > 0$).\n- Lỗi 2: Nhầm lẫn điều kiện của ẩn phụ $t = a^x > 0$ nhưng ẩn phụ $t = \\log_a x$ thì $t \\in \\mathbb{R}$.",
-          "action": "Bước 1: Tìm tập xác định của phương trình.\nBước 2: Áp dụng các tính chất của lũy thừa và lôgarit để rút gọn.\nBước 3: Giải phương trình hệ quả và đối chiếu với điều kiện ban đầu."
-        },
-        {
-          "order": 3,
-          "tag": "Cấp số cộng và cấp số nhân",
-          "theory": "1. Cấp số cộng $(u_n)$ có số hạng đầu $u_1$ và công sai $d$:\n- Số hạng tổng quát: $u_n = u_1 + (n - 1)d$.\n- Tổng $n$ số hạng đầu tiên: $S_n = \\frac{n[2u_1 + (n - 1)d]}{2} = \\frac{n(u_1 + u_n)}{2}$.\n2. Cấp số nhân $(u_n)$ có số hạng đầu $u_1$ và công bội $q$:\n- Số hạng tổng quát: $u_n = u_1 \\cdot q^{n - 1}$.\n- Tổng $n$ số hạng đầu tiên: $S_n = \\frac{u_1(1 - q^n)}{1 - q}$ (với $q \\neq 1$).",
-          "commonMistake": "- Lỗi 1: Nhầm lẫn giữa công thức số hạng tổng quát của cấp số cộng ($u_n = u_1 + (n-1)d$) và cấp số nhân ($u_n = u_1 \\cdot q^{n-1}$).\n- Lỗi 2: Quên xét trường hợp $q = 1$ khi tính tổng cấp số nhân.",
-          "action": "Bước 1: Xác định rõ dãy số cho trước là cấp số cộng hay cấp số nhân dựa vào định nghĩa ($u_{n+1} - u_n = \\text{hằng số}$ hoặc $\\frac{u_{n+1}}{u_n} = \\text{hằng số}$).\nBước 2: Viết ra các công thức liên quan đến $u_1, d, q$.\nBước 3: Lập hệ phương trình để tìm các đại lượng chưa biết và tính toán kết quả."
-        },
-        {
-          "order": 4,
-          "tag": "Khảo sát hàm số",
-          "theory": "1. Tính đơn điệu của hàm số:\n- Cho hàm số $y = f(x)$ có đạo hàm trên khoảng $K$.\n- Nếu $f'(x) > 0, \\forall x \\in K$ thì hàm số đồng biến trên $K$.\n- Nếu $f'(x) < 0, \\forall x \\in K$ thì hàm số nghịch biến trên $K$.\n2. Cực trị của hàm số:\n- Nếu $f'(x_0) = 0$ và $f'(x)$ đổi dấu từ dương sang âm khi qua $x_0$ thì $x_0$ là điểm cực đại.\n- Nếu $f'(x_0) = 0$ và $f'(x)$ đổi dấu từ âm sang dương khi qua $x_0$ thì $x_0$ là điểm cực tiểu.\n3. Tiệm cận của đồ thị hàm số $y = \\frac{ax + b}{cx + d}$ ($ad - bc \\neq 0$):\n- Tiệm cận ngang: $y = \\frac{a}{c}$.\n- Tiệm cận đứng: $x = -\\frac{d}{c}$.",
-          "commonMistake": "- Lỗi 1: Quên điều kiện đạo hàm bằng 0 tại hữu hạn điểm khi xét tính đơn điệu.\n- Lỗi 2: Nhầm lẫn giữa điểm cực trị của hàm số ($x_0$) và giá trị cực trị của hàm số ($y_0$).\n- Lỗi 3: Xác định sai đường tiệm cận đứng hoặc tiệm cận ngang của hàm số phân thức.",
-          "action": "Bước 1: Tìm tập xác định của hàm số.\nBước 2: Tính đạo hàm $y'$, tìm các điểm mà tại đó $y' = 0$ hoặc $y'$ không xác định.\nBước 3: Lập bảng biến thiên và kết luận về tính đơn điệu, cực trị, tiệm cận."
+          "theory": "1. Công thức nghiệm cơ bản:\n- $\\sin x = \\sin \\alpha \\Leftrightarrow \\left[ \\begin{aligned} x &= \\alpha + k2\\pi \\\\ x &= \\pi - \\alpha + k2\\pi \\end{aligned} \\right. \\quad (k \\in \\mathbb{Z})$.\n\n- $\\cos x = \\cos \\alpha \\Leftrightarrow x = \\pm \\alpha + k2\\pi \\quad (k \\in \\mathbb{Z})$.\n\n- $\\tan x = \\tan \\alpha \\Leftrightarrow x = \\alpha + k\\pi \\quad (k \\in \\mathbb{Z})$ (với điều kiện $\\cos x \\neq 0$).\n\n- $\\cot x = \\cot \\alpha \\Leftrightarrow x = \\alpha + k\\pi \\quad (k \\in \\mathbb{Z})$ (với điều kiện $\\sin x \\neq 0$).\n\n2. Các trường hợp đặc biệt:\n- $\\sin x = 0 \\Leftrightarrow x = k\\pi$ ($k \\in \\mathbb{Z}$). Khi $\\sin x = 1 \\Leftrightarrow x = \\frac{\\pi}{2} + k2\\pi$. Khi $\\sin x = -1 \\Leftrightarrow x = -\\frac{\\pi}{2} + k2\\pi$.\n\n- $\\cos x = 0 \\Leftrightarrow x = \\frac{\\pi}{2} + k\\pi$ ($k \\in \\mathbb{Z}$). Khi $\\cos x = 1 \\Leftrightarrow x = k2\\pi$. Khi $\\cos x = -1 \\Leftrightarrow x = \\pi + k2\\pi$.",
+          "commonMistake": "- Lỗi 1: Nhầm lẫn chu kỳ nghiệm, hay quên nhân $2\\pi$ đối với họ sin, cos hoặc viết nhầm thành $k2\\pi$ đối với họ tan, cot.\n- Lỗi 2: Quên mất trường hợp nghiệm thứ hai $x = \\pi - \\alpha + k2\\pi$ khi giải phương trình chứa hàm sin.\n- Lỗi 3: Quên đặt điều kiện xác định cho phương trình chứa ẩn ở mẫu hoặc hàm $\\tan, \\cot$.",
+          "action": "Bước 1: Chuyển vế, thu gọn phương trình về dạng tích hoặc dạng cơ bản $\\sin x = m$, $\\cos x = m$, $\\tan x = m$.\nBước 2: Kiểm tra điều kiện của tham số $m$ (với $\\sin x, \\cos x$ thì $|m| \\le 1$).\nBước 3: Sử dụng bảng giá trị lượng giác đặc biệt hoặc máy tính cầm tay để tìm góc $\\alpha$.\nBước 4: Viết đầy đủ các họ nghiệm và kết luận kèm theo điều kiện $k \\in \\mathbb{Z}$."
         }
       ]
     },
     "exercises": [
       {
-        "content": "Các nghiệm của phương trình $2\\sin x - 1 = 0$ là:",
+        "content": "Nghiệm của phương trình $\\sin x = \\frac{1}{2}$ là:",
         "options": [
           {
             "key": "A",
@@ -71,23 +48,98 @@
         ]
       },
       {
-        "content": "Tổng các nghiệm của phương trình $\\cos x = \\frac{1}{2}$ trên đoạn $[0; 2\\pi]$ là:",
+        "content": "Các nghiệm của phương trình $\\sin x = -\\frac{\\sqrt{3}}{2}$ là:",
         "options": [
           {
             "key": "A",
-            "text": "$\\pi$"
+            "text": "$x = \\frac{\\pi}{3} + k2\\pi$ và $x = \\frac{2\\pi}{3} + k2\\pi$ ($k \\in \\mathbb{Z}$)"
           },
           {
             "key": "B",
-            "text": "$2\\pi$"
+            "text": "$x = \\frac{\\pi}{6} + k2\\pi$ và $x = \\frac{5\\pi}{6} + k2\\pi$ ($k \\in \\mathbb{Z}$)"
           },
           {
             "key": "C",
-            "text": "$\\frac{3\\pi}{2}$"
+            "text": "$x = -\\frac{\\pi}{3} + k2\\pi$ và $x = \\frac{4\\pi}{3} + k2\\pi$ ($k \\in \\mathbb{Z}$)"
           },
           {
             "key": "D",
-            "text": "$\\frac{5\\pi}{3}$"
+            "text": "$x = -\\frac{\\pi}{6} + k2\\pi$ và $x = \\frac{7\\pi}{6} + k2\\pi$ ($k \\in \\mathbb{Z}$)"
+          }
+        ],
+        "correctAnswer": "C",
+        "tags": [
+          "Phương trình lượng giác"
+        ]
+      },
+      {
+        "content": "Giải phương trình $\\sin \\left(x + \\frac{\\pi}{4}\\right) = \\frac{\\sqrt{2}}{2}$ ta được các nghiệm là:",
+        "options": [
+          {
+            "key": "A",
+            "text": "$x = k2\\pi$ và $x = \\frac{\\pi}{2} + k2\\pi$ ($k \\in \\mathbb{Z}$)"
+          },
+          {
+            "key": "B",
+            "text": "$x = \\frac{\\pi}{4} + k2\\pi$ và $x = \\pi + k2\\pi$ ($k \\in \\mathbb{Z}$)"
+          },
+          {
+            "key": "C",
+            "text": "$x = k\\pi$ và $x = \\frac{\\pi}{2} + k\\pi$ ($k \\in \\mathbb{Z}$)"
+          },
+          {
+            "key": "D",
+            "text": "$x = \\frac{\\pi}{2} + k2\\pi$ và $x = \\pi + k2\\pi$ ($k \\in \\mathbb{Z}$)"
+          }
+        ],
+        "correctAnswer": "A",
+        "tags": [
+          "Phương trình lượng giác"
+        ]
+      },
+      {
+        "content": "Các góc lượng giác $x$ sao cho $\\cos x = \\frac{\\sqrt{2}}{2}$ là:",
+        "options": [
+          {
+            "key": "A",
+            "text": "$x = \\frac{\\pi}{4} + k2\\pi$ và $x = \\frac{3\\pi}{4} + k2\\pi$ ($k \\in \\mathbb{Z}$)"
+          },
+          {
+            "key": "B",
+            "text": "$x = \\frac{\\pi}{6} + k2\\pi$ và $x = -\\frac{\\pi}{6} + k2\\pi$ ($k \\in \\mathbb{Z}$)"
+          },
+          {
+            "key": "C",
+            "text": "$x = \\frac{\\pi}{4} + k2\\pi$ và $x = -\\frac{\\pi}{4} + k2\\pi$ ($k \\in \\mathbb{Z}$)"
+          },
+          {
+            "key": "D",
+            "text": "$x = \\frac{\\pi}{3} + k2\\pi$ và $x = -\\frac{\\pi}{3} + k2\\pi$ ($k \\in \\mathbb{Z}$)"
+          }
+        ],
+        "correctAnswer": "C",
+        "tags": [
+          "Phương trình lượng giác"
+        ]
+      },
+      {
+        "content": "Tập nghiệm của phương trình $\\cos x = -\\frac{1}{2}$ là:",
+        "options": [
+          {
+            "key": "A",
+            "text": "$S = \\left\\{ \\pm \\frac{\\pi}{3} + k2\\pi \\mid k \\in \\mathbb{Z} \\right\\}$"
+          },
+          {
+            "key": "B",
+            "text": "$S = \\left\\{ \\pm \\frac{2\\pi}{3} + k2\\pi \\mid k \\in \\mathbb{Z} \\right\\}$"
+          },
+          {
+            "key": "C",
+            "text": "$S = \\left\\{ \\pm \\frac{\\pi}{6} + k2\\pi \\mid k \\in \\mathbb{Z} \\right\\}$"
+          },
+          {
+            "key": "D",
+            "text": "$S = \\left\\{ \\pm \\frac{5\\pi}{6} + k2\\pi \\mid k \\in \\mathbb{Z} \\right\\}$"
           }
         ],
         "correctAnswer": "B",
@@ -96,23 +148,123 @@
         ]
       },
       {
-        "content": "Nghiệm của phương trình $\\tan \\left(x - \\frac{\\pi}{4}\\right) = 1$ là:",
+        "content": "Nghiệm của phương trình $\\cos \\left(2x - \\frac{\\pi}{3}\\right) = 0$ là:",
         "options": [
           {
             "key": "A",
-            "text": "$x = \\frac{\\pi}{2} + k2\\pi$ ($k \\in \\mathbb{Z}$)"
+            "text": "$x = \\frac{5\\pi}{12} + k\\frac{\\pi}{2}$ ($k \\in \\mathbb{Z}$)"
           },
           {
             "key": "B",
+            "text": "$x = \\frac{\\pi}{6} + k\\pi$ ($k \\in \\mathbb{Z}$)"
+          },
+          {
+            "key": "C",
+            "text": "$x = \\frac{5\\pi}{12} + k\\pi$ ($k \\in \\mathbb{Z}$)"
+          },
+          {
+            "key": "D",
+            "text": "$x = \\frac{\\pi}{3} + k\\frac{\\pi}{2}$ ($k \\in \\mathbb{Z}$)"
+          }
+        ],
+        "correctAnswer": "A",
+        "tags": [
+          "Phương trình lượng giác"
+        ]
+      },
+      {
+        "content": "Các góc lượng giác $x$ sao cho $\\tan x = \\sqrt{3}$ là:",
+        "options": [
+          {
+            "key": "A",
+            "text": "$x = \\frac{\\pi}{6} + k2\\pi$ ($k \\in \\mathbb{Z}$)"
+          },
+          {
+            "key": "B",
+            "text": "$x = \\frac{\\pi}{3} + k2\\pi$ ($k \\in \\mathbb{Z}$)"
+          },
+          {
+            "key": "C",
+            "text": "$x = \\frac{\\pi}{6} + k\\pi$ ($k \\in \\mathbb{Z}$)"
+          },
+          {
+            "key": "D",
+            "text": "$x = \\frac{\\pi}{3} + k\\pi$ ($k \\in \\mathbb{Z}$)"
+          }
+        ],
+        "correctAnswer": "D",
+        "tags": [
+          "Phương trình lượng giác"
+        ]
+      },
+      {
+        "content": "Tất cả các nghiệm của phương trình $\\tan \\left(x - \\frac{\\pi}{4}\\right) = 1$ là:",
+        "options": [
+          {
+            "key": "A",
             "text": "$x = \\frac{\\pi}{2} + k\\pi$ ($k \\in \\mathbb{Z}$)"
           },
           {
-            "key": "C",
+            "key": "B",
             "text": "$x = k\\pi$ ($k \\in \\mathbb{Z}$)"
           },
           {
+            "key": "C",
+            "text": "$x = \\frac{\\pi}{4} + k\\pi$ ($k \\in \\mathbb{Z}$)"
+          },
+          {
             "key": "D",
-            "text": "$x = \\pi + k\\pi$ ($k \\in \\mathbb{Z}$)"
+            "text": "$x = \\frac{3\\pi}{4} + k\\pi$ ($k \\in \\mathbb{Z}$)"
+          }
+        ],
+        "correctAnswer": "A",
+        "tags": [
+          "Phương trình lượng giác"
+        ]
+      },
+      {
+        "content": "Phương trình $\\tan x = -\\frac{\\sqrt{3}}{3}$ có tập nghiệm là:",
+        "options": [
+          {
+            "key": "A",
+            "text": "$S = \\left\\{ -\\frac{\\pi}{6} + k\\pi \\mid k \\in \\mathbb{Z} \\right\\}$"
+          },
+          {
+            "key": "B",
+            "text": "$S = \\left\\{ \\frac{\\pi}{6} + k\\pi \\mid k \\in \\mathbb{Z} \\right\\}$"
+          },
+          {
+            "key": "C",
+            "text": "$S = \\left\\{ -\\frac{\\pi}{3} + k\\pi \\mid k \\in \\mathbb{Z} \\right\\}$"
+          },
+          {
+            "key": "D",
+            "text": "$S = \\left\\{ \\frac{5\\pi}{6} + k\\pi \\mid k \\in \\mathbb{Z} \\right\\}$"
+          }
+        ],
+        "correctAnswer": "A",
+        "tags": [
+          "Phương trình lượng giác"
+        ]
+      },
+      {
+        "content": "Các góc lượng giác $x$ sao cho $\\cot x = 1$ là:",
+        "options": [
+          {
+            "key": "A",
+            "text": "$x = \\frac{\\pi}{4} + k2\\pi$ ($k \\in \\mathbb{Z}$)"
+          },
+          {
+            "key": "B",
+            "text": "$x = \\frac{\\pi}{4} + k\\pi$ ($k \\in \\mathbb{Z}$)"
+          },
+          {
+            "key": "C",
+            "text": "$x = \\frac{3\\pi}{4} + k\\pi$ ($k \\in \\mathbb{Z}$)"
+          },
+          {
+            "key": "D",
+            "text": "$x = \\pm \\frac{\\pi}{4} + k2\\pi$ ($k \\in \\mathbb{Z}$)"
           }
         ],
         "correctAnswer": "B",
@@ -121,169 +273,214 @@
         ]
       },
       {
-        "content": "Tổng các nghiệm của phương trình $9^x - 4 \\cdot 3^x + 3 = 0$ là:",
+        "content": "Phương trình $\\cot \\left(x + \\frac{\\pi}{3}\\right) = -\\sqrt{3}$ có các nghiệm là:",
         "options": [
           {
             "key": "A",
-            "text": "$1$"
+            "text": "$x = \\frac{\\pi}{6} + k\\pi$ ($k \\in \\mathbb{Z}$)"
           },
           {
             "key": "B",
-            "text": "$2$"
+            "text": "$x = -\\frac{\\pi}{2} + k\\pi$ ($k \\in \\mathbb{Z}$)"
           },
           {
             "key": "C",
-            "text": "$3$"
+            "text": "$x = \\frac{\\pi}{2} + k\\pi$ ($k \\in \\mathbb{Z}$)"
           },
           {
             "key": "D",
-            "text": "$0$"
-          }
-        ],
-        "correctAnswer": "A",
-        "tags": [
-          "Phương trình mũ và lôgarit"
-        ]
-      },
-      {
-        "content": "Nghiệm của phương trình $\\log_2(x - 1) = 3$ là:",
-        "options": [
-          {
-            "key": "A",
-            "text": "$x = 7$"
-          },
-          {
-            "key": "B",
-            "text": "$x = 8$"
-          },
-          {
-            "key": "C",
-            "text": "$x = 9$"
-          },
-          {
-            "key": "D",
-            "text": "$x = 10$"
-          }
-        ],
-        "correctAnswer": "C",
-        "tags": [
-          "Phương trình mũ và lôgarit"
-        ]
-      },
-      {
-        "content": "Tập nghiệm của bất phương trình $\\log_3(2x - 1) < 2$ là:",
-        "options": [
-          {
-            "key": "A",
-            "text": "$(-\\infty; 5)$"
-          },
-          {
-            "key": "B",
-            "text": "$(\\frac{1}{2}; 5)$"
-          },
-          {
-            "key": "C",
-            "text": "$[\\frac{1}{2}; 5)$"
-          },
-          {
-            "key": "D",
-            "text": "$(5; +\\infty)$"
+            "text": "$x = -\\frac{\\pi}{6} + k\\pi$ ($k \\in \\mathbb{Z}$)"
           }
         ],
         "correctAnswer": "B",
         "tags": [
-          "Phương trình mũ và lôgarit"
+          "Phương trình lượng giác"
         ]
       },
       {
-        "content": "Trong các dãy số sau, dãy số nào là cấp số cộng?",
+        "content": "Giải phương trình $\\cot \\left(2x - \\frac{\\pi}{4}\\right) = \\frac{\\sqrt{3}}{3}$ ta được họ nghiệm là:",
         "options": [
           {
             "key": "A",
-            "text": "$u_n = 2n + 1$"
+            "text": "$x = \\frac{7\\pi}{24} + k\\frac{\\pi}{2}$ ($k \\in \\mathbb{Z}$)"
           },
           {
             "key": "B",
-            "text": "$u_n = 2^n$"
+            "text": "$x = \\frac{\\pi}{12} + k\\pi$ ($k \\in \\mathbb{Z}$)"
           },
           {
             "key": "C",
-            "text": "$u_n = n^2$"
+            "text": "$x = \\frac{5\\pi}{24} + k\\frac{\\pi}{2}$ ($k \\in \\mathbb{Z}$)"
           },
           {
             "key": "D",
-            "text": "$u_n = \\frac{1}{n}$"
+            "text": "$x = \\frac{\\pi}{3} + k\\frac{\\pi}{2}$ ($k \\in \\mathbb{Z}$)"
           }
         ],
         "correctAnswer": "A",
         "tags": [
-          "Cấp số cộng và cấp số nhân"
+          "Phương trình lượng giác"
         ]
       },
       {
-        "content": "Cho cấp số cộng $(u_n)$ có số hạng đầu $u_1 = 3$ và công sai $d = 2$. Số hạng thứ $5$ của cấp số cộng là:",
+        "content": "Nghiệm của phương trình $\\sin 2x = \\frac{\\sqrt{3}}{2}$ là:",
         "options": [
           {
             "key": "A",
-            "text": "$9$"
+            "text": "$x = \\frac{\\pi}{6} + k\\pi$ và $x = \\frac{\\pi}{3} + k\\pi$ ($k \\in \\mathbb{Z}$)"
           },
           {
             "key": "B",
-            "text": "$11$"
+            "text": "$x = \\frac{\\pi}{3} + k\\pi$ và $x = \\frac{2\\pi}{3} + k\\pi$ ($k \\in \\mathbb{Z}$)"
           },
           {
             "key": "C",
-            "text": "$13$"
+            "text": "$x = \\frac{\\pi}{12} + k\\pi$ và $x = \\frac{5\\pi}{12} + k\\pi$ ($k \\in \\mathbb{Z}$)"
           },
           {
             "key": "D",
-            "text": "$15$"
-          }
-        ],
-        "correctAnswer": "B",
-        "tags": [
-          "Cấp số cộng và cấp số nhân"
-        ]
-      },
-      {
-        "content": "Cho cấp số nhân $(u_n)$ có số hạng đầu $u_1 = 2$ và công bội $q = 3$. Số hạng thứ $4$ của cấp số nhân là:",
-        "options": [
-          {
-            "key": "A",
-            "text": "$18$"
-          },
-          {
-            "key": "B",
-            "text": "$24$"
-          },
-          {
-            "key": "C",
-            "text": "$54$"
-          },
-          {
-            "key": "D",
-            "text": "$162$"
+            "text": "$x = \\frac{\\pi}{6} + k2\\pi$ và $x = \\frac{5\\pi}{6} + k2\\pi$ ($k \\in \\mathbb{Z}$)"
           }
         ],
         "correctAnswer": "C",
         "tags": [
-          "Cấp số cộng và cấp số nhân"
+          "Phương trình lượng giác"
         ]
       },
       {
-        "content": "Cho hàm số $y = x^3 - 3x^2 + 2$. Hàm số nghịch biến trên khoảng nào dưới đây?",
+        "content": "Tập nghiệm của phương trình $\\cos \\left(3x - \\frac{\\pi}{6}\\right) = \\frac{1}{2}$ là:",
         "options": [
           {
             "key": "A",
-            "text": "$(0; 2)$"
+            "text": "$x = \\frac{\\pi}{6} + k\\frac{2\\pi}{3}$ và $x = -\\frac{\\pi}{18} + k\\frac{2\\pi}{3}$ ($k \\in \\mathbb{Z}$)"
           },
           {
             "key": "B",
-            "text": "$(-2; 0)$"
+            "text": "$x = \\frac{\\pi}{6} + k2\\pi$ và $x = -\\frac{\\pi}{18} + k2\\pi$ ($k \\in \\mathbb{Z}$)"
           },
           {
             "key": "C",
-            "text": "$(2; +\\infty)$"
+            "text": "$x = \\frac{\\pi}{3} + k\\pi$ và $x = \\frac{\\pi}{9} + k\\pi$ ($k \\in \\mathbb{Z}$)"
+          },
+          {
+            "key": "D",
+            "text": "$x = \\pm \\frac{\\pi}{9} + k\\frac{2\\pi}{3}$ ($k \\in \\mathbb{Z}$)"
+          }
+        ],
+        "correctAnswer": "A",
+        "tags": [
+          "Phương trình lượng giác"
+        ]
+      },
+      {
+        "content": "Nghiệm của phương trình $\\sqrt{3}\\tan \\left(x + \\frac{\\pi}{6}\\right) - 3 = 0$ là:",
+        "options": [
+          {
+            "key": "A",
+            "text": "$x = k\\pi$ ($k \\in \\mathbb{Z}$)"
+          },
+          {
+            "key": "B",
+            "text": "$x = \\frac{\\pi}{6} + k\\pi$ ($k \\in \\mathbb{Z}$)"
+          },
+          {
+            "key": "C",
+            "text": "$x = \\frac{\\pi}{3} + k\\pi$ ($k \\in \\mathbb{Z}$)"
+          },
+          {
+            "key": "D",
+            "text": "$x = -\\frac{\\pi}{6} + k\\pi$ ($k \\in \\mathbb{Z}$)"
+          }
+        ],
+        "correctAnswer": "A",
+        "tags": [
+          "Phương trình lượng giác"
+        ]
+      }
+    ],
+    "status": "approved",
+    "reviewedBy": "u-teacher-1",
+    "generatedAt": "2026-09-21T14:51:10.344Z",
+    "reviewedAt": "2026-09-21T14:51:44.904Z"
+  },
+  {
+    "id": "ge-c535f843-3e53-4e95-a92f-9715f5ab52c4",
+    "studentId": "u-98741842-4faa-4754-9ac8-e0e46af5d42f",
+    "sourceExamId": "e-b26bab22-9fcc-45da-9db5-994790e09082",
+    "sourceSubmissionId": "s-25486d87-0d84-4160-b244-9a01535a6640",
+    "examId": "e-7a671e9b-f807-4243-848c-c83c5412a3af",
+    "weakTags": [
+      "KHẢO SÁT HÀM SỐ"
+    ],
+    "cacheKey": "submission-s-25486d87-0d84-4160-b244-9a01535a6640_khao-sat-ham-so",
+    "roadmap": {
+      "summary": "Chào em Nguyễn Phước Quyền, thầy rất hiểu những khó khăn em đang gặp phải với chuyên đề 'Khảo sát hàm số' (tỷ lệ sai lên tới 60%). Qua các câu hỏi em chưa chọn đáp án, phần lớn các lỗi xuất phát từ việc chưa nắm vững kỹ năng đọc đồ thị, bảng biến thiên để xác định khoảng đồng biến, nghịch biến hoặc các điểm cực trị của hàm số. Để khắc phục điểm yếu này, em cần rèn luyện lại từ bản chất: đạo hàm dương thì hàm số đồng biến, đạo hàm âm thì nghịch biến, kết hợp với việc quan sát chiều đi lên và đi xuống của đồ thị từ trái sang phải. Hãy kiên trì đọc kỹ lý thuyết, làm từng bước các bài tập tự luyện dưới đây để lấy lại tự tin và đạt điểm cao trong kỳ thi THPT Quốc gia sắp tới nhé!",
+      "steps": [
+        {
+          "order": 1,
+          "tag": "Khảo sát hàm số",
+          "theory": "1. Tính đơn điệu của hàm số:\n- Cho hàm số $y = f(x)$ có đạo hàm trên khoảng $K$:\n+ Nếu $f'(x) > 0$ với mọi $x \\in K$ thì hàm số đồng biến trên khoảng $K$.\n+ Nếu $f'(x) < 0$ với mọi $x \\in K$ thì hàm số nghịch biến trên khoảng $K$.\n2. Đọc khoảng đồng biến, nghịch biến từ đồ thị và bảng biến thiên:\n- Trên đồ thị: Hàm số đồng biến trên khoảng mà đường cong đi lên từ trái sang phải ($f'(x) > 0$); nghịch biến khi đường cong đi xuống từ trái sang phải ($f'(x) < 0$).\n- Trên bảng biến thiên: Chiều đi lên của mũi tên thể hiện hàm số đồng biến, chiều đi xuống thể hiện hàm số nghịch biến.",
+          "commonMistake": "- Lỗi 1: Nhầm lẫn giữa khoảng đồng biến và nghịch biến do đọc ngược chiều từ phải sang trái.\n- Lỗi 2: Viết nhầm dấu hoặc lấy cả các giá trị tại điểm làm triệt tiêu đạo hàm khi kết luận khoảng đơn điệu.",
+          "action": "Bước 1: Xác định rõ yêu cầu đề bài hỏi khoảng đồng biến hay nghịch biến.\nBước 2: Quan sát đồ thị (tìm khoảng đường đi lên/xuống) hoặc bảng biến thiên (tìm chiều mũi tên tương ứng).\nBước 3: Gióng các khoảng đó xuống trục số $Ox$ và đối chiếu với các phương án."
+        }
+      ]
+    },
+    "exercises": [
+      {
+        "content": "Cho hàm số $y = f(x)$ liên tục trên $\\mathbb{R}$ và có đồ thị như hình vẽ bên. Hàm số đã cho đồng biến trên khoảng nào dưới đây?",
+        "diagram": {
+          "type": "function-graph",
+          "expression": "x^3 - 3*x",
+          "domain": [
+            -2.5,
+            2.5
+          ]
+        },
+        "options": [
+          {
+            "key": "A",
+            "text": "$(-1; 1)$"
+          },
+          {
+            "key": "B",
+            "text": "$(-\\infty; -1)$"
+          },
+          {
+            "key": "C",
+            "text": "$(-1; +\\infty)$"
+          },
+          {
+            "key": "D",
+            "text": "$(0; 1)$"
+          }
+        ],
+        "correctAnswer": "B",
+        "tags": [
+          "Khảo sát hàm số"
+        ]
+      },
+      {
+        "content": "Cho hàm số $y = f(x)$ liên tục trên $\\mathbb{R}$ và có đồ thị như hình vẽ bên. Hàm số đã cho đồng biến trên khoảng nào dưới đây?",
+        "diagram": {
+          "type": "function-graph",
+          "expression": "-x^3 + 3*x",
+          "domain": [
+            -2.5,
+            2.5
+          ]
+        },
+        "options": [
+          {
+            "key": "A",
+            "text": "$(-1; 1)$"
+          },
+          {
+            "key": "B",
+            "text": "$(-\\infty; -1)$"
+          },
+          {
+            "key": "C",
+            "text": "$(1; +\\infty)$"
           },
           {
             "key": "D",
@@ -296,23 +493,76 @@
         ]
       },
       {
-        "content": "Điểm cực tiểu của hàm số $y = x^3 - 3x$ là:",
+        "content": "Cho hàm số $y = f(x)$ liên tục trên $\\mathbb{R}$ và có đồ thị như hình vẽ bên. Hàm số đã cho đồng biến trên khoảng nào dưới đây?",
+        "diagram": {
+          "type": "function-graph",
+          "expression": "x^3 - 3*x + 2",
+          "domain": [
+            -2.5,
+            2.5
+          ]
+        },
         "options": [
           {
             "key": "A",
-            "text": "$x = 1$"
+            "text": "$(-1; 1)$"
           },
           {
             "key": "B",
-            "text": "$x = -1$"
+            "text": "$(1; +\\infty)$"
           },
           {
             "key": "C",
-            "text": "$y = 2$"
+            "text": "$(-2; 2)$"
           },
           {
             "key": "D",
-            "text": "$y = -2$"
+            "text": "$(-\\infty; 1)$"
+          }
+        ],
+        "correctAnswer": "B",
+        "tags": [
+          "Khảo sát hàm số"
+        ]
+      },
+      {
+        "content": "Cho hàm số $y = f(x)$ có bảng biến thiên như sau. Hàm số đã cho nghịch biến trên khoảng nào dưới đây?",
+        "diagram": {
+          "type": "variation-table",
+          "points": [
+            "-\\infty",
+            "-1",
+            "1",
+            "+\\infty"
+          ],
+          "signs": [
+            "+",
+            "-",
+            "+"
+          ],
+          "values": [
+            "-\\infty",
+            "2",
+            "-2",
+            "+\\infty"
+          ]
+        },
+        "options": [
+          {
+            "key": "A",
+            "text": "$(-1; 1)$"
+          },
+          {
+            "key": "B",
+            "text": "$(1; +\\infty)$"
+          },
+          {
+            "key": "C",
+            "text": "$(-\\infty; -1)$"
+          },
+          {
+            "key": "D",
+            "text": "$(-2; 2)$"
           }
         ],
         "correctAnswer": "A",
@@ -321,23 +571,88 @@
         ]
       },
       {
-        "content": "Đường tiệm cận đứng của đồ thị hàm số $y = \\frac{2x - 1}{x + 1}$ là:",
+        "content": "Cho hàm số $y = f(x)$ có bảng biến thiên như sau. Hàm số đã cho nghịch biến trên khoảng nào dưới đây?",
+        "diagram": {
+          "type": "variation-table",
+          "points": [
+            "-\\infty",
+            "0",
+            "2",
+            "+\\infty"
+          ],
+          "signs": [
+            "-",
+            "+",
+            "-"
+          ],
+          "values": [
+            "+\\infty",
+            "1",
+            "5",
+            "+\\infty"
+          ]
+        },
         "options": [
           {
             "key": "A",
-            "text": "$x = -1$"
+            "text": "$(0; 2)$"
           },
           {
             "key": "B",
-            "text": "$x = 1$"
+            "text": "$(2; +\\infty)$"
           },
           {
             "key": "C",
-            "text": "$y = 2$"
+            "text": "$(-\\infty; 0)$"
           },
           {
             "key": "D",
-            "text": "$y = -1$"
+            "text": "$(-\\infty; 2)$"
+          }
+        ],
+        "correctAnswer": "B",
+        "tags": [
+          "Khảo sát hàm số"
+        ]
+      },
+      {
+        "content": "Cho hàm số $y = f(x)$ có bảng biến thiên như sau. Hàm số đã cho nghịch biến trên khoảng nào dưới đây?",
+        "diagram": {
+          "type": "variation-table",
+          "points": [
+            "-\\infty",
+            "-2",
+            "0",
+            "+\\infty"
+          ],
+          "signs": [
+            "+",
+            "-",
+            "+"
+          ],
+          "values": [
+            "-\\infty",
+            "3",
+            "-1",
+            "+\\infty"
+          ]
+        },
+        "options": [
+          {
+            "key": "A",
+            "text": "$(-2; 0)$"
+          },
+          {
+            "key": "B",
+            "text": "$(-2; 3)$"
+          },
+          {
+            "key": "C",
+            "text": "$(0; +\\infty)$"
+          },
+          {
+            "key": "D",
+            "text": "$(-\\infty; -2)$"
           }
         ],
         "correctAnswer": "A",
@@ -346,877 +661,108 @@
         ]
       },
       {
-        "content": "Tập nghiệm của phương trình $\\sin 2x = 1$ là:",
+        "content": "Cho hàm số $y = f(x)$ có đồ thị như Hình 4. Phát biểu nào sau đây là đúng?",
+        "diagram": {
+          "type": "function-graph",
+          "expression": "x^3 - 3*x",
+          "domain": [
+            -2.5,
+            2.5
+          ]
+        },
         "options": [
           {
             "key": "A",
-            "text": "$x = \\frac{\\pi}{4} + k\\pi$ ($k \\in \\mathbb{Z}$)"
+            "text": "Hàm số đồng biến trên khoảng $(-1; 1)$."
           },
           {
             "key": "B",
-            "text": "$x = \\frac{\\pi}{2} + k2\\pi$ ($k \\in \\mathbb{Z}$)"
+            "text": "Hàm số nghịch biến trên khoảng $(-1; 1)$."
           },
           {
             "key": "C",
-            "text": "$x = \\frac{\\pi}{4} + k\\frac{\\pi}{2}$ ($k \\in \\mathbb{Z}$)"
+            "text": "Hàm số đồng biến trên khoảng $(-\\infty; +\\infty)$."
           },
           {
             "key": "D",
-            "text": "$x = \\frac{\\pi}{2} + k\\pi$ ($k \\in \\mathbb{Z}$)"
-          }
-        ],
-        "correctAnswer": "C",
-        "tags": [
-          "Phương trình lượng giác"
-        ]
-      },
-      {
-        "content": "Số nghiệm của phương trình $\\cos x = 0$ trên đoạn $[0; 2\\pi]$ là:",
-        "options": [
-          {
-            "key": "A",
-            "text": "$1$"
-          },
-          {
-            "key": "B",
-            "text": "$2$"
-          },
-          {
-            "key": "C",
-            "text": "$3$"
-          },
-          {
-            "key": "D",
-            "text": "$4$"
+            "text": "Hàm số nghịch biến trên khoảng $(-\\infty; -1)$."
           }
         ],
         "correctAnswer": "B",
         "tags": [
-          "Phương trình lượng giác"
+          "Khảo sát hàm số"
         ]
       },
       {
-        "content": "Nghiệm của phương trình $\\sin x + \\cos x = 0$ là:",
+        "content": "Cho hàm số $y = f(x)$ có đồ thị như hình vẽ. Phát biểu nào sau đây là đúng?",
+        "diagram": {
+          "type": "function-graph",
+          "expression": "-x^3 + 3*x + 1",
+          "domain": [
+            -2.5,
+            2.5
+          ]
+        },
         "options": [
           {
             "key": "A",
-            "text": "$x = -\\frac{\\pi}{4} + k2\\pi$ ($k \\in \\mathbb{Z}$)"
+            "text": "Hàm số nghịch biến trên khoảng $(-1; 1)$."
           },
           {
             "key": "B",
-            "text": "$x = \\frac{\\pi}{4} + k2\\pi$ ($k \\in \\mathbb{Z}$)"
+            "text": "Hàm số đồng biến trên khoảng $(-1; 1)$."
           },
           {
             "key": "C",
-            "text": "$x = -\\frac{\\pi}{4} + k\\pi$ ($k \\in \\mathbb{Z}$)"
+            "text": "Hàm số đồng biến trên khoảng $(1; +\\infty)$."
           },
           {
             "key": "D",
-            "text": "$x = \\frac{\\pi}{4} + k\\pi$ ($k \\in \\mathbb{Z}$)"
-          }
-        ],
-        "correctAnswer": "C",
-        "tags": [
-          "Phương trình lượng giác"
-        ]
-      },
-      {
-        "content": "Tập nghiệm của phương trình $\\log_2(x^2 - 3x + 2) = 1$ là:",
-        "options": [
-          {
-            "key": "A",
-            "text": "$\\{0; 3\\}$"
-          },
-          {
-            "key": "B",
-            "text": "$\\{1; 2\\}$"
-          },
-          {
-            "key": "C",
-            "text": "$\\{3\\}$"
-          },
-          {
-            "key": "D",
-            "text": "$\\emptyset$"
-          }
-        ],
-        "correctAnswer": "A",
-        "tags": [
-          "Phương trình mũ và lôgarit"
-        ]
-      },
-      {
-        "content": "Phương trình $2^{x-1} = 8$ có nghiệm là:",
-        "options": [
-          {
-            "key": "A",
-            "text": "$x = 2$"
-          },
-          {
-            "key": "B",
-            "text": "$x = 3$"
-          },
-          {
-            "key": "C",
-            "text": "$x = 4$"
-          },
-          {
-            "key": "D",
-            "text": "$x = 5$"
-          }
-        ],
-        "correctAnswer": "C",
-        "tags": [
-          "Phương trình mũ và lôgarit"
-        ]
-      },
-      {
-        "content": "Tập nghiệm của phương trình $\\log_3 x + \\log_3(x - 2) = 1$ là:",
-        "options": [
-          {
-            "key": "A",
-            "text": "$\\{-1; 3\\}$"
-          },
-          {
-            "key": "B",
-            "text": "$\\{3\\}$"
-          },
-          {
-            "key": "C",
-            "text": "$\\{-1}$"
-          },
-          {
-            "key": "D",
-            "text": "$\\emptyset$"
+            "text": "Hàm số nghịch biến trên khoảng $(-\\infty; 0)$."
           }
         ],
         "correctAnswer": "B",
         "tags": [
-          "Phương trình mũ và lôgarit"
+          "Khảo sát hàm số"
         ]
       },
       {
-        "content": "Cho cấp số cộng $(u_n)$ có tổng $n$ số hạng đầu tiên là $S_n = 2n^2 + n$. Công sai $d$ của cấp số cộng đó là:",
+        "content": "Cho hàm số $y = f(x)$ có đồ thị như hình vẽ. Phát biểu nào sau đây là đúng?",
+        "diagram": {
+          "type": "function-graph",
+          "expression": "x^3 - 3*x + 1",
+          "domain": [
+            -2.5,
+            2.5
+          ]
+        },
         "options": [
           {
             "key": "A",
-            "text": "$2$"
+            "text": "Hàm số đạt cực đại tại $x = 1$."
           },
           {
             "key": "B",
-            "text": "$3$"
+            "text": "Hàm số đạt cực tiểu tại $x = 1$."
           },
           {
             "key": "C",
-            "text": "$4$"
+            "text": "Hàm số nghịch biến trên khoảng $(-1; 1)$."
           },
           {
             "key": "D",
-            "text": "$5$"
+            "text": "Hàm số đồng biến trên khoảng $(-\\infty; -1)$."
           }
         ],
-        "correctAnswer": "C",
-        "tags": [
-          "Cấp số cộng và cấp số nhân"
-        ]
-      },
-      {
-        "content": "Biết ba số $x, 5, y$ theo thứ tự lập thành một cấp số cộng, và ba số $x, 1, y$ theo thứ tự lập thành một cấp số nhân. Giá trị của tích $xy$ là:",
-        "options": [
-          {
-            "key": "A",
-            "text": "$9$"
-          },
-          {
-            "key": "B",
-            "text": "$12$"
-          },
-          {
-            "key": "C",
-            "text": "$16$"
-          },
-          {
-            "key": "D",
-            "text": "$25$"
-          }
-        ],
-        "correctAnswer": "A",
-        "tags": [
-          "Cấp số cộng và cấp số nhân"
-        ]
-      },
-      {
-        "content": "Giá trị lớn nhất của hàm số $y = -x^3 + 3x - 1$ trên đoạn $[0; 2]$ là:",
-        "options": [
-          {
-            "key": "A",
-            "text": "$1$"
-          },
-          {
-            "key": "B",
-            "text": "$3$"
-          },
-          {
-            "key": "C",
-            "text": "$-1$"
-          },
-          {
-            "key": "D",
-            "text": "$-3$"
-          }
-        ],
-        "correctAnswer": "A",
+        "correctAnswer": "B",
         "tags": [
           "Khảo sát hàm số"
         ]
       }
     ],
-    "status": "pending_review",
-    "reviewedBy": null,
-    "generatedAt": "2026-09-10T03:10:53.681Z"
-  },
-  {
-    "id": "ge-a31686e7-f19f-4ac0-942f-4a8bc5a19110",
-    "studentId": "u-fcf462ed-d7e1-4589-821a-e05639277d2e",
-    "sourceExamId": "e-6f635f77-f2aa-4f66-bfff-e6dc2ea8959c",
-    "sourceSubmissionId": "s-899b85bd-a133-44aa-ab93-d5ef2a0eed7f",
-    "examId": null,
-    "weakTags": [
-      "XÁC SUẤT",
-      "HÌNH HỌC KHÔNG GIAN",
-      "VECTƠ VÀ PHƯƠNG PHÁP TỌA ĐỘ TRONG KHÔNG GIAN"
-    ],
-    "cacheKey": "submission-s-899b85bd-a133-44aa-ab93-d5ef2a0eed7f_hinh-hoc-khong-gian_vecto-va-phuong-phap-toa-do-trong-khong-gian_xac-suat",
-    "roadmap": {
-      "summary": "Chào em Nguyễn Phước Quyền, thầy rất hiểu những khó khăn em đang gặp phải khi ôn thi THPT Quốc gia môn Toán. Qua bài kiểm tra gần đây, em đang bị hổng kiến thức ở 3 phân vùng trọng điểm: Xác suất (tỷ lệ sai 38%), Hình học không gian (tỷ lệ sai 33%) và Vectơ cùng phương pháp tọa độ trong không gian (tỷ lệ sai 21%). Những lỗi này chủ yếu xuất phát từ việc em chưa nắm vững bản chất công thức tính khoảng cách, góc, các quy tắc đếm tổ hợp xác suất và phương trình mặt cầu, mặt phẳng. Thầy đã xây dựng một lộ trình tự học chi tiết kèm theo 24 bài tập tương tự có giải thích và công thức chuẩn LaTeX 100%. Hãy kiên trì luyện tập từng chuyên đề, làm lại các câu sai và đối chiếu lý thuyết, chắc chắn điểm số của em sẽ cải thiện vượt bậc trong kỳ thi tới!",
-      "steps": [
-        {
-          "order": 1,
-          "tag": "XÁC SUẤT",
-          "theory": "1. Quy tắc đếm cơ bản:\n- Quy tắc cộng: Một công việc được hoàn thành bởi một trong hai hành động $A$ hoặc $B$ (nếu hành động này xảy ra thì hành động kia không xảy ra). Nếu hành động $A$ có $m$ cách thực hiện, hành động $B$ có $n$ cách thực hiện thì có $m + n$ cách hoàn thành công việc.\n- Quy tắc nhân: Một công việc được hoàn thành bởi hai hành động liên tiếp $A$ và $B$. Nếu hành động $A$ có $m$ cách thực hiện và ứng với mỗi cách đó có $n$ cách thực hiện hành động $B$ thì có $m \\cdot n$ cách hoàn thành công việc.\n2. Hoán vị, chỉnh hợp, tổ hợp:\n- Hoán vị của $n$ phần tử: $P_n = n!$\n- Chỉnh hợp chập $k$ của $n$ phần tử ($1 \\le k \\le n$): $A_n^k = \\frac{n!}{(n-k)!}$\n- Tổ hợp chập $k$ của $n$ phần tử ($0 \\le k \\le n$): $C_n^k = \\frac{n!}{k!(n-k)!}$\n3. Xác suất của biến cố:\n- Cho không gian mẫu $\\Omega$ hữu hạn và có các phần tử đồng khả năng. Xác suất của biến cố $A$ là: $P(A) = \\frac{n(A)}{n(\\Omega)}$\n- Các tính chất: $P(\\varnothing) = 0$, $P(\\Omega) = 1$, $0 \\le P(A) \\le 1$, $P(\\overline{A}) = 1 - P(A)$.\n- Công thức cộng xác suất: $P(A \\cup B) = P(A) + P(B) - P(A \\cap B)$. Nếu $A$ và $B$ xung khắc thì $P(A \\cup B) = P(A) + P(B)$.",
-          "commonMistake": "- Lỗi 1: Nhầm lẫn giữa chỉnh hợp $A_n^k$ và tổ hợp $C_n^k$ (quên phân biệt khi nào có tính thứ tự, khi nào không).\n- Lỗi 2: Quên nhân hoán vị của các phần tử khi xếp nhóm (bài toán học sinh đứng cạnh nhau).\n- Lỗi 3: Áp dụng sai công thức cộng xác suất hoặc không trừ đi phần giao của hai biến cố.",
-          "action": "Bước 1: Xác định rõ không gian mẫu $\\Omega$ bằng cách dùng quy tắc đếm hoặc công thức tổ hợp.\nBước 2: Phân tích kỹ yêu cầu của biến cố $A$ để tính số phần tử $n(A)$, chú ý các điều kiện ràng buộc như chia hết, số đôi một khác nhau, hoặc đứng cạnh nhau.\nBước 3: Lập tỷ số $P(A) = \\frac{n(A)}{n(\\Omega)}$ và rút gọn kết quả."
-        },
-        {
-          "order": 2,
-          "tag": "HÌNH HỌC KHÔNG GIAN",
-          "theory": "1. Góc giữa hai đường thẳng:\n- Để tìm góc giữa hai đường thẳng $a$ và $b$, ta có thể tịnh tiến một đường thẳng hoặc dựng đường thẳng song song với một trong hai đường thẳng đó cắt đường thẳng còn lại tại điểm $O$.\n- Sử dụng hệ thức lượng trong tam giác (định lý cô-sin) để tính góc: $\\cos \\alpha = \\frac{b^2 + c^2 - a^2}{2bc}$.\n2. Góc giữa đường thẳng và mặt phẳng:\n- Góc giữa đường thẳng $d$ và mặt phẳng $(P)$ (với $d$ không vuông góc và không song song với $(P)$) là góc giữa $d$ và hình chiếu vuông góc $d'$ của $d$ lên $(P)$.\n3. Góc giữa hai mặt phẳng (Góc phẳng nhị diện):\n- Cách 1: Tìm giao tuyến $\\Delta$ của hai mặt phẳng $(P)$ và $(Q)$. Từ một điểm $I$ trên $\\Delta$, dựng trong $(P)$ đường thẳng $a \\perp \\Delta$ và dựng trong $(Q)$ đường thẳng $b \\perp \\Delta$. Khi đó góc giữa $(P)$ và $(Q)$ là góc giữa hai đường thẳng $a$ và $b$.\n- Cách 2: Dựng đoạn vuông góc chung hoặc sử dụng tọa độ hóa không gian.",
-          "commonMistake": "- Lỗi 1: Xác định sai hình chiếu của một điểm lên mặt phẳng hoặc đường thẳng.\n- Lỗi 2: Nhầm lẫn góc giữa đường thẳng và mặt phẳng với góc giữa đường thẳng và đường thẳng.\n- Lỗi 3: Quên xét góc phẳng nhị diện luôn nằm trong đoạn từ $0^\\circ$ đến $180^\\circ$.",
-          "action": "Bước 1: Phân tích đề bài yêu cầu tính góc gì (đường - đường, đường - mặt, hay mặt - mặt).\nBước 2: Tìm các điểm đặc biệt, sử dụng tính chất vuông góc sẵn có trong hình chóp đều, hình lăng trụ đứng hoặc hình lập phương.\nBước 3: Áp dụng các định lý hình học không gian cổ điển hoặc hệ thức lượng trong tam giác vuông, tam giác đều để tính giá trị lượng giác của góc."
-        },
-        {
-          "order": 3,
-          "tag": "VECTƠ VÀ PHƯƠNG PHÁP TỌA ĐỘ TRONG KHÔNG GIAN",
-          "theory": "1. Phương trình mặt cầu:\n- Mặt cầu $(S)$ tâm $I(a; b; c)$ và bán kính $R$ có phương trình chính tắc: $(x - a)^2 + (y - b)^2 + (z - c)^2 = R^2$.\n- Phương trình tổng quát: $x^2 + y^2 + z^2 - 2ax - 2by - 2cz + d = 0$ với điều kiện $a^2 + b^2 + c^2 - d > 0$ và bán kính $R = \\sqrt{a^2 + b^2 + c^2 - d}$.\n2. Phương trình mặt phẳng:\n- Phương trình tổng quát của mặt phẳng $(P)$: $Ax + By + Cz + D = 0$ với $A^2 + B^2 + C^2 > 0$.\n- Vectơ pháp tuyến của mặt phẳng $(P)$ là $\\vec{n} = (A; B; C)$.\n- Nếu mặt phẳng đi qua điểm $M(x_0; y_0; z_0)$ và nhận $\\vec{n} = (A; B; C)$ làm VTPT thì có phương trình: $A(x - x_0) + B(y - y_0) + C(z - z_0) = 0$.",
-          "commonMistake": "- Lỗi 1: Nhầm lẫn giữa bán kính $R$ và bình phương bán kính $R^2$ trong phương trình mặt cầu.\n- Lỗi 2: Quên điều kiện tồn tại của mặt cầu tổng quát ($a^2 + b^2 + c^2 - d > 0$).\n- Lỗi 3: Đọc nhầm hệ số của phương trình mặt phẳng thành vectơ pháp tuyến (bỏ quên dấu hoặc nhầm thứ tự tọa độ $x, y, z$).",
-          "action": "Bước 1: Xác định rõ các yếu tố cơ bản của đề bài như tâm $I$, bán kính $R$ hoặc hệ số của phương trình mặt phẳng, mặt cầu.\nBước 2: Lắp các thông số vào công thức chuẩn.\nBước 3: Kiểm tra lại các điều kiện dấu và tính toán cẩn thận trước khi chọn đáp án."
-        }
-      ]
-    },
-    "exercises": [
-      {
-        "content": "Cho tập hợp $X = \\{1, 2, 3, 4, 5, 6\\}$. Số các số tự nhiên có $3$ chữ số đôi một khác nhau thuộc tập hợp $X$ và chia hết cho $2$ có thể lập được là:",
-        "options": [
-          {
-            "key": "A",
-            "text": "$60$"
-          },
-          {
-            "key": "B",
-            "text": "$48$"
-          },
-          {
-            "key": "C",
-            "text": "$36$"
-          },
-          {
-            "key": "D",
-            "text": "$120$"
-          }
-        ],
-        "correctAnswer": "A",
-        "tags": [
-          "XÁC SUẤT"
-        ]
-      },
-      {
-        "content": "Cho tập hợp $Y = \\{0, 1, 2, 3, 4, 5\\}$. Số các số tự nhiên có $3$ chữ số đôi một khác nhau lập từ tập $Y$ và là số chẵn là:",
-        "options": [
-          {
-            "key": "A",
-            "text": "$52$"
-          },
-          {
-            "key": "B",
-            "text": "$60$"
-          },
-          {
-            "key": "C",
-            "text": "$50$"
-          },
-          {
-            "key": "D",
-            "text": "$100$"
-          }
-        ],
-        "correctAnswer": "A",
-        "tags": [
-          "XÁC SUẤT"
-        ]
-      },
-      {
-        "content": "Cho tập hợp $S = \\{1, 2, 3, 4, 5, 6, 7, 8, 9\\}$. Số các số tự nhiên có $3$ chữ số đôi một khác nhau sao cho tổng các chữ số của nó chia hết cho $3$ là:",
-        "options": [
-          {
-            "key": "A",
-            "text": "$216$"
-          },
-          {
-            "key": "B",
-            "text": "$180$"
-          },
-          {
-            "key": "C",
-            "text": "$222$"
-          },
-          {
-            "key": "D",
-            "text": "$144$"
-          }
-        ],
-        "correctAnswer": "A",
-        "tags": [
-          "XÁC SUẤT"
-        ]
-      },
-      {
-        "content": "Một nhóm học sinh gồm $4$ bạn nam và $6$ bạn nữ được xếp ngẫu nhiên thành một hàng ngang. Xác suất để $4$ bạn nam đứng cạnh nhau là:",
-        "options": [
-          {
-            "key": "A",
-            "text": "$\\frac{1}{21}$"
-          },
-          {
-            "key": "B",
-            "text": "$\\frac{1}{42}$"
-          },
-          {
-            "key": "C",
-            "text": "$\\frac{4}{35}$"
-          },
-          {
-            "key": "D",
-            "text": "$\\frac{2}{21}$"
-          }
-        ],
-        "correctAnswer": "C",
-        "tags": [
-          "XÁC SUẤT"
-        ]
-      },
-      {
-        "content": "Một nhóm gồm $3$ học sinh nam và $5$ học sinh nữ xếp thành một hàng dọc. Xác suất để không có hai học sinh nam nào đứng cạnh nhau là:",
-        "options": [
-          {
-            "key": "A",
-            "text": "$\\frac{5}{14}$"
-          },
-          {
-            "key": "B",
-            "text": "$\\frac{3}{14}$"
-          },
-          {
-            "key": "C",
-            "text": "$\\frac{1}{7}$"
-          },
-          {
-            "key": "D",
-            "text": "$\\frac{2}{7}$"
-          }
-        ],
-        "correctAnswer": "A",
-        "tags": [
-          "XÁC SUẤT"
-        ]
-      },
-      {
-        "content": "Xếp ngẫu nhiên $3$ học sinh nam và $3$ học sinh nữ ngồi vào một hàng ghế dài gồm $6$ ghế xếp theo một hàng ngang. Xác suất để nam và nữ ngồi đan xen nhau (không có 2 học sinh cùng giới tính ngồi cạnh nhau) là:",
-        "options": [
-          {
-            "key": "A",
-            "text": "$\\frac{1}{10}$"
-          },
-          {
-            "key": "B",
-            "text": "$\\frac{1}{20}$"
-          },
-          {
-            "key": "C",
-            "text": "$\\frac{3}{10}$"
-          },
-          {
-            "key": "D",
-            "text": "$\\frac{1}{5}$"
-          }
-        ],
-        "correctAnswer": "A",
-        "tags": [
-          "XÁC SUẤT"
-        ]
-      },
-      {
-        "content": "Cho hai biến cố $A$ và $B$ độc lập với nhau với $P(A) = 0.4$ và $P(B) = 0.5$. Khi đó xác suất của biến cố $A \\cup B$ bằng:",
-        "options": [
-          {
-            "key": "A",
-            "text": "$0.9$"
-          },
-          {
-            "key": "B",
-            "text": "$0.7$"
-          },
-          {
-            "key": "C",
-            "text": "$0.2$"
-          },
-          {
-            "key": "D",
-            "text": "$0.6$"
-          }
-        ],
-        "correctAnswer": "B",
-        "tags": [
-          "XÁC SUẤT"
-        ]
-      },
-      {
-        "content": "Cho hai biến cố $A$ và $B$ có $P(A) = 0.3$, $P(B) = 0.6$ và $P(A \\cup B) = 0.7$. Khi đó $P(A \\mid B)$ hoặc xác suất giao $P(A \\cap B)$ bằng:",
-        "options": [
-          {
-            "key": "A",
-            "text": "$0.2$"
-          },
-          {
-            "key": "B",
-            "text": "$0.18$"
-          },
-          {
-            "key": "C",
-            "text": "$0.4$"
-          },
-          {
-            "key": "D",
-            "text": "$0.5$"
-          }
-        ],
-        "correctAnswer": "A",
-        "tags": [
-          "XÁC SUẤT"
-        ]
-      },
-      {
-        "content": "Cho hai biến cố xung khắc $A$ và $B$ với $P(A) = 0.3$ và $P(A \\cup B) = 0.8$. Khi đó xác suất của biến cố $B$ là:",
-        "options": [
-          {
-            "key": "A",
-            "text": "$0.5$"
-          },
-          {
-            "key": "B",
-            "text": "$0.3$"
-          },
-          {
-            "key": "C",
-            "text": "$0.2$"
-          },
-          {
-            "key": "D",
-            "text": "$0.6$"
-          }
-        ],
-        "correctAnswer": "A",
-        "tags": [
-          "XÁC SUẤT"
-        ]
-      },
-      {
-        "content": "Cho hình chóp tam giác đều $S.ABC$ có tất cả các cạnh bằng $a$. Gọi $M$ là trung điểm của $BC$. Góc phẳng nhị diện $[S, BC, A]$ bằng:",
-        "options": [
-          {
-            "key": "A",
-            "text": "$30^\\circ$"
-          },
-          {
-            "key": "B",
-            "text": "$45^\\circ$"
-          },
-          {
-            "key": "C",
-            "text": "$60^\\circ$"
-          },
-          {
-            "key": "D",
-            "text": "$90^\\circ$"
-          }
-        ],
-        "correctAnswer": "C",
-        "tags": [
-          "HÌNH HỌC KHÔNG GIAN"
-        ]
-      },
-      {
-        "content": "Cho hình chóp tứ giác đều $S.ABCD$ có tất cả các cạnh đều bằng $a$. Gọi $\\alpha$ là góc phẳng nhị diện $[S, CD, A]$. Giá trị của $\\cos \\alpha$ là:",
-        "options": [
-          {
-            "key": "A",
-            "text": "$\\frac{\\sqrt{3}}{3}$"
-          },
-          {
-            "key": "B",
-            "text": "$\\frac{\\sqrt{2}}{2}$"
-          },
-          {
-            "key": "C",
-            "text": "$\\frac{1}{3}$"
-          },
-          {
-            "key": "D",
-            "text": "$\\frac{\\sqrt{6}}{3}$"
-          }
-        ],
-        "correctAnswer": "A",
-        "tags": [
-          "HÌNH HỌC KHÔNG GIAN"
-        ]
-      },
-      {
-        "content": "Cho hình lập phương $ABCD.A'B'C'D'$ có cạnh bằng $a$. Cô-sin của góc phẳng nhị diện $[B', AC, B]$ là:",
-        "options": [
-          {
-            "key": "A",
-            "text": "$\\frac{1}{\\sqrt{3}}$"
-          },
-          {
-            "key": "B",
-            "text": "$\\frac{1}{3}$"
-          },
-          {
-            "key": "C",
-            "text": "$\\frac{\\sqrt{3}}{3}$"
-          },
-          {
-            "key": "D",
-            "text": "$\\frac{\\sqrt{2}}{3}$"
-          }
-        ],
-        "correctAnswer": "C",
-        "tags": [
-          "HÌNH HỌC KHÔNG GIAN"
-        ]
-      },
-      {
-        "content": "Cho hình lập phương $ABCD.A'B'C'D'$. Góc giữa hai đường thẳng $AB'$ và $BC'$ bằng:",
-        "options": [
-          {
-            "key": "A",
-            "text": "$30^\\circ$"
-          },
-          {
-            "key": "B",
-            "text": "$45^\\circ$"
-          },
-          {
-            "key": "C",
-            "text": "$60^\\circ$"
-          },
-          {
-            "key": "D",
-            "text": "$90^\\circ$"
-          }
-        ],
-        "correctAnswer": "C",
-        "tags": [
-          "HÌNH HỌC KHÔNG GIAN"
-        ]
-      },
-      {
-        "content": "Cho hình chóp tứ giác đều $S.ABCD$ có tất cả các cạnh bằng $a$. Góc giữa hai đường thẳng $SA$ và $CD$ là:",
-        "options": [
-          {
-            "key": "A",
-            "text": "$30^\\circ$"
-          },
-          {
-            "key": "B",
-            "text": "$45^\\circ$"
-          },
-          {
-            "key": "C",
-            "text": "$60^\\circ$"
-          },
-          {
-            "key": "D",
-            "text": "$90^\\circ$"
-          }
-        ],
-        "correctAnswer": "C",
-        "tags": [
-          "HÌNH HỌC KHÔNG GIAN"
-        ]
-      },
-      {
-        "content": "Cho hình lăng trụ đứng $ABC.A'B'C'$ có đáy $ABC$ là tam giác vuông cân tại $B$ với $AB = BC = a$, cạnh $AA' = a\\sqrt{2}$. Góc giữa hai đường thẳng $AB'$ và $BC'$ bằng:",
-        "options": [
-          {
-            "key": "A",
-            "text": "$30^\\circ$"
-          },
-          {
-            "key": "B",
-            "text": "$60^\\circ$"
-          },
-          {
-            "key": "C",
-            "text": "$45^\\circ$"
-          },
-          {
-            "key": "D",
-            "text": "$90^\\circ$"
-          }
-        ],
-        "correctAnswer": "D",
-        "tags": [
-          "HÌNH HỌC KHÔNG GIAN"
-        ]
-      },
-      {
-        "content": "Trong không gian $Oxyz$, mặt cầu $(S): (x - 1)^2 + (y + 2)^2 + (z - 3)^2 = 16$ có bán kính $R$ bằng:",
-        "options": [
-          {
-            "key": "A",
-            "text": "$4$"
-          },
-          {
-            "key": "B",
-            "text": "$16$"
-          },
-          {
-            "key": "C",
-            "text": "$2$"
-          },
-          {
-            "key": "D",
-            "text": "$8$"
-          }
-        ],
-        "correctAnswer": "A",
-        "tags": [
-          "VECTƠ VÀ PHƯƠNG PHÁP TỌA ĐỘ TRONG KHÔNG GIAN"
-        ]
-      },
-      {
-        "content": "Trong không gian $Oxyz$, mặt cầu $(S): x^2 + y^2 + z^2 - 2x + 4y - 6z - 2 = 0$ có bán kính $R$ bằng:",
-        "options": [
-          {
-            "key": "A",
-            "text": "$4$"
-          },
-          {
-            "key": "B",
-            "text": "$16$"
-          },
-          {
-            "key": "C",
-            "text": "$3$"
-          },
-          {
-            "key": "D",
-            "text": "$\\sqrt{12}$"
-          }
-        ],
-        "correctAnswer": "A",
-        "tags": [
-          "VECTƠ VÀ PHƯƠNG PHÁP TỌA ĐỘ TRONG KHÔNG GIAN"
-        ]
-      },
-      {
-        "content": "Trong không gian $Oxyz$, cho mặt cầu $(S)$ có phương trình $2x^2 + 2y^2 + 2z^2 - 8x + 12y - 6z - 3 = 0$. Bán kính của mặt cầu $(S)$ là:",
-        "options": [
-          {
-            "key": "A",
-            "text": "$4$"
-          },
-          {
-            "key": "B",
-            "text": "$5$"
-          },
-          {
-            "key": "C",
-            "text": "$\\sqrt{19}$"
-          },
-          {
-            "key": "D",
-            "text": "$\\frac{5}{2}$"
-          }
-        ],
-        "correctAnswer": "B",
-        "tags": [
-          "VECTƠ VÀ PHƯƠNG PHÁP TỌA ĐỘ TRÔNG KHÔNG GIAN"
-        ]
-      },
-      {
-        "content": "Trong không gian $Oxyz$, vectơ nào sau đây là một vectơ pháp tuyến của mặt phẳng $(P): 2x - 3y + z - 5 = 0$?",
-        "options": [
-          {
-            "key": "A",
-            "text": "$\\vec{n} = (2; -3; -5)$"
-          },
-          {
-            "key": "B",
-            "text": "$\\vec{n} = (2; -3; 1)$"
-          },
-          {
-            "key": "C",
-            "text": "$\\vec{n} = (-2; 3; -1)$"
-          },
-          {
-            "key": "D",
-            "text": "$\\vec{n} = (2; 3; 1)$"
-          }
-        ],
-        "correctAnswer": "B",
-        "tags": [
-          "VECTƠ VÀ PHƯƠNG PHÁP TỌA ĐỘ TRONG KHÔNG GIAN"
-        ]
-      },
-      {
-        "content": "Trong không gian $Oxyz$, cho mặt phẳng $(Q)$ đi qua điểm $M(1; -2; 3)$ và có vectơ pháp tuyến $\\vec{n} = (3; 1; -2)$. Phương trình của mặt phẳng $(Q)$ là:",
-        "options": [
-          {
-            "key": "A",
-            "text": "$3x + y - 2z + 5 = 0$"
-          },
-          {
-            "key": "B",
-            "text": "$3x + y - 2z + 5 = 0$"
-          },
-          {
-            "key": "C",
-            "text": "$3x + y - 2z - 5 = 0$"
-          },
-          {
-            "key": "D",
-            "text": "$x - 2y + 3z + 3 = 0$"
-          }
-        ],
-        "correctAnswer": "A",
-        "tags": [
-          "VECTƠ VÀ PHƯƠNG PHÁP TỌA ĐỘ TRONG KHÔNG GIAN"
-        ]
-      },
-      {
-        "content": "Trong không gian $Oxyz$, cho ba điểm $A(1; 0; 0)$, $B(0; 2; 0)$ và $C(0; 0; 3)$. Vectơ pháp tuyến của mặt phẳng $(ABC)$ là:",
-        "options": [
-          {
-            "key": "A",
-            "text": "$\\vec{n} = (6; 3; 2)$"
-          },
-          {
-            "key": "B",
-            "text": "$\\vec{n} = (1; 2; 3)$"
-          },
-          {
-            "key": "C",
-            "text": "$\\vec{n} = (3; 2; 1)$"
-          },
-          {
-            "key": "D",
-            "text": "$\\vec{n} = (6; -3; -2)$"
-          }
-        ],
-        "correctAnswer": "A",
-        "tags": [
-          "VECTƠ VÀ PHƯƠNG PHÁP TỌA ĐỘ TRONG KHÔNG GIAN"
-        ]
-      },
-      {
-        "content": "Trong không gian $Oxyz$, phương trình mặt cầu có tâm $I(2; -1; 4)$ và bán kính $R = 5$ là:",
-        "options": [
-          {
-            "key": "A",
-            "text": "$(x - 2)^2 + (y + 1)^2 + (z - 4)^2 = 25$"
-          },
-          {
-            "key": "B",
-            "text": "$(x + 2)^2 + (y - 1)^2 + (z + 4)^2 = 25$"
-          },
-          {
-            "key": "C",
-            "text": "$(x - 2)^2 + (y + 1)^2 + (z - 4)^2 = 5$"
-          },
-          {
-            "key": "D",
-            "text": "$(x - 2)^2 + (y - 1)^2 + (z - 4)^2 = 25$"
-          }
-        ],
-        "correctAnswer": "A",
-        "tags": [
-          "VECTƠ VÀ PHƯƠNG PHÁP TỌA ĐỘ TRONG KHÔNG GIAN"
-        ]
-      },
-      {
-        "content": "Trong không gian $Oxyz$, mặt cầu tâm $I(1; 2; -3)$ và đường kính bằng $8$ có phương trình là:",
-        "options": [
-          {
-            "key": "A",
-            "text": "$(x - 1)^2 + (y - 2)^2 + (z + 3)^2 = 16$"
-          },
-          {
-            "key": "B",
-            "text": "$(x - 1)^2 + (y - 2)^2 + (z + 3)^2 = 64$"
-          },
-          {
-            "key": "C",
-            "text": "$(x + 1)^2 + (y + 2)^2 + (z - 3)^2 = 16$"
-          },
-          {
-            "key": "D",
-            "text": "$(x - 1)^2 + (y - 2)^2 + (z + 3)^2 = 4$"
-          }
-        ],
-        "correctAnswer": "A",
-        "tags": [
-          "VECTƠ VÀ PHƯƠNG PHÁP TỌA ĐỘ TRONG KHÔNG GIAN"
-        ]
-      },
-      {
-        "content": "Trong không gian $Oxyz$, phương trình mặt cầu nhận đoạn thẳng $AB$ với $A(2; 1; 4)$ và $B(4; 3; 10)$ làm đường kính là:",
-        "options": [
-          {
-            "key": "A",
-            "text": "$(x - 3)^2 + (y - 2)^2 + (z - 7)^2 = 11$"
-          },
-          {
-            "key": "B",
-            "text": "$(x - 3)^2 + (y - 2)^2 + (z - 7)^2 = 44$"
-          },
-          {
-            "key": "C",
-            "text": "$(x - 3)^2 + (y - 2)^2 + (z - 7)^2 = \\sqrt{11}$"
-          },
-          {
-            "key": "D",
-            "text": "$(x + 3)^2 + (y + 2)^2 + (z + 7)^2 = 11$"
-          }
-        ],
-        "correctAnswer": "A",
-        "tags": [
-          "VECTƠ VÀ PHƯƠNG PHÁP TỌA ĐỘ TRONG KHÔNG GIAN"
-        ]
-      }
-    ],
-    "status": "pending_review",
-    "reviewedBy": null,
-    "generatedAt": "2026-09-10T03:20:16.787Z"
+    "status": "approved",
+    "reviewedBy": "u-teacher-1",
+    "generatedAt": "2026-09-21T15:08:50.969Z",
+    "reviewedAt": "2026-09-21T15:10:28.122Z"
   }
 ]

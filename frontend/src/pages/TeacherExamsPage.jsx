@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useMemo } from 'react';
+import React, { useEffect, useState, useMemo, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import api from '../services/api';
 import { renderMath } from '../utils/mathRender';
@@ -44,8 +44,10 @@ export default function TeacherExamsPage() {
   const [creating, setCreating] = useState(false);
   const [wordFile, setWordFile] = useState(null);
   const [uploadingWord, setUploadingWord] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
   const [parsedQuestions, setParsedQuestions] = useState([]);
   const [uploadError, setUploadError] = useState('');
+  const [createAnswerKeyFile, setCreateAnswerKeyFile] = useState(null);
   const [createAssignedStudents, setCreateAssignedStudents] = useState([]);
   const [createAssignSearch, setCreateAssignSearch] = useState('');
   const [createAssignClassFilter, setCreateAssignClassFilter] = useState('all');
@@ -79,11 +81,63 @@ export default function TeacherExamsPage() {
   const [savingEdit, setSavingEdit] = useState(false);
   const [successMessage, setSuccessMessage] = useState('');
   const [expandedExamIds, setExpandedExamIds] = useState(new Set());
+  const [expandedAiFolderIds, setExpandedAiFolderIds] = useState(new Set());
+  const [uploadingAnswerKeyExamId, setUploadingAnswerKeyExamId] = useState(null);
+  const answerKeyInputRefs = useRef({});
 
   const navigate = useNavigate();
 
+  function handlePickAnswerKeyFile(examId) {
+    const input = answerKeyInputRefs.current[examId];
+    if (input) input.click();
+  }
+
+  async function handleAnswerKeyFileSelected(examId, file) {
+    if (!file) return;
+    setUploadingAnswerKeyExamId(examId);
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      await api.post(`/exams/${examId}/answer-key`, formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      });
+      await loadData();
+    } catch (err) {
+      console.error(err);
+      alert(err.response?.data?.message || 'Lỗi khi tải lên file đáp án chi tiết');
+    } finally {
+      setUploadingAnswerKeyExamId(null);
+    }
+  }
+
+  async function handleRemoveAnswerKey(examId) {
+    if (!window.confirm('Gỡ file đáp án chi tiết khỏi đề thi này?')) return;
+    setUploadingAnswerKeyExamId(examId);
+    try {
+      await api.delete(`/exams/${examId}/answer-key`);
+      await loadData();
+    } catch (err) {
+      console.error(err);
+      alert(err.response?.data?.message || 'Lỗi khi gỡ file đáp án chi tiết');
+    } finally {
+      setUploadingAnswerKeyExamId(null);
+    }
+  }
+
   function toggleExpandExam(examId) {
     setExpandedExamIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(examId)) {
+        next.delete(examId);
+      } else {
+        next.add(examId);
+      }
+      return next;
+    });
+  }
+
+  function toggleAiFolder(examId) {
+    setExpandedAiFolderIds((prev) => {
       const next = new Set(prev);
       if (next.has(examId)) {
         next.delete(examId);
@@ -150,6 +204,7 @@ export default function TeacherExamsPage() {
     setWordFile(file);
     setUploadError('');
     setUploadingWord(true);
+    setUploadProgress(0);
 
     // Tự động gợi ý tên đề thi từ tên file nếu chưa nhập tên đề
     if (!newExam.title || newExam.title.trim() === '') {
@@ -165,9 +220,33 @@ export default function TeacherExamsPage() {
     const formData = new FormData();
     formData.append('file', file);
 
+    // Server xử lý đồng bộ (bóc tách câu hỏi + chuyển đổi từng ảnh công
+    // thức qua LibreOffice) nên không có % thật để hỏi giữa chừng. Ghép 2
+    // giai đoạn: (1) % thật lúc tải file lên (thường rất nhanh), (2) mô
+    // phỏng tăng dần trong lúc chờ server xử lý - chạy chậm lại khi gần
+    // tới cuối để không "nói dối" là sắp xong, dừng hẳn khi có phản hồi.
+    let simulateInterval = null;
+    function startSimulatedProgress() {
+      simulateInterval = setInterval(() => {
+        setUploadProgress((prev) => {
+          if (prev >= 92) return prev;
+          const step = prev < 60 ? 4 : prev < 80 ? 2 : 0.5;
+          return Math.min(92, prev + step);
+        });
+      }, 350);
+    }
+
     try {
       const res = await api.post('/exams/import-preview', formData, {
         headers: { 'Content-Type': 'multipart/form-data' },
+        onUploadProgress: (evt) => {
+          if (!evt.total) return;
+          const uploadPercent = Math.round((evt.loaded / evt.total) * 30); // tải file chiếm ~30% thanh tiến trình
+          setUploadProgress((prev) => Math.max(prev, uploadPercent));
+          if (evt.loaded >= evt.total && !simulateInterval) {
+            startSimulatedProgress();
+          }
+        },
       });
 
       const rawQuestions = Array.isArray(res.data) ? res.data : (res.data.questions || []);
@@ -188,11 +267,14 @@ export default function TeacherExamsPage() {
       }));
 
       setParsedQuestions(list);
+      setUploadProgress(100);
     } catch (err) {
       console.error(err);
       setUploadError(err.response?.data?.message || err.message || 'Không thể đọc và bóc tách file Word này.');
     } finally {
+      if (simulateInterval) clearInterval(simulateInterval);
       setUploadingWord(false);
+      setTimeout(() => setUploadProgress(0), 600);
     }
   }
 
@@ -216,7 +298,6 @@ export default function TeacherExamsPage() {
   const [resizeTarget, setResizeTarget] = useState(null); // { previewIdx, field, optionKey, imgIndex }
   const [customEmValue, setCustomEmValue] = useState('');
   const [resizeScope, setResizeScope] = useState('target'); // 'target' | 'question' | 'all'
-  const [isMultiFormulaSelect, setIsMultiFormulaSelect] = useState(false);
   const [selectedFormulaKeys, setSelectedFormulaKeys] = useState([]); // 'preview_${idx}_${field}_${optKey || 'none'}_${imgIndex}'
   const [batchCustomEmValue, setBatchCustomEmValue] = useState('');
 
@@ -265,7 +346,7 @@ export default function TeacherExamsPage() {
       const imgs = container.querySelectorAll('img.formula-img');
       imgs.forEach((img, imgIndex) => {
         const key = `preview_${previewIdx}_${field}_${optionKey}_${imgIndex}`;
-        const currentSize = img.style.height || '1.8em';
+        const currentSize = img.style.height || '1.55em';
         img.setAttribute('title', `📐 Cỡ hiện tại: ${currentSize} (Bấm để chọn/bỏ chọn)`);
         if (selectedFormulaKeys.includes(key)) {
           img.classList.add('formula-selected');
@@ -457,6 +538,11 @@ export default function TeacherExamsPage() {
     setCreateError('');
     setSuccessMessage('');
 
+    if (parsedQuestions.length === 0) {
+      setCreateError('Vui lòng tải lên file Word đề thi và đợi tách câu hỏi thành công trước khi tạo đề - không tạo đề rỗng (chưa có câu hỏi).');
+      return;
+    }
+
     if (createAssignedStudents.length === 0) {
       setCreateError('Vui lòng chọn ít nhất một học sinh để giao đề thi!');
       return;
@@ -486,14 +572,30 @@ export default function TeacherExamsPage() {
         await api.post(`/exams/${createdExam.id}/questions/bulk`, { questions: payload });
       }
 
+      // 3. Nếu giáo viên đã chọn sẵn file đáp án chi tiết, tải lên luôn
+      let answerKeyUploaded = false;
+      if (createAnswerKeyFile) {
+        try {
+          const formData = new FormData();
+          formData.append('file', createAnswerKeyFile);
+          await api.post(`/exams/${createdExam.id}/answer-key`, formData, {
+            headers: { 'Content-Type': 'multipart/form-data' },
+          });
+          answerKeyUploaded = true;
+        } catch (err) {
+          console.error('Lỗi tải file đáp án chi tiết:', err);
+        }
+      }
+
       setNewExam({ title: '', description: '', durationMinutes: 15 });
       setWordFile(null);
       setParsedQuestions([]);
       setCreateAssignedStudents([]);
+      setCreateAnswerKeyFile(null);
       setShowCreateForm(false);
       window.dispatchEvent(new Event('app:refresh-notifications'));
       setSuccessMessage(
-        `🎉 Tạo đề thi "${createdExam.title}" thành công! 🚀 Đã giao ngay cho ${assignedCount} học sinh.${importedCount > 0 ? ` (Đã nạp ${importedCount} câu hỏi)` : ''}`
+        `🎉 Tạo đề thi "${createdExam.title}" thành công! 🚀 Đã giao ngay cho ${assignedCount} học sinh.${importedCount > 0 ? ` (Đã nạp ${importedCount} câu hỏi)` : ''}${answerKeyUploaded ? ' (Đã đính kèm đáp án chi tiết)' : ''}`
       );
       await loadData();
     } catch (err) {
@@ -540,7 +642,21 @@ export default function TeacherExamsPage() {
     }
   }
 
-  const filteredExams = exams.filter((exam) => {
+  // Nhóm các đề do AI tự sinh thêm (sourceExamId) vào đúng "thư mục" của đề
+  // gốc, thay vì hiện tách rời như 1 đề độc lập trong danh sách chính.
+  const examIds = new Set(exams.map((e) => e.id));
+  const aiChildrenByParent = {};
+  exams.forEach((exam) => {
+    if (exam.sourceExamId && examIds.has(exam.sourceExamId)) {
+      if (!aiChildrenByParent[exam.sourceExamId]) aiChildrenByParent[exam.sourceExamId] = [];
+      aiChildrenByParent[exam.sourceExamId].push(exam);
+    }
+  });
+  // Đề gốc thật (không phải AI sinh) HOẶC đề AI sinh nhưng đề gốc của nó
+  // không còn tồn tại nữa (đã bị xoá) - vẫn hiện ở danh sách chính để không mất dữ liệu.
+  const topLevelExams = exams.filter((exam) => !exam.sourceExamId || !examIds.has(exam.sourceExamId));
+
+  const filteredExams = topLevelExams.filter((exam) => {
     const matchesSearch =
       exam.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
       (exam.description && exam.description.toLowerCase().includes(searchQuery.toLowerCase()));
@@ -593,6 +709,7 @@ export default function TeacherExamsPage() {
           <button
             type="button"
             onClick={() => setSuccessMessage('')}
+            aria-label="Đóng thông báo"
             style={{
               background: 'none',
               border: 'none',
@@ -637,7 +754,7 @@ export default function TeacherExamsPage() {
           <div className="card-header">
             <h2>Tạo đề thi mới</h2>
           </div>
-          <form onSubmit={handleCreateExam}>
+          <form className="form-panel" onSubmit={handleCreateExam}>
             {/* Tải lên File Word */}
             <div
               style={{
@@ -659,12 +776,22 @@ export default function TeacherExamsPage() {
                   disabled={uploadingWord || creating}
                   style={{ padding: '8px 12px', fontSize: 13, flex: 1, minWidth: 220, background: '#ffffff' }}
                 />
-                {uploadingWord && (
-                  <span style={{ fontSize: 13, color: 'var(--primary)', fontWeight: 600 }}>
-                    ⏳ Đang xử lí file. Vui lòng đợi giây lát.
-                  </span>
-                )}
               </div>
+
+              {uploadingWord && (
+                <div style={{ marginTop: 10 }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12.5, fontWeight: 600, color: 'var(--primary)', marginBottom: 5 }}>
+                    <span>⏳ Đang xử lí file. Vui lòng đợi giấy lát...</span>
+                    <span>{Math.round(uploadProgress)}%</span>
+                  </div>
+                  <div className="progress-bar-wrapper" style={{ maxWidth: '100%', height: 8 }}>
+                    <div className="progress-bar-fill" style={{ width: `${uploadProgress}%`, background: 'var(--primary)', transition: 'width 0.3s ease' }} />
+                  </div>
+                  <div style={{ fontSize: 11.5, color: 'var(--text-muted)', marginTop: 4 }}>
+                    Đề có nhiều công thức Toán sẽ mất nhiều thời gian hơn do phải dựng từng ảnh công thức.
+                  </div>
+                </div>
+              )}
 
               {uploadError && (
                 <p className="error-text" style={{ marginTop: 8 }}>
@@ -700,24 +827,6 @@ export default function TeacherExamsPage() {
                     </div>
 
                     <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
-                      <button
-                        type="button"
-                        className={`btn sm ${isMultiFormulaSelect ? 'primary' : 'secondary'}`}
-                        style={{
-                          background: isMultiFormulaSelect ? '#6366f1' : '#fff',
-                          color: isMultiFormulaSelect ? '#fff' : '#475569',
-                          borderColor: isMultiFormulaSelect ? '#4f46e5' : '#cbd5e1',
-                          fontWeight: 700,
-                          fontSize: 12,
-                        }}
-                        onClick={() => {
-                          setIsMultiFormulaSelect(!isMultiFormulaSelect);
-                          if (isMultiFormulaSelect) clearFormulaSelection();
-                        }}
-                      >
-                        {isMultiFormulaSelect ? `✓ Chế độ chọn nhiều (${selectedFormulaKeys.length})` : '📐 Bật chọn nhiều công thức'}
-                      </button>
-
                       {totalFormulaCount > 0 && (
                         <button
                           type="button"
@@ -742,7 +851,7 @@ export default function TeacherExamsPage() {
                     </div>
                   </div>
 
-                  {isMultiFormulaSelect && (
+                  {totalFormulaCount > 0 && (
                     <div
                       style={{
                         padding: '8px 12px',
@@ -756,9 +865,11 @@ export default function TeacherExamsPage() {
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'space-between',
+                        flexWrap: 'wrap',
+                        gap: 6,
                       }}
                     >
-                      <span>💡 <strong>Chế độ chọn nhiều đang BẬT:</strong> Bấm vào bất kỳ công thức nào bên dưới để chọn / bỏ chọn. Đã chọn <strong>{selectedFormulaKeys.length}</strong> công thức.</span>
+                      <span>💡 Bấm vào bất kỳ công thức nào bên dưới để chọn / bỏ chọn. Đã chọn <strong>{selectedFormulaKeys.length}</strong> công thức.</span>
                       {selectedFormulaKeys.length > 0 && (
                         <span style={{ fontSize: 12, fontWeight: 700, color: '#4f46e5' }}>
                           (Xem thanh công cụ phía dưới màn hình để đổi cỡ hàng loạt)
@@ -792,7 +903,7 @@ export default function TeacherExamsPage() {
                                   marginTop: idx > 0 ? 14 : 0,
                                   marginBottom: 4,
                                   padding: '9px 14px',
-                                  background: 'linear-gradient(135deg, #2563eb 0%, #3b82f6 100%)',
+                                  background: 'var(--ink)',
                                   color: '#fff',
                                   borderRadius: 'var(--radius-md)',
                                   display: 'flex',
@@ -846,9 +957,11 @@ export default function TeacherExamsPage() {
                                 <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>Chủ đề:</span>
                                 <input
                                   type="text"
+                                  aria-label={`Chủ đề của câu ${displayQNum}`}
                                   value={q.tags[0] || ''}
                                   onChange={(e) => updateParsedQuestionTag(idx, e.target.value)}
-                                  placeholder="Nhập tên chủ đề..."
+                                  placeholder="Nhập tên chủ đề…"
+                                  spellCheck={false}
                                   style={{
                                     padding: '3px 8px',
                                     fontSize: 12,
@@ -972,21 +1085,25 @@ export default function TeacherExamsPage() {
             </div>
 
             <div className="form-group">
-              <label>Tên đề thi <span style={{ color: 'var(--danger)' }}>*</span></label>
+              <label htmlFor="exam-title">Tên đề thi <span style={{ color: 'var(--danger)' }}>*</span></label>
               <input
+                id="exam-title"
                 type="text"
-                placeholder="VD: Đề ôn tập số 1"
+                placeholder="Đề ôn tập số 1…"
                 value={newExam.title}
                 onChange={(e) => setNewExam({ ...newExam, title: e.target.value })}
+                autoComplete="off"
                 required
               />
             </div>
 
             <div className="form-row">
               <div className="form-group">
-                <label>Thời gian làm bài (phút) <span style={{ color: 'var(--danger)' }}>*</span></label>
+                <label htmlFor="exam-duration">Thời gian làm bài (phút) <span style={{ color: 'var(--danger)' }}>*</span></label>
                 <input
+                  id="exam-duration"
                   type="number"
+                  inputMode="numeric"
                   min={1}
                   max={180}
                   value={newExam.durationMinutes}
@@ -995,14 +1112,31 @@ export default function TeacherExamsPage() {
                 />
               </div>
               <div className="form-group">
-                <label>Mô tả ngắn</label>
+                <label htmlFor="exam-description">Mô tả ngắn</label>
                 <input
+                  id="exam-description"
                   type="text"
-                  placeholder="VD: Đề gồm 10 câu trắc nghiệm..."
+                  placeholder="Đề gồm 10 câu trắc nghiệm…"
                   value={newExam.description}
                   onChange={(e) => setNewExam({ ...newExam, description: e.target.value })}
+                  autoComplete="off"
                 />
               </div>
+            </div>
+
+            <div className="form-group">
+              <label htmlFor="exam-answer-key">📄 File đáp án chi tiết</label>
+              <input
+                id="exam-answer-key"
+                type="file"
+                accept=".pdf,image/*,.doc,.docx"
+                onChange={(e) => setCreateAnswerKeyFile(e.target.files[0] || null)}
+              />
+              <p style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 4 }}>
+                {createAnswerKeyFile
+                  ? `Upload thành công: ${createAnswerKeyFile.name}`
+                  : 'Học sinh sẽ xem/tải/quét QR file này ngay sau khi nộp bài. Có thể bỏ qua và thêm sau ở danh sách đề thi.'}
+              </p>
             </div>
 
             {/* GIAO ĐỀ CHO HỌC SINH / LỚP HỌC */}
@@ -1021,7 +1155,7 @@ export default function TeacherExamsPage() {
                     👥 Giao đề cho học sinh
                   </strong>
                   <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 2 }}>
-                    Đã chọn: <strong style={{ color: 'var(--primary)' }}>{createAssignedStudents.length}/{students.length} học sinh</strong>
+                    Upload thành công: <strong style={{ color: 'var(--primary)' }}>{createAssignedStudents.length}/{students.length} học sinh</strong>
                   </div>
                 </div>
                 <button
@@ -1059,9 +1193,11 @@ export default function TeacherExamsPage() {
               <div style={{ display: 'flex', gap: 8, marginBottom: 10, flexWrap: 'wrap' }}>
                 <input
                   type="text"
-                  placeholder="Tìm theo tên học sinh, email..."
+                  placeholder="Tìm theo tên học sinh, email…"
+                  aria-label="Tìm học sinh theo tên hoặc email"
                   value={createAssignSearch}
                   onChange={(e) => setCreateAssignSearch(e.target.value)}
+                  spellCheck={false}
                   style={{ flex: 1, minWidth: 180, fontSize: 13, padding: '6px 10px' }}
                 />
                 <select
@@ -1159,10 +1295,20 @@ export default function TeacherExamsPage() {
               )}
             </div>
 
-            {createError && <p className="error-text">⚠️ {createError}</p>}
+            {createError && (
+              <p className="error-text" role="alert" aria-live="polite">
+                <span aria-hidden="true">⚠️</span> {createError}
+              </p>
+            )}
+
+            {createAssignedStudents.length > 0 && parsedQuestions.length === 0 && (
+              <p style={{ fontSize: 12.5, color: 'var(--text-muted)', marginTop: 10 }}>
+                ⬆️ Tải lên file Word đề thi ở trên và đợi tách câu hỏi thành công để mở nút tạo đề (không cho tạo đề rỗng chưa có câu hỏi).
+              </p>
+            )}
 
             <div style={{ display: 'flex', gap: 10, marginTop: 14, alignItems: 'center', flexWrap: 'wrap' }}>
-              {createAssignedStudents.length > 0 ? (
+              {createAssignedStudents.length > 0 && parsedQuestions.length > 0 ? (
                 <button
                   className="btn"
                   type="submit"
@@ -1170,7 +1316,7 @@ export default function TeacherExamsPage() {
                   style={{ background: 'linear-gradient(135deg, #10b981, #059669)', fontSize: 14, fontWeight: 700 }}
                 >
                   {creating
-                    ? 'Đang tạo & giao đề...'
+                    ? 'Đang tạo & giao đề…'
                     : `🚀 Tạo bài tập ➔`}
                 </button>
               ) : null}
@@ -1200,9 +1346,11 @@ export default function TeacherExamsPage() {
               <span className="search-icon">🔍</span>
               <input
                 type="text"
-                placeholder="Tìm kiếm đề..."
+                placeholder="Tìm kiếm đề…"
+                aria-label="Tìm đề thi theo tên"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
+                spellCheck={false}
                 style={{ padding: '8px 12px 8px 32px', height: 38 }}
               />
             </div>
@@ -1222,7 +1370,7 @@ export default function TeacherExamsPage() {
         {loading ? (
           <div className="empty-state">
             <div className="empty-state-icon">⏳</div>
-            <div className="empty-state-title">Đang tải danh sách bài tập...</div>
+            <div className="empty-state-title">Đang tải danh sách bài tập…</div>
           </div>
         ) : filteredExams.length === 0 ? (
           <div className="empty-state">
@@ -1252,6 +1400,8 @@ export default function TeacherExamsPage() {
                   const distinctSubmittedStudentIds = new Set(examSubmissions.map((s) => s.studentId));
                   const submittedCount = distinctSubmittedStudentIds.size;
                   const isExpanded = expandedExamIds.has(exam.id);
+                  const aiChildren = aiChildrenByParent[exam.id] || [];
+                  const isAiFolderExpanded = expandedAiFolderIds.has(exam.id);
 
                   // Tính điểm trung bình của các học sinh đã nộp (lấy đợt mới nhất)
                   let avgScore = null;
@@ -1281,6 +1431,28 @@ export default function TeacherExamsPage() {
                             <span>📝 {exam.questionsCount ?? (exam.questions?.length || 0)} câu hỏi</span>
                             <span>⏱️ {exam.durationMinutes} phút</span>
                           </div>
+                          {aiChildren.length > 0 && (
+                            <button
+                              type="button"
+                              onClick={() => toggleAiFolder(exam.id)}
+                              style={{
+                                marginTop: 6,
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: 5,
+                                fontSize: 12,
+                                fontWeight: 700,
+                                color: 'var(--ai, #7c3aed)',
+                                background: 'var(--ai-bg, #f3ecff)',
+                                border: '1px solid var(--ai-line, #ddcbfb)',
+                                borderRadius: 20,
+                                padding: '3px 10px',
+                                cursor: 'pointer',
+                              }}
+                            >
+                              📂 {aiChildren.length} bài tập AI sinh thêm {isAiFolderExpanded ? '▲' : '▼'}
+                            </button>
+                          )}
                         </td>
                         <td className="nowrap" style={{ verticalAlign: 'middle' }}>
                           <span className={`status-pill ${exam.status}`}>
@@ -1327,44 +1499,81 @@ export default function TeacherExamsPage() {
                         <td className="nowrap" style={{ textAlign: 'right', verticalAlign: 'middle' }}>
                           <div className="action-buttons" style={{ justifyContent: 'flex-end', gap: 8 }}>
                             {exam.status === 'assigned' ? (
-                              <>
-                                <Link
-                                  to={`/teacher/exams/${exam.id}`}
-                                  className="btn sm secondary"
-                                  style={{ whiteSpace: 'nowrap', display: 'inline-flex', alignItems: 'center', gap: 5 }}
-                                >
-                                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
-                                    <circle cx="12" cy="12" r="3"></circle>
-                                  </svg>
-                                  <span>Xem đề</span>
-                                </Link>
-                                <button
-                                  type="button"
-                                  className="btn sm outline-danger"
-                                  onClick={() => handleDeleteExam(exam)}
-                                  title="Xoá đề thi"
-                                  style={{ whiteSpace: 'nowrap' }}
-                                >
-                                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                    <polyline points="3 6 5 6 21 6"></polyline>
-                                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
-                                    <line x1="10" y1="11" x2="10" y2="17"></line>
-                                    <line x1="14" y1="11" x2="14" y2="17"></line>
-                                  </svg>
-                                  <span>Xoá</span>
-                                </button>
-                              </>
+                              <Link
+                                to={`/teacher/exams/${exam.id}`}
+                                className="btn sm secondary"
+                                style={{ whiteSpace: 'nowrap', display: 'inline-flex', alignItems: 'center', gap: 5 }}
+                              >
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                  <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                                  <circle cx="12" cy="12" r="3"></circle>
+                                </svg>
+                                <span>Xem đề</span>
+                              </Link>
+                            ) : (
+                              <Link
+                                to={`/teacher/exams/${exam.id}`}
+                                className="btn sm"
+                                style={{ whiteSpace: 'nowrap', display: 'inline-flex', alignItems: 'center', gap: 5 }}
+                              >
+                                <span>Soạn câu hỏi</span>
+                                <span>➔</span>
+                              </Link>
+                            )}
+
+                            {/* Đáp án chi tiết: dùng chung cho cả đề nháp lẫn đề đã giao */}
+                            <input
+                              ref={(el) => { answerKeyInputRefs.current[exam.id] = el; }}
+                              type="file"
+                              accept=".pdf,image/*,.doc,.docx"
+                              style={{ display: 'none' }}
+                              onChange={(e) => handleAnswerKeyFileSelected(exam.id, e.target.files[0])}
+                            />
+                            <button
+                              type="button"
+                              className="btn sm secondary"
+                              onClick={() => handlePickAnswerKeyFile(exam.id)}
+                              disabled={uploadingAnswerKeyExamId === exam.id}
+                              title={exam.answerKeyFile ? 'Thay file đáp án chi tiết' : 'Tải lên file đáp án chi tiết (PDF/ảnh) cho học sinh xem sau khi nộp bài'}
+                              style={{ whiteSpace: 'nowrap' }}
+                            >
+                              {uploadingAnswerKeyExamId === exam.id
+                                ? '⏳ Đang tải...'
+                                : exam.answerKeyFile
+                                  ? '📄 Đã có đáp án chi tiết'
+                                  : '📄 Đáp án chi tiết'}
+                            </button>
+                            {exam.answerKeyFile && (
+                              <button
+                                type="button"
+                                className="btn sm outline-danger"
+                                onClick={() => handleRemoveAnswerKey(exam.id)}
+                                disabled={uploadingAnswerKeyExamId === exam.id}
+                                title="Gỡ file đáp án chi tiết"
+                                style={{ whiteSpace: 'nowrap' }}
+                              >
+                                🗑️
+                              </button>
+                            )}
+
+                            {exam.status === 'assigned' ? (
+                              <button
+                                type="button"
+                                className="btn sm outline-danger"
+                                onClick={() => handleDeleteExam(exam)}
+                                title="Xoá đề thi"
+                                style={{ whiteSpace: 'nowrap' }}
+                              >
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                  <polyline points="3 6 5 6 21 6"></polyline>
+                                  <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                                  <line x1="10" y1="11" x2="10" y2="17"></line>
+                                  <line x1="14" y1="11" x2="14" y2="17"></line>
+                                </svg>
+                                <span>Xoá</span>
+                              </button>
                             ) : (
                               <>
-                                <Link
-                                  to={`/teacher/exams/${exam.id}`}
-                                  className="btn sm"
-                                  style={{ whiteSpace: 'nowrap', display: 'inline-flex', alignItems: 'center', gap: 5 }}
-                                >
-                                  <span>Soạn câu hỏi</span>
-                                  <span>➔</span>
-                                </Link>
                                 <button
                                   type="button"
                                   className="btn sm secondary"
@@ -1595,9 +1804,9 @@ export default function TeacherExamsPage() {
                                               display: 'inline-flex',
                                               alignItems: 'center',
                                               gap: 5,
-                                              background: 'linear-gradient(135deg, #2563eb, #1d4ed8)',
+                                              background: 'var(--primary)',
                                               color: '#fff',
-                                              boxShadow: '0 2px 6px rgba(37,99,235,0.2)',
+                                              boxShadow: '0 2px 6px rgba(138,97,31,0.25)',
                                             }}
                                           >
                                             ✨ Xem bài & AI ➔
@@ -1659,6 +1868,64 @@ export default function TeacherExamsPage() {
                           </td>
                         </tr>
                       )}
+
+                      {/* Thư mục con: các đề AI tự sinh thêm dựa trên đề này */}
+                      {isAiFolderExpanded && aiChildren.length > 0 && (
+                        <tr style={{ background: 'var(--ai-bg, #f3ecff)' }}>
+                          <td colSpan={4} style={{ padding: '12px 20px 16px', borderTop: 'none', borderBottom: '2px solid var(--border)' }}>
+                            <div style={{ fontSize: 12.5, fontWeight: 700, color: 'var(--ai, #7c3aed)', marginBottom: 8 }}>
+                              📂 Bài tập AI sinh thêm từ đề "{exam.title}"
+                            </div>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                              {aiChildren.map((child) => {
+                                const childAssigned = child.assignedTo || [];
+                                const childStudent = students.find((s) => childAssigned.includes(s.id));
+                                return (
+                                  <div
+                                    key={child.id}
+                                    style={{
+                                      display: 'flex',
+                                      alignItems: 'center',
+                                      justifyContent: 'space-between',
+                                      gap: 12,
+                                      flexWrap: 'wrap',
+                                      background: '#ffffff',
+                                      border: '1px solid var(--ai-line, #ddcbfb)',
+                                      borderRadius: 8,
+                                      padding: '10px 14px',
+                                    }}
+                                  >
+                                    <div style={{ minWidth: 200 }}>
+                                      <Link to={`/teacher/exams/${child.id}`} style={{ fontWeight: 600, fontSize: 13.5 }}>
+                                        {child.title}
+                                      </Link>
+                                      <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 2 }}>
+                                        👤 {childStudent ? childStudent.name : 'Học sinh'} · 📝 {child.questionsCount ?? 0} câu
+                                      </div>
+                                    </div>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                                      <span className={`status-pill ${child.status}`}>
+                                        {child.status === 'assigned' ? '✓ Đang giao' : '○ Bản nháp'}
+                                      </span>
+                                      <Link to={`/teacher/exams/${child.id}`} className="btn sm secondary" style={{ whiteSpace: 'nowrap' }}>
+                                        Xem đề
+                                      </Link>
+                                      <button
+                                        type="button"
+                                        className="btn sm outline-danger"
+                                        onClick={() => handleDeleteExam(child)}
+                                        title="Xoá đề này"
+                                      >
+                                        Xoá
+                                      </button>
+                                    </div>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          </td>
+                        </tr>
+                      )}
                     </React.Fragment>
                   );
                 })}
@@ -1693,6 +1960,7 @@ export default function TeacherExamsPage() {
               <h2>Sửa thông tin đề thi</h2>
               <button
                 type="button"
+                aria-label="Đóng"
                 style={{ background: 'none', border: 'none', fontSize: 20, cursor: 'pointer', color: 'var(--text-muted)' }}
                 onClick={() => setEditingExam(null)}
               >
@@ -1700,22 +1968,26 @@ export default function TeacherExamsPage() {
               </button>
             </div>
 
-            <form onSubmit={handleSaveEditExam}>
+            <form className="form-panel" onSubmit={handleSaveEditExam}>
               <div className="form-group">
-                <label>Tên đề thi <span style={{ color: 'var(--danger)' }}>*</span></label>
+                <label htmlFor="edit-exam-title">Tên đề thi <span style={{ color: 'var(--danger)' }}>*</span></label>
                 <input
+                  id="edit-exam-title"
                   type="text"
                   value={editForm.title}
                   onChange={(e) => setEditForm({ ...editForm, title: e.target.value })}
+                  autoComplete="off"
                   required
                 />
               </div>
 
               <div className="form-row">
                 <div className="form-group">
-                  <label>Thời gian (phút) <span style={{ color: 'var(--danger)' }}>*</span></label>
+                  <label htmlFor="edit-exam-duration">Thời gian (phút) <span style={{ color: 'var(--danger)' }}>*</span></label>
                   <input
+                    id="edit-exam-duration"
                     type="number"
+                    inputMode="numeric"
                     min={1}
                     max={180}
                     value={editForm.durationMinutes}
@@ -1724,8 +1996,9 @@ export default function TeacherExamsPage() {
                   />
                 </div>
                 <div className="form-group">
-                  <label>Trạng thái</label>
+                  <label htmlFor="edit-exam-status">Trạng thái</label>
                   <select
+                    id="edit-exam-status"
                     value={editForm.status}
                     onChange={(e) => setEditForm({ ...editForm, status: e.target.value })}
                   >
@@ -1736,22 +2009,28 @@ export default function TeacherExamsPage() {
               </div>
 
               <div className="form-group">
-                <label>Mô tả ngắn</label>
+                <label htmlFor="edit-exam-description">Mô tả ngắn</label>
                 <input
+                  id="edit-exam-description"
                   type="text"
                   value={editForm.description}
                   onChange={(e) => setEditForm({ ...editForm, description: e.target.value })}
+                  autoComplete="off"
                 />
               </div>
 
-              {editError && <p className="error-text">⚠️ {editError}</p>}
+              {editError && (
+                <p className="error-text" role="alert" aria-live="polite">
+                  <span aria-hidden="true">⚠️</span> {editError}
+                </p>
+              )}
 
               <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10, marginTop: 16 }}>
                 <button type="button" className="btn secondary" onClick={() => setEditingExam(null)}>
                   Huỷ
                 </button>
                 <button className="btn" type="submit" disabled={savingEdit}>
-                  {savingEdit ? 'Đang lưu...' : 'Lưu thay đổi'}
+                  {savingEdit ? 'Đang lưu…' : 'Lưu thay đổi'}
                 </button>
               </div>
             </form>
@@ -1765,14 +2044,14 @@ export default function TeacherExamsPage() {
           <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
             <span style={{ fontSize: 15 }}>📐</span>
             <span style={{ fontWeight: 700, fontSize: 13, color: '#1e293b' }}>
-              Đã chọn <strong style={{ color: '#2563eb' }}>{selectedFormulaKeys.length}</strong> CT
+              Đã chọn <strong style={{ color: 'var(--primary)' }}>{selectedFormulaKeys.length}</strong> CT
             </span>
             {selectedFormulaSizes.length > 0 && (
               <span
                 style={{
-                  background: '#eff6ff',
-                  color: '#1d4ed8',
-                  border: '1px solid #bfdbfe',
+                  background: 'var(--gold-soft)',
+                  color: 'var(--primary)',
+                  border: '1px solid var(--primary-border)',
                   padding: '2px 8px',
                   borderRadius: 12,
                   fontSize: 11.5,
@@ -1842,7 +2121,7 @@ export default function TeacherExamsPage() {
               type="submit"
               className="btn sm"
               style={{
-                background: '#2563eb',
+                background: 'var(--primary)',
                 color: '#ffffff',
                 border: 'none',
                 borderRadius: 20,
@@ -1850,7 +2129,7 @@ export default function TeacherExamsPage() {
                 fontSize: 12.5,
                 fontWeight: 700,
                 cursor: 'pointer',
-                boxShadow: '0 2px 6px rgba(37, 99, 235, 0.25)',
+                boxShadow: '0 2px 6px rgba(138, 97, 31, 0.3)',
               }}
               disabled={!batchCustomEmValue}
             >

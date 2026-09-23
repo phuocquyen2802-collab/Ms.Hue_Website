@@ -76,10 +76,10 @@ function isLibreOfficeAvailable() {
 // quả hợp lý dù không phân tích được font.
 const EM_PER_PT = 0.135; // 1pt cỡ chữ MathType -> bao nhiêu em cho 1 dòng công thức
 const GLOBAL_PX_TO_EM = 0.043; // dự phòng (Tầng 2): 1px chiều cao gốc -> bao nhiêu em
-const MIN_FORMULA_HEIGHT_EM = 1.3;
-const MAX_FORMULA_HEIGHT_EM = 5.5;
-const DEFAULT_FORMULA_HEIGHT_EM = 1.8; // dùng khi không đo được kích thước gốc (ảnh lỗi/thiếu)
-const DEFAULT_FORMULA_VALIGN_EM = -0.35;
+const MIN_FORMULA_HEIGHT_EM = 1.1;
+const MAX_FORMULA_HEIGHT_EM = 4.8;
+const DEFAULT_FORMULA_HEIGHT_EM = 1.55; // dùng khi không đo được kích thước gốc (ảnh lỗi/thiếu)
+const DEFAULT_FORMULA_VALIGN_EM = -0.3;
 const DEFAULT_PX_PER_PT = 3.8; // dùng khi 1 lượt import không có đủ mẫu để tự hiệu chỉnh
 
 function clampHeightEm(raw) {
@@ -149,7 +149,14 @@ async function countInkBands(pngBuffer, width, height) {
 
   if (!inkRows.some(Boolean)) return 0;
 
-  const MIN_GAP_HEIGHT = Math.max(2, Math.round(height * 0.08));
+  // Ngưỡng gộp khoảng ngăn "quá hẹp" (nhiễu/răng cưa) - GIỚI HẠN TRẦN cố định (6px), KHÔNG
+  // để tỉ lệ 8% chiều cao tăng vô hạn theo ảnh càng cao: hệ phương trình 2-3 dòng (ngoặc
+  // nhọn) thường xếp dòng khá SÁT nhau (khoảng ngăn thật giữa các dòng chỉ ~5-8px dù ảnh
+  // tổng thể cao 150-200px do có 3 dòng) - nếu để ngưỡng tỉ lệ theo % chiều cao TOÀN ẢNH như
+  // trước (8% của 150-200px = 12-16px), khoảng ngăn thật giữa các dòng bị coi là "quá hẹp"
+  // rồi gộp nhầm thành 1 dải mực liên tục, khiến hệ 3 dòng bị tính nhầm thành "1 dòng đơn"
+  // và hiển thị nhỏ sai (dù đúng là có xếp tầng thật).
+  const MIN_GAP_HEIGHT = Math.min(6, Math.max(2, Math.round(height * 0.08)));
 
   // Gộp các khoảng ngăn quá hẹp (nhiễu/răng cưa 1-2 hàng) lại thành "có
   // mực", chỉ giữ khoảng ngăn đủ cao làm ranh giới tầng thật.
@@ -197,6 +204,149 @@ function computeFormulaSizeFromFont(nativeHeightPx, fontSizePt, pxPerPt, hasMult
   return finalizeSize(baseEm * Math.min(stackFactor, 4));
 }
 
+// ---- TẦNG 0 (mới, chính xác NHẤT - ưu tiên cao nhất khi có): đo kích thước
+// THẬT bằng cách chuyển đổi CHÍNH ảnh WMF/EMF đó sang SVG. LibreOffice khi
+// convert-to svg vẫn bọc cả trang A4 xung quanh (giống PNG), nhưng bên trong
+// luôn ghi kèm 1 thẻ <rect class="BoundingBox" x=".." y=".." width=".."
+// height=".."/> - đây là khung bao SÁT nội dung công thức (kể cả phân số,
+// hệ phương trình nhiều tầng), tính theo đúng đơn vị của viewBox, quy đổi
+// thẳng ra mm rồi ra pt qua tỉ lệ width="Xmm" so với viewBox. Đây là số đo
+// HÌNH HỌC THẬT do LibreOffice tự tính, không phải suy đoán qua mật độ điểm
+// ảnh (ink band) hay dò byte LOGFONT trong file WMF như Tầng 1/2 bên dưới -
+// nên chính xác tuyệt đối với MỌI loại công thức (1 dòng, phân số, hệ nhiều
+// tầng...) mà không cần phân biệt trường hợp bằng heuristic nữa.
+// LƯU Ý QUAN TRỌNG (phát hiện thực tế khi test với đề thi thật): cỡ chữ ghi
+// trong file WMF/EMF ĐÔI KHI không phản ánh đúng kích thước hiển thị giáo
+// viên thật sự muốn - vì Word cho phép kéo thu nhỏ/phóng to khung công thức
+// bằng tay SAU KHI gõ xong (chỉ đổi kích thước hiển thị trong Word, không
+// ghi đè lại metadata font gốc bên trong WMF). Vì vậy TUYỆT ĐỐI KHÔNG được
+// dùng trực tiếp `bboxHeightPt` (số đo tuyệt đối) hay `fontSizePt` (số đo
+// tuyệt đối) làm cỡ hiển thị - mà phải dùng TỈ LỆ giữa 2 số đo đó
+// (bboxHeightPt / fontSizePt): tỉ lệ này KHÔNG đổi dù cả khối công thức có
+// bị Word scale to/nhỏ bao nhiêu (vì cả tử và mẫu cùng scale theo 1 hệ số),
+// nên vẫn phân biệt CHÍNH XÁC "1 dòng đơn" (tỉ lệ ~1.1-1.3) và "phân số/hệ
+// nhiều tầng thật" (tỉ lệ vượt hẳn ~1.6 trở lên) bất kể font-size tuyệt đối
+// ghi trong file lớn hay nhỏ thế nào.
+function parseSvgBoundingBoxMetrics(svgText) {
+  const pageMatch = svgText.match(
+    /<svg[^>]*\swidth="([\d.]+)mm"\s+height="[\d.]+mm"\s+viewBox="0 0 ([\d.]+) [\d.]+"/
+  );
+  const boxMatch = svgText.match(/<rect class="BoundingBox"[^>]*\/>/);
+  if (!pageMatch || !boxMatch) return null;
+
+  const pageWidthMm = parseFloat(pageMatch[1]);
+  const viewBoxWidth = parseFloat(pageMatch[2]);
+  if (!pageWidthMm || !viewBoxWidth) return null;
+  const mmPerUnit = pageWidthMm / viewBoxWidth;
+
+  const heightAttr = boxMatch[0].match(/\sheight="([\d.]+)"/);
+  if (!heightAttr) return null;
+  const heightUnits = parseFloat(heightAttr[1]);
+  if (!heightUnits) return null;
+
+  const fontSizeMatches = [...svgText.matchAll(/font-size="([\d.]+)px"/g)].map((m) => parseFloat(m[1]));
+  if (fontSizeMatches.length === 0) return null;
+  const maxFontSizeUnits = Math.max(...fontSizeMatches);
+  if (!maxFontSizeUnits) return null;
+
+  return {
+    heightPt: (heightUnits * mmPerUnit) / 0.352778, // 1pt = 0.352778mm
+    fontSizePt: (maxFontSizeUnits * mmPerUnit) / 0.352778,
+  };
+}
+
+// Ranh giới tỉ lệ (chiều cao khung bao / cỡ chữ lớn nhất) để phân biệt "1
+// dòng công thức đơn" và "thật sự có xếp tầng" (phân số, hệ phương trình).
+// Đo thực tế trên hàng chục công thức 1 dòng thật của đề thi mẫu cho tỉ lệ
+// ổn định trong khoảng 1.08-1.27; đặt ngưỡng 1.4 để có biên an toàn.
+const SINGLE_LINE_RATIO_THRESHOLD = 1.4;
+// Tỉ lệ "chuẩn" của đúng 1 dòng, dùng làm mốc quy đổi hệ số phóng to cho
+// phần vượt trội khi công thức thật sự nhiều tầng.
+const SINGLE_LINE_RATIO_BASELINE = 1.2;
+
+// `hasMultipleBands`: cổng xác nhận bằng đếm dải mực thật (xem `countInkBands`),
+// GIỐNG HỆT cơ chế Tầng 1 (`computeFormulaSizeFromFont`) - bắt buộc phải có
+// (mặc định coi là true nếu không truyền, để không phá các lệnh gọi cũ/test).
+// Lý do bắt buộc: tỉ lệ bboxHeight/fontSize có thể bị "phồng" bởi các yếu tố
+// KHÔNG PHẢI xếp tầng thật - ví dụ mũi tên vector phía trên $\vec{u}$, dấu mũ/
+// gạch ngang, hoặc phần đệm (padding) riêng của LibreOffice khi render 1 ký
+// tự đơn lẻ - khiến 1 dòng công thức thật bị tính nhầm thành "nhiều tầng" và
+// phóng to sai. Chỉ khi ĐẾM MỰC xác nhận có >=2 dải mực tách rời (phân số/hệ
+// phương trình thật) mới cho phép dùng stackFactor từ tỉ lệ SVG.
+function computeFormulaSizeFromSvgRatio(metrics, hasMultipleBands = true) {
+  if (!metrics || !metrics.heightPt || !metrics.fontSizePt) return null;
+  if (!hasMultipleBands) return finalizeSize(DEFAULT_FORMULA_HEIGHT_EM);
+  const ratio = metrics.heightPt / metrics.fontSizePt;
+  if (ratio <= SINGLE_LINE_RATIO_THRESHOLD) {
+    // 1 dòng đơn - LUÔN dùng cỡ chuẩn, bỏ qua font-size tuyệt đối (có thể
+    // không đáng tin do bị Word scale tay như ghi chú ở trên).
+    return finalizeSize(DEFAULT_FORMULA_HEIGHT_EM);
+  }
+  const stackFactor = Math.min(4, ratio / SINGLE_LINE_RATIO_BASELINE);
+  return finalizeSize(DEFAULT_FORMULA_HEIGHT_EM * stackFactor);
+}
+
+// Chuyển 1 lô WMF/EMF sang SVG chỉ để ĐO kích thước (không dùng SVG để hiển
+// thị - font nhúng trong SVG do LibreOffice xuất là "SVG Font", định dạng cũ
+// trình duyệt hiện đại không còn hỗ trợ render, nên ảnh hiển thị thật cho
+// học sinh vẫn luôn là PNG như trước). Nếu LibreOffice lỗi hoặc file nào đó
+// không đọc được BoundingBox, trả về null cho đúng vị trí đó - nơi gọi sẽ tự
+// rơi về Tầng 1/2 dự phòng, không có gì bị "vỡ".
+async function measureSvgMetrics(wmfItems) {
+  if (!isLibreOfficeAvailable() || wmfItems.length === 0) {
+    return wmfItems.map(() => null);
+  }
+
+  const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'wmf-svg-'));
+  const profileDir = path.join(tmpDir, 'profile').replace(/\\/g, '/');
+  const results = new Array(wmfItems.length).fill(null);
+
+  try {
+    for (let batchStart = 0; batchStart < wmfItems.length; batchStart += BATCH_SIZE) {
+      const batch = wmfItems.slice(batchStart, batchStart + BATCH_SIZE);
+      const filePaths = batch.map((item, i) => {
+        const ext = (item && item.ext) ? item.ext : 'wmf';
+        return path.join(tmpDir, `eq-${batchStart + i}.${ext}`);
+      });
+
+      batch.forEach((item, i) => {
+        const buf = (item && item.buffer) ? item.buffer : item;
+        fs.writeFileSync(filePaths[i], buf);
+      });
+
+      try {
+        await runSoffice([
+          `-env:UserInstallation=file:///${profileDir}`,
+          '--headless',
+          '--convert-to',
+          'svg',
+          '--outdir',
+          tmpDir,
+          ...filePaths,
+        ]);
+      } catch (err) {
+        console.error('LibreOffice (đo SVG) lỗi, dùng lại cách ước lượng cũ:', err.message);
+        continue;
+      }
+
+      filePaths.forEach((fPath, i) => {
+        const svgPath = fPath.replace(/\.(wmf|emf)$/i, '.svg');
+        if (!fs.existsSync(svgPath)) return;
+        try {
+          const svgText = fs.readFileSync(svgPath, 'utf8');
+          results[batchStart + i] = parseSvgBoundingBoxMetrics(svgText);
+        } catch {
+          results[batchStart + i] = null;
+        }
+      });
+    }
+  } finally {
+    fs.rmSync(tmpDir, { recursive: true, force: true });
+  }
+
+  return results;
+}
+
 // Trung vị tỉ lệ (chiều cao gốc px / cỡ chữ pt) trên các ảnh ĐÃ ĐỌC ĐƯỢC cỡ
 // chữ thật trong cùng 1 lượt import - dùng làm "pxPerPt" hiệu chỉnh riêng
 // cho lượt import đó (không cần biết trước DPI của LibreOffice).
@@ -228,12 +378,19 @@ async function trimWhitespace(pngBuffer) {
     const w = meta.width || 0;
     const h = meta.height || 0;
 
-    // Đồ thị, bảng biến thiên, hình học (kích thước lớn thực sự) - loại này hiển thị theo `diagram-img`
+    // Đồ thị, bảng biến thiên, hình học (kích thước lớn thực sự) - loại này hiển thị theo
+    // `diagram-img` (KHÔNG bị giới hạn chiều cao như công thức). Đo thực tế trên các đề mẫu
+    // thật: mọi hình vẽ/đồ thị thật đều có CẢ 2 CHIỀU (rộng lẫn cao) từ 150px trở lên (nhỏ nhất
+    // gặp: 228x232, 489x154) - trong khi công thức nhiều ký tự xếp dọc (vectơ, toạ độ điểm như
+    // "(15;-16;17)", hệ nhiều tầng) có thể cao/rộng vượt 85-100px ở MỘT chiều nhưng KHÔNG BAO
+    // GIỜ cả 2 chiều cùng lớn - trước đây chỉ cần 1 điều kiện 1 chiều đạt ngưỡng (đặc biệt
+    // `h >= 85` không kèm điều kiện chiều rộng) đã đủ để bị nhận nhầm là "hình vẽ" và hiển thị
+    // đúng kích thước pixel gốc không giới hạn, gây ra công thức bị phóng to bất thường (không
+    // phải do sai kích thước tính toán, mà do bị nhận NHẦM LOẠI ẢNH). Yêu cầu CẢ 2 chiều đủ lớn
+    // (hoặc diện tích thật lớn, cho hình chữ nhật dẹt) mới coi là hình vẽ thật.
     const isDiagram = Boolean(
-      (w >= 120 && h >= 80) ||
-      (w >= 180 && h >= 60) ||
-      (h >= 85) ||
-      (w * h >= 12000)
+      (w >= 150 && h >= 100) ||
+      (w * h >= 40000)
     );
     const bandCount = !isDiagram && w > 0 && h > 0 ? await countInkBands(trimmed, w, h) : 0;
 
@@ -266,19 +423,52 @@ function runSoffice(args) {
   });
 }
 
+// Chuyển 1 file Word (.doc/.docx) bất kỳ sang PDF bằng LibreOffice - dùng để
+// giáo viên "xem trước trên web" file đáp án chi tiết dạng Word (trình duyệt
+// không tự hiển thị được .docx, nhưng hiển thị PDF trực tiếp qua <iframe>
+// rất tốt). Trả về Buffer PDF, hoặc null nếu không có LibreOffice/lỗi.
+async function convertDocumentToPdfBuffer(fileBuffer, originalExt) {
+  if (!isLibreOfficeAvailable()) return null;
+  const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'doc2pdf-'));
+  const profileDir = path.join(tmpDir, 'profile').replace(/\\/g, '/');
+  const ext = (originalExt || 'docx').replace(/^\./, '');
+  const srcPath = path.join(tmpDir, `doc.${ext}`);
+  try {
+    fs.writeFileSync(srcPath, fileBuffer);
+    await runSoffice([
+      `-env:UserInstallation=file:///${profileDir}`,
+      '--headless',
+      '--convert-to',
+      'pdf',
+      '--outdir',
+      tmpDir,
+      srcPath,
+    ]);
+    const pdfPath = path.join(tmpDir, 'doc.pdf');
+    if (!fs.existsSync(pdfPath)) return null;
+    return fs.readFileSync(pdfPath);
+  } catch (err) {
+    console.error('Lỗi chuyển Word sang PDF để xem trước:', err.message);
+    return null;
+  } finally {
+    fs.rmSync(tmpDir, { recursive: true, force: true });
+  }
+}
+
 // Chuyển 1 mảng buffer WMF/EMF thành mảng { base64, isDiagram, displayHeightEm,
-// verticalAlignEm } (giữ nguyên thứ tự đầu vào). Chạy 2 lượt:
-//   1) Chuyển đổi + đo kích thước gốc của TẤT CẢ ảnh, đồng thời đọc cỡ chữ
-//      thật (fontSizePt) từ buffer WMF/EMF gốc của từng ảnh.
-//   2) Hiệu chỉnh `pxPerPt` DÙNG CHUNG cho cả lượt import này (dựa trên
-//      trung vị toàn bộ ảnh đọc được cỡ chữ), rồi tính cỡ hiển thị cuối cùng
-//      cho từng ảnh - ảnh nào đọc được cỡ chữ thật thì dùng Tầng 1 (chính
-//      xác), ảnh nào không đọc được thì tự động rơi về Tầng 2 (dự phòng).
+// verticalAlignEm } (giữ nguyên thứ tự đầu vào). Chạy song song:
+//   A) Đo kích thước THẬT qua SVG (Tầng 0, xem `measureSvgMetrics` phía
+//      trên) - chính xác nhất, ưu tiên dùng cho mọi ảnh đo được.
+//   B) Chuyển đổi sang PNG để hiển thị (ảnh thật gửi cho học sinh/giáo viên
+//      xem) + đọc cỡ chữ thật qua LOGFONT làm dự phòng (Tầng 1/2) cho những
+//      ảnh Tầng 0 không đo được (LibreOffice lỗi, định dạng lạ...).
 async function convertWmfBuffersToPng(wmfItems) {
   if (!isLibreOfficeAvailable()) {
     return wmfItems.map(() => null);
   }
   if (wmfItems.length === 0) return [];
+
+  const svgMetricsPromise = measureSvgMetrics(wmfItems);
 
   const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'wmf-convert-'));
   const profileDir = path.join(tmpDir, 'profile').replace(/\\/g, '/');
@@ -344,16 +534,27 @@ async function convertWmfBuffersToPng(wmfItems) {
       : results.filter(Boolean).map((r) => ({ heightPx: r.height, fontSizePt: r.fontSizePt }))
   );
 
-  return results.map((r) => {
+  // Chờ kết quả đo SVG (Tầng 0) chạy song song ở trên xong.
+  const svgMetricsList = await svgMetricsPromise;
+
+  return results.map((r, idx) => {
     if (!r) return null;
     if (r.isDiagram) {
       const { fontSizePt, bandCount, ...rest } = r;
       return rest;
     }
+
+    const svgMetrics = svgMetricsList[idx];
     const hasMultipleBands = r.bandCount >= 2;
-    const size = r.fontSizePt
-      ? computeFormulaSizeFromFont(r.height, r.fontSizePt, pxPerPt, hasMultipleBands)
-      : computeFormulaSize(r.height, hasMultipleBands);
+    let size = computeFormulaSizeFromSvgRatio(svgMetrics, hasMultipleBands);
+    if (!size) {
+      // Tầng 1/2 (dự phòng): SVG đo lỗi cho đúng ảnh này -> quay lại cách
+      // cũ (font-parse WMF/EMF hoặc ước lượng thuần theo pixel).
+      size = r.fontSizePt
+        ? computeFormulaSizeFromFont(r.height, r.fontSizePt, pxPerPt, hasMultipleBands)
+        : computeFormulaSize(r.height, hasMultipleBands);
+    }
+
     const { fontSizePt, bandCount, ...rest } = r;
     return { ...rest, displayHeightEm: size.displayHeightEm, verticalAlignEm: size.verticalAlignEm };
   });
@@ -362,6 +563,7 @@ async function convertWmfBuffersToPng(wmfItems) {
 module.exports = {
   isLibreOfficeAvailable,
   convertWmfBuffersToPng,
+  convertDocumentToPdfBuffer,
   trimWhitespace,
   computeFormulaSize,
   computeFormulaSizeFromFont,

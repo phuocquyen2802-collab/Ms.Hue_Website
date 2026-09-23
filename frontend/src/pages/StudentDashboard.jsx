@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import api from '../services/api';
+import AnswerKeyPanel from '../components/AnswerKeyPanel';
 
 export default function StudentDashboard() {
   const [exams, setExams] = useState([]);
@@ -33,6 +34,18 @@ export default function StudentDashboard() {
 
   const completedCount = exams.filter((e) => isSubmitted(e.id)).length;
   const pendingCount = exams.length - completedCount;
+
+  // Nhóm các đề AI tự sinh thêm (sourceExamId) vào đúng "thư mục" của đề
+  // gốc, thay vì hiện tách rời như 1 đề độc lập trong danh sách chính.
+  const examIds = new Set(exams.map((e) => e.id));
+  const aiChildrenByParent = {};
+  exams.forEach((exam) => {
+    if (exam.sourceExamId && examIds.has(exam.sourceExamId)) {
+      if (!aiChildrenByParent[exam.sourceExamId]) aiChildrenByParent[exam.sourceExamId] = [];
+      aiChildrenByParent[exam.sourceExamId].push(exam);
+    }
+  });
+  const topLevelExams = exams.filter((exam) => !exam.sourceExamId || !examIds.has(exam.sourceExamId));
 
   return (
     <div className="container">
@@ -123,13 +136,11 @@ export default function StudentDashboard() {
           </div>
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-            {exams.map((exam) => {
+            {topLevelExams.map((exam) => {
               const examSubs = submissions
                 .filter((s) => s.examId === exam.id)
                 .sort((a, b) => (b.attempt || 1) - (a.attempt || 1));
               const submitted = examSubs.length > 0;
-              const latestSub = examSubs[0];
-              const maxScore = submitted ? Math.max(...examSubs.map((s) => s.score || 0)) : 0;
 
               return (
                 <ExamCardItem
@@ -137,6 +148,8 @@ export default function StudentDashboard() {
                   exam={exam}
                   examSubs={examSubs}
                   submitted={submitted}
+                  aiChildren={aiChildrenByParent[exam.id] || []}
+                  submissions={submissions}
                 />
               );
             })}
@@ -147,8 +160,9 @@ export default function StudentDashboard() {
   );
 }
 
-function ExamCardItem({ exam, examSubs, submitted }) {
+function ExamCardItem({ exam, examSubs, submitted, aiChildren = [], submissions = [] }) {
   const [expanded, setExpanded] = useState(false);
+  const [aiFolderExpanded, setAiFolderExpanded] = useState(false);
 
   return (
     <div
@@ -199,6 +213,28 @@ function ExamCardItem({ exam, examSubs, submitted }) {
               <span style={{ fontWeight: 600, color: '#475569' }}>⏱️ {exam.durationMinutes} phút</span>
               {exam.description && <span>• {exam.description}</span>}
             </div>
+            {aiChildren.length > 0 && (
+              <button
+                type="button"
+                onClick={() => setAiFolderExpanded((v) => !v)}
+                style={{
+                  marginTop: 8,
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: 5,
+                  fontSize: 12,
+                  fontWeight: 700,
+                  color: 'var(--purple, #7c3aed)',
+                  background: '#f3ecff',
+                  border: '1px solid #ddcbfb',
+                  borderRadius: 20,
+                  padding: '3px 10px',
+                  cursor: 'pointer',
+                }}
+              >
+                📂 {aiChildren.length} bài tập AI sinh thêm {aiFolderExpanded ? '▲' : '▼'}
+              </button>
+            )}
           </div>
         </div>
 
@@ -288,6 +324,13 @@ function ExamCardItem({ exam, examSubs, submitted }) {
         </div>
       </div>
 
+      {/* Đáp án chi tiết (nếu giáo viên có đính kèm) - chỉ hiện sau khi đã nộp bài */}
+      {submitted && exam.answerKeyFile && (
+        <div style={{ padding: '0 24px 18px' }}>
+          <AnswerKeyPanel examId={exam.id} answerKeyFile={exam.answerKeyFile} />
+        </div>
+      )}
+
       {/* Expanded History Sub-list for All Attempts */}
       {expanded && examSubs.length > 0 && (
         <div
@@ -367,6 +410,56 @@ function ExamCardItem({ exam, examSubs, submitted }) {
                       📊 Kết quả của tôi
                     </Link>
                   </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* Thư mục con: bài tập AI sinh thêm dựa trên đề này */}
+      {aiFolderExpanded && aiChildren.length > 0 && (
+        <div style={{ padding: '14px 20px', background: '#f9f5ff', borderTop: '1px solid #ddcbfb' }}>
+          <div style={{ fontSize: 12.5, fontWeight: 700, color: '#7c3aed', marginBottom: 10 }}>
+            📂 Bài tập AI sinh thêm từ đề này:
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            {aiChildren.map((child) => {
+              const childSubs = submissions.filter((s) => s.examId === child.id);
+              const childSubmitted = childSubs.length > 0;
+              return (
+                <div
+                  key={child.id}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    gap: 10,
+                    flexWrap: 'wrap',
+                    padding: '10px 14px',
+                    background: '#ffffff',
+                    borderRadius: 8,
+                    border: '1px solid #ddcbfb',
+                  }}
+                >
+                  <div style={{ fontWeight: 600, fontSize: 13.5, color: '#1e293b' }}>{child.title}</div>
+                  {childSubmitted ? (
+                    <Link
+                      to={`/student/submissions/${childSubs[childSubs.length - 1].id}`}
+                      className="btn sm"
+                      style={{ padding: '5px 14px', fontSize: 12.5, background: 'var(--primary)', color: '#fff', borderRadius: 6, fontWeight: 600 }}
+                    >
+                      📊 Kết quả của tôi
+                    </Link>
+                  ) : (
+                    <Link
+                      to={`/student/exams/${child.id}`}
+                      className="btn sm"
+                      style={{ padding: '5px 14px', fontSize: 12.5, borderRadius: 6, fontWeight: 700 }}
+                    >
+                      Bắt đầu làm bài ➔
+                    </Link>
+                  )}
                 </div>
               );
             })}

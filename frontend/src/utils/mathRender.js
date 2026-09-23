@@ -23,8 +23,14 @@ export function renderMath(text) {
 
   const htmlTokens = [];
 
+  // 0. Dọn chữ "undefined" rác lọt vào nội dung (lỗi dữ liệu cũ khi ghép
+  // chuỗi với một trường bị thiếu/JS undefined, từ trước khi các bản vá
+  // backend hiện tại có hiệu lực) - dọn NGAY TỪ ĐẦU, không chỉ khi đứng
+  // riêng 1 dòng, để không làm rối các bước xử lý công thức phía sau.
+  let tokenized = text.replace(/\$?\bundefined\b\$?/g, '');
+
   // 1. TÁCH VÀ BẢO VỆ 100% CÁC THẺ HTML/IMG/SVG CÓ SẴN NGAY ĐẦU TIÊN
-  let tokenized = text.replace(
+  tokenized = tokenized.replace(
     /(<svg[\s\S]*?<\/svg>|<table[\s\S]*?<\/table>|<img[^>]*>|<\/?[a-zA-Z][a-zA-Z0-9\-_]*(?:\s+[^>]*)?\/?>|<!--[\s\S]*?-->)/gi,
     (match) => {
       const placeholder = `___HTML_TOKEN_${htmlTokens.length}___`;
@@ -119,10 +125,48 @@ export function renderMath(text) {
     }
   });
 
-  // 10. Xử lý Inline Math $...$ (Bảo vệ KaTeX SVG không bị ngắt dòng làm vỡ path)
-  tokenized = tokenized.replace(/\$([^\$\n\r]+?)\$/g, (match, formula) => {
+  // 10. Xử lý Inline Math $...$ — cho phép công thức lỡ bị AI ngắt xuống dòng
+  // giữa 2 dấu $ (vẫn khớp được, gộp lại thành 1 dòng trước khi render KaTeX).
+  // CHẶN NUỐT NHẦM VĂN XUÔI: nếu lỡ có 1 dấu $ lẻ (AI quên đóng), việc cho
+  // phép xuống dòng có thể khiến regex "nuốt" luôn cả đoạn văn tiếng Việt
+  // phía sau cho tới dấu $ kế tiếp, rồi bị KaTeX in nghiêng + xoá hết khoảng
+  // trắng (chế độ Toán coi khoảng trắng là vô nghĩa) - làm vỡ chữ tiếng Việt
+  // hoàn toàn. Công thức LaTeX thật chỉ gồm số/chữ Latin/lệnh LaTeX, KHÔNG
+  // BAO GIỜ có tiếng Việt có dấu, nên dùng chính đặc điểm này để nhận diện:
+  // hễ nội dung bắt được có dấu tiếng Việt -> chắc chắn không phải công thức
+  // thật, trả về nguyên văn thay vì đưa vào KaTeX.
+  const VIETNAMESE_DIACRITICS = /[àáảãạăằắẳẵặâầấẩẫậèéẻẽẹêềếểễệìíỉĩịòóỏõọôồốổỗộơờớởỡợùúủũụưừứửữựỳýỷỹỵđÀÁẢÃẠĂẰẮẲẴẶÂẦẤẨẪẬÈÉẺẼẸÊỀẾỂỄỆÌÍỈĨỊÒÓỎÕỌÔỒỐỔỖỘƠỜỚỞỠỢÙÚỦŨỤƯỪỨỬỮỰỲÝỶỸỴĐ]/;
+  tokenized = tokenized.replace(/\$([^\$]{1,300}?)\$/g, (match, formula) => {
+    if (VIETNAMESE_DIACRITICS.test(formula)) return match;
     try {
-      const rendered = katex.renderToString(formula.trim(), KATEX_OPTS_INLINE).replace(/\r?\n/g, ' ');
+      const cleanFormula = formula.replace(/[\r\n]+/g, ' ').trim();
+      if (!cleanFormula) return match;
+      const rendered = katex.renderToString(cleanFormula, KATEX_OPTS_INLINE).replace(/\r?\n/g, ' ');
+      const placeholder = `___HTML_TOKEN_${htmlTokens.length}___`;
+      htmlTokens.push(rendered);
+      return placeholder;
+    } catch {
+      return match;
+    }
+  });
+
+  // 10.5 Bọc riêng các KÝ HIỆU TOÁN ĐƠN LẺ (không cần tham số) còn sót lại
+  // NGOÀI mọi cặp $...$ (mọi công thức có $ đã được tách hết ra token ở
+  // bước 10 phía trên) - trường hợp AI quên bọc $ cho 1 ký hiệu đơn lẻ giữa
+  // câu văn (ví dụ "...a > 0,a \neq 1 thì..."). Chỉ áp dụng cho danh sách
+  // ký hiệu AN TOÀN không cần tham số đi kèm, tránh render sai các lệnh
+  // cần đối số như \frac, \sqrt nếu chúng lỡ đứng ngoài $ (hiếm gặp hơn).
+  const STANDALONE_SYMBOLS = [
+    'neq', 'leq', 'geq', 'leftrightarrow', 'Leftrightarrow', 'rightarrow', 'Rightarrow',
+    'in', 'notin', 'forall', 'exists', 'cdot', 'times', 'div', 'pm', 'mp', 'infty',
+    'alpha', 'beta', 'gamma', 'delta', 'pi', 'theta', 'lambda', 'mu', 'sigma', 'phi', 'omega',
+    'subset', 'cup', 'cap', 'emptyset', 'partial', 'nabla', 'approx', 'equiv', 'sim',
+    'propto', 'cong', 'perp', 'parallel', 'angle', 'to',
+  ];
+  const standaloneSymbolPattern = new RegExp(`\\\\(?:${STANDALONE_SYMBOLS.join('|')})(?![a-zA-Z])`, 'g');
+  tokenized = tokenized.replace(standaloneSymbolPattern, (match) => {
+    try {
+      const rendered = katex.renderToString(match, KATEX_OPTS_INLINE);
       const placeholder = `___HTML_TOKEN_${htmlTokens.length}___`;
       htmlTokens.push(rendered);
       return placeholder;

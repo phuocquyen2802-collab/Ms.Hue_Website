@@ -25,6 +25,8 @@ function getMyWeakTopics(req, res) {
         id: s.id,
         examId: s.examId,
         examTitle: exam ? exam.title : s.examId,
+        isAiGenerated: Boolean(exam?.isAiGenerated),
+        sourceExamId: exam?.sourceExamId || null,
         attempt: s.attempt || 1,
         score: s.score,
         correctCount: s.correctCount,

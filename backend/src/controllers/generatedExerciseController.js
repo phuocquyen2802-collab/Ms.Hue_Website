@@ -175,6 +175,11 @@ function approveGeneratedExercise(req, res) {
       durationMinutes: exercises.length * 2,
       status: 'assigned',
       createdAt: new Date().toISOString(),
+      // Đánh dấu đây là đề AI sinh thêm TỪ 1 đề gốc - dùng để nhóm hiển thị
+      // như "thư mục con" của đề gốc trong danh sách đề thi (giáo viên) và
+      // "Luyện đề" (học sinh), thay vì hiện tách rời như 1 đề độc lập.
+      sourceExamId: record.sourceExamId || null,
+      isAiGenerated: true,
     };
     dataAccess.insert('exams', exam);
 
@@ -187,6 +192,7 @@ function approveGeneratedExercise(req, res) {
         correctAnswer: exercise.correctAnswer,
         tags: exercise.tags && exercise.tags.length > 0 ? exercise.tags : weakTags,
         difficulty: 'medium',
+        diagram: exercise.diagram || null,
         createdAt: new Date().toISOString(),
       });
     });

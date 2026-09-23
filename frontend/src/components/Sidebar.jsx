@@ -11,7 +11,8 @@ const TEACHER_MENU = [
 const STUDENT_MENU = [
   { to: '/student', icon: '🏠', label: 'Luyện đề', end: true },
   { to: '/student/weak-topics', icon: '📈', label: 'Kết quả của tôi' },
-  { to: '/student/ai-assistant', icon: '🤖', label: 'Hỏi đáp AI Gemini' },
+  { to: '/student/roadmaps', icon: '🗺️', label: 'Lộ trình ôn tập' },
+  { to: '/student/ai-assistant', icon: '🤖', label: 'Trợ lý AI - Chatbot' },
 ];
 
 export default function Sidebar() {
@@ -76,8 +77,8 @@ export default function Sidebar() {
               fontSize: 12,
               justifyContent: 'center',
               borderRadius: 6,
-              border: '1px solid #e2e8f0',
-              background: '#f8fafc',
+              border: '1px solid rgba(238, 240, 248, 0.16)',
+              background: 'rgba(238, 240, 248, 0.06)',
             }}
             title="Cài đặt tài khoản"
           >
@@ -94,8 +95,8 @@ export default function Sidebar() {
               fontSize: 12,
               justifyContent: 'center',
               borderRadius: 6,
-              border: '1px solid #fee2e2',
-              background: '#fff5f5',
+              border: '1px solid rgba(220, 38, 38, 0.3)',
+              background: 'rgba(220, 38, 38, 0.1)',
             }}
           >
             <span>🚪</span>

@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import api from '../services/api';
 import { renderMath } from '../utils/mathRender';
+import QuestionDiagram from '../components/QuestionDiagram';
 
 export default function ResultPage() {
   const { submissionId } = useParams();
@@ -210,6 +211,8 @@ export default function ResultPage() {
                       style={{ fontWeight: 600, fontSize: 14, color: 'var(--text-main)', marginBottom: 12, lineHeight: 1.6 }}
                       dangerouslySetInnerHTML={{ __html: renderMath(a.content) }}
                     />
+
+                    <QuestionDiagram diagram={a.diagram} />
 
                     <div style={{ fontSize: 13, display: 'flex', gap: 16, flexWrap: 'wrap' }}>
                       <div>

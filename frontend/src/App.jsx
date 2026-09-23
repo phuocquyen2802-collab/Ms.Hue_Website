@@ -14,6 +14,7 @@ import StudentDashboard from './pages/StudentDashboard';
 import ExamPage from './pages/ExamPage';
 import ResultPage from './pages/ResultPage';
 import StudentWeakTopicsPage from './pages/StudentWeakTopicsPage';
+import StudentRoadmapsPage from './pages/StudentRoadmapsPage';
 import StudentHistoryDetailPage from './pages/StudentHistoryDetailPage';
 import SettingsPage from './pages/SettingsPage';
 import AiAssistantPage from './pages/AiAssistantPage';
@@ -136,6 +137,14 @@ export default function App() {
         element={
           <ProtectedRoute role="student">
             <StudentWeakTopicsPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/student/roadmaps"
+        element={
+          <ProtectedRoute role="student">
+            <StudentRoadmapsPage />
           </ProtectedRoute>
         }
       />

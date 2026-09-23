@@ -79,7 +79,7 @@ function getFileMeta(fileName) {
 export default function ChatWidget() {
   const { user } = useAuth();
 
-  const [isPanelExpanded, setIsPanelExpanded] = useState(true);
+  const [isPanelExpanded, setIsPanelExpanded] = useState(false);
   const [contacts, setContacts] = useState([]);
   const [activePartner, setActivePartner] = useState(null);
   const [conversation, setConversation] = useState([]);
@@ -358,7 +358,7 @@ export default function ChatWidget() {
   });
 
   return (
-    <div style={{ position: 'fixed', bottom: 20, right: 20, zIndex: 199, fontFamily: 'inherit', display: 'flex', alignItems: 'flex-end', gap: 14 }}>
+    <div className="no-print" style={{ position: 'fixed', bottom: 20, right: 20, zIndex: 199, fontFamily: 'inherit', display: 'flex', alignItems: 'flex-end', gap: 14 }}>
       {/* 1. POPUP HỘI THOẠI TRÒ CHUYỆN */}
       {activePartner && (
         <div
@@ -1318,14 +1318,14 @@ export default function ChatWidget() {
             height: 48,
             padding: '0 16px',
             borderRadius: 24,
-            background: 'linear-gradient(135deg, #2563eb, #1d4ed8)',
+            background: 'var(--ink)',
             color: '#ffffff',
             border: 'none',
             cursor: 'pointer',
             display: 'flex',
             alignItems: 'center',
             gap: 8,
-            boxShadow: '0 8px 24px rgba(37, 99, 235, 0.35)',
+            boxShadow: '0 8px 24px rgba(27, 35, 64, 0.35)',
             fontWeight: 700,
             fontSize: 13.5,
           }}

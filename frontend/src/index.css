@@ -1,25 +1,37 @@
 :root {
   --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-  
-  /* Color Palette - Clean White & Standard Accents */
-  --bg-app: #f8fafc;
-  --bg-card: #ffffff;
-  --bg-subtle: #f1f5f9;
-  --bg-hover: #f8fafc;
-  
-  --border-color: #e2e8f0;
-  --border-light: #edf2f7;
-  --border-focus: #2563eb;
+  --font-display: 'Fraunces', 'Georgia', serif;
 
-  --text-main: #1e293b;
-  --text-muted: #64748b;
-  --text-light: #94a3b8;
-  
-  /* Primary & Brand Colors */
-  --primary: #2563eb;
-  --primary-hover: #1d4ed8;
-  --primary-light: #eff6ff;
-  --primary-border: #bfdbfe;
+  /* Bảng màu "vở bài tập Toán" — dùng cho trang đăng nhập/xác thực */
+  --paper: #f6f4ee;
+  --paper-line: #e4e0d3;
+  --ink: #1b2340;
+  --ink-soft: #55607f;
+  --gold: #c98a2c;
+  --gold-hover: #b3781f;
+  --gold-soft: #f3e4c6;
+  --gold-text: #8a611f;
+
+  /* Bảng màu "vở bài tập Toán" áp dụng cho toàn bộ giao diện */
+  --bg-app: var(--paper);
+  --bg-card: #fffefb;
+  --bg-subtle: #efead9;
+  --bg-hover: #efead9;
+
+  --border-color: var(--paper-line);
+  --border-light: #ece6d6;
+  --border-focus: var(--gold);
+
+  --text-main: var(--ink);
+  --text-muted: var(--ink-soft);
+  --text-light: #8791ac;
+
+  /* Primary & Brand Colors — dùng vàng hổ phách đậm để vừa đọc rõ làm chữ
+     trên nền giấy, vừa đủ tối để chữ trắng trên nút bấm đạt chuẩn tương phản */
+  --primary: var(--gold-text);
+  --primary-hover: #6f4d18;
+  --primary-light: var(--gold-soft);
+  --primary-border: #e7c98a;
   
   /* Semantic Colors */
   --success: #10b981;
@@ -51,11 +63,11 @@
   --radius-xl: 16px;
   
   /* Shadows */
-  --shadow-xs: 0 1px 2px 0 rgba(15, 23, 42, 0.04);
-  --shadow-sm: 0 1px 3px 0 rgba(15, 23, 42, 0.06);
-  --shadow-md: 0 4px 6px -1px rgba(15, 23, 42, 0.07);
-  --shadow-lg: 0 10px 15px -3px rgba(15, 23, 42, 0.08);
-  --shadow-card: 0 1px 3px rgba(15, 23, 42, 0.05);
+  --shadow-xs: 0 1px 2px 0 rgba(27, 35, 64, 0.05);
+  --shadow-sm: 0 1px 3px 0 rgba(27, 35, 64, 0.07);
+  --shadow-md: 0 4px 6px -1px rgba(27, 35, 64, 0.08);
+  --shadow-lg: 0 10px 15px -3px rgba(27, 35, 64, 0.1);
+  --shadow-card: 0 1px 3px rgba(27, 35, 64, 0.06);
 }
 
 * {
@@ -82,12 +94,12 @@ body {
 }
 
 a {
-  color: var(--primary);
+  color: var(--gold-text);
   text-decoration: none;
 }
 
 a:hover {
-  color: var(--primary-hover);
+  color: var(--ink);
 }
 
 h1, h2, h3, h4, h5, h6 {
@@ -110,8 +122,8 @@ h1, h2, h3, h4, h5, h6 {
 .sidebar {
   width: var(--sidebar-width);
   flex-shrink: 0;
-  background: var(--bg-card);
-  border-right: 1px solid var(--border-color);
+  background: var(--ink);
+  border-right: none;
   display: flex;
   flex-direction: column;
   padding: 16px 12px;
@@ -126,34 +138,37 @@ h1, h2, h3, h4, h5, h6 {
   align-items: center;
   gap: 10px;
   padding: 8px 10px 16px 10px;
-  border-bottom: 1px solid var(--border-light);
+  border-bottom: 1px solid rgba(238, 240, 248, 0.14);
   margin-bottom: 14px;
 }
 
 .sidebar-logo-icon {
   width: 32px;
   height: 32px;
-  background: var(--primary);
-  color: white;
+  background: transparent;
+  color: var(--gold-soft);
+  border: 1.5px solid rgba(238, 240, 248, 0.35);
   border-radius: var(--radius-md);
   display: flex;
   align-items: center;
   justify-content: center;
   font-size: 16px;
-  font-weight: 700;
+  font-family: var(--font-display);
+  font-weight: 600;
 }
 
 .sidebar-brand-text {
-  font-weight: 700;
+  font-family: var(--font-display);
+  font-weight: 600;
   font-size: 15px;
-  color: var(--text-main);
+  color: #f7f5ee;
   white-space: nowrap;
 }
 
 .sidebar-brand-sub {
   font-size: 11px;
   font-weight: 500;
-  color: var(--primary);
+  color: var(--gold-soft);
   white-space: nowrap;
 }
 
@@ -171,21 +186,23 @@ h1, h2, h3, h4, h5, h6 {
   gap: 10px;
   padding: 9px 12px;
   border-radius: var(--radius-md);
-  color: var(--text-muted);
+  color: #b9c0d9;
   font-weight: 500;
   font-size: 14px;
-  transition: background-color 0.15s ease, color 0.15s ease;
+  border-left: 3px solid transparent;
+  transition: background-color 0.15s ease, color 0.15s ease, border-color 0.15s ease;
   white-space: nowrap;
 }
 
 .sidebar-link:hover {
-  background: var(--bg-subtle);
-  color: var(--text-main);
+  background: rgba(238, 240, 248, 0.06);
+  color: #f7f5ee;
 }
 
 .sidebar-link.active {
-  background: var(--primary-light);
-  color: var(--primary);
+  background: rgba(201, 138, 44, 0.14);
+  color: var(--gold-soft);
+  border-left-color: var(--gold);
   font-weight: 600;
 }
 
@@ -197,7 +214,7 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 .sidebar-footer {
-  border-top: 1px solid var(--border-light);
+  border-top: 1px solid rgba(238, 240, 248, 0.14);
   padding-top: 12px;
   margin-top: 10px;
   display: flex;
@@ -211,19 +228,19 @@ h1, h2, h3, h4, h5, h6 {
   gap: 10px;
   padding: 8px 10px;
   border-radius: var(--radius-md);
-  background: var(--bg-subtle);
+  background: rgba(238, 240, 248, 0.06);
 }
 
 .user-avatar {
   width: 32px;
   height: 32px;
   border-radius: 50%;
-  background: var(--primary);
-  color: white;
+  background: var(--gold);
+  color: var(--ink);
   display: flex;
   align-items: center;
   justify-content: center;
-  font-weight: 600;
+  font-weight: 700;
   font-size: 13px;
   flex-shrink: 0;
 }
@@ -236,7 +253,7 @@ h1, h2, h3, h4, h5, h6 {
 .sidebar-user-name {
   font-weight: 600;
   font-size: 13px;
-  color: var(--text-main);
+  color: #f7f5ee;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -244,7 +261,7 @@ h1, h2, h3, h4, h5, h6 {
 
 .sidebar-user-role {
   font-size: 11px;
-  color: var(--text-muted);
+  color: #8990ac;
   white-space: nowrap;
 }
 
@@ -255,7 +272,7 @@ h1, h2, h3, h4, h5, h6 {
   gap: 6px;
   padding: 8px 10px;
   border-radius: var(--radius-md);
-  color: var(--danger);
+  color: #f2b8b8;
   font-weight: 500;
   background: transparent;
   border: 1px solid transparent;
@@ -266,8 +283,8 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 .logout-link:hover {
-  background: var(--danger-bg);
-  border-color: var(--danger-border);
+  background: rgba(220, 38, 38, 0.18);
+  border-color: rgba(220, 38, 38, 0.35);
 }
 
 .main-content {
@@ -297,8 +314,9 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 .page-title {
-  font-size: 22px;
-  font-weight: 700;
+  font-family: var(--font-display);
+  font-size: 26px;
+  font-weight: 600;
   color: var(--text-main);
 }
 
@@ -377,7 +395,7 @@ h1, h2, h3, h4, h5, h6 {
 
 .metric-icon-box.blue {
   background: var(--primary-light);
-  color: var(--primary);
+  color: var(--gold-text);
 }
 
 .metric-icon-box.green {
@@ -461,8 +479,8 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 .tab-button.active {
-  color: var(--primary);
-  border-bottom-color: var(--primary);
+  color: var(--gold-text);
+  border-bottom-color: var(--gold);
   font-weight: 600;
 }
 
@@ -478,7 +496,7 @@ h1, h2, h3, h4, h5, h6 {
 
 .tab-button.active .tab-count {
   background: var(--primary-light);
-  color: var(--primary);
+  color: var(--gold-text);
 }
 
 /* ==========================================================================
@@ -501,14 +519,19 @@ button.btn, .btn, a.btn {
   font-family: inherit;
   white-space: nowrap;
   text-decoration: none !important;
-  transition: all 0.2s ease;
+  transition: background-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease, border-color 0.2s ease;
+}
+
+button.btn:focus-visible, .btn:focus-visible, a.btn:focus-visible {
+  outline: 2px solid var(--border-focus);
+  outline-offset: 2px;
 }
 
 button.btn:hover, .btn:hover, a.btn:hover {
   background: var(--primary-hover);
   color: #ffffff !important;
   text-decoration: none !important;
-  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.25);
+  box-shadow: 0 4px 12px rgba(138, 97, 31, 0.3);
   transform: translateY(-1px);
 }
 
@@ -545,7 +568,7 @@ button.btn-back {
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.04);
   text-decoration: none;
   cursor: pointer;
-  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: background-color 0.2s cubic-bezier(0.4, 0, 0.2, 1), border-color 0.2s cubic-bezier(0.4, 0, 0.2, 1), color 0.2s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.2s cubic-bezier(0.4, 0, 0.2, 1), transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .btn-back:hover,
@@ -569,7 +592,7 @@ button.btn-back:hover {
   color: #334155;
   font-size: 14px;
   font-weight: 800;
-  transition: all 0.2s ease;
+  transition: background-color 0.2s ease, color 0.2s ease, transform 0.2s ease;
 }
 
 .btn-back:hover .btn-back-arrow {
@@ -608,7 +631,7 @@ button.btn.outline-danger, .btn.outline-danger, a.btn.outline-danger {
   align-items: center;
   gap: 5px;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
-  transition: all 0.2s ease;
+  transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
 }
 
 button.btn.outline-danger:hover, .btn.outline-danger:hover, a.btn.outline-danger:hover {
@@ -662,6 +685,18 @@ input:focus,
 select:focus,
 textarea:focus {
   outline: none;
+}
+
+input:focus:not(:focus-visible),
+select:focus:not(:focus-visible),
+textarea:focus:not(:focus-visible) {
+  border-color: var(--border-color);
+  box-shadow: none;
+}
+
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
   border-color: var(--border-focus);
   box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.15);
 }
@@ -756,7 +791,7 @@ tbody tr:hover {
   justify-content: center;
   font-size: 12px;
   font-weight: 600;
-  color: var(--primary);
+  color: var(--gold-text);
   flex-shrink: 0;
 }
 
@@ -982,6 +1017,216 @@ tbody tr:hover {
 }
 
 /* ==========================================================================
+   Khung xem trước công thức khi giáo viên sửa nội dung AI sinh (raw LaTeX)
+   ========================================================================== */
+
+/* Cơ chế "bấm vào là sửa ngay tại chỗ": mặc định CHỈ hiện công thức đã
+   render (trông như văn bản bình thường, không lộ mã LaTeX thô). Bấm/focus
+   vào đúng vị trí đó sẽ lộ ra ô nhập mã LaTeX chồng đúng lên trên (dùng CSS
+   :focus-within, không cần JS state) - gõ xong bấm ra ngoài (blur) sẽ thấy
+   lại ngay công thức đã render theo nội dung mới, không còn 2 khung tách
+   rời (1 cái để xem, 1 cái để sửa) như trước nữa. */
+.formula-edit-box {
+  position: relative;
+  border: 1px solid #cbd5e1 !important;
+  border-radius: 6px !important;
+  background: #ffffff !important;
+  width: 100%;
+  min-height: 34px;
+}
+
+.formula-edit-box .formula-edit-box-preview {
+  position: relative;
+  z-index: 1;
+  padding: 7px 10px !important;
+  margin: 0 !important;
+  border: none !important;
+  border-radius: 6px !important;
+  background: transparent !important;
+  line-height: 1.6;
+  color: #1e293b;
+  min-height: 20px;
+  cursor: text;
+  pointer-events: none; /* click phải xuyên qua tới input bên trên để focus được, xem ghi chú input */
+}
+
+.formula-edit-box .formula-edit-box-preview:empty::before {
+  content: 'Bấm để nhập nội dung…';
+  color: #94a3b8;
+  font-style: italic;
+}
+
+/* Input luôn nằm TRÊN preview (z-index cao hơn) dù đang ẩn (opacity:0), để
+   MỌI cú bấm chuột đều rơi đúng vào input và focus được nó - nếu để input
+   nằm dưới, preview sẽ chặn hết click và không bao giờ vào được chế độ sửa. */
+.formula-edit-box .formula-edit-box-input {
+  position: absolute !important;
+  inset: 0;
+  display: block;
+  width: 100% !important;
+  height: 100% !important;
+  padding: 7px 10px !important;
+  margin: 0 !important;
+  font-size: inherit !important;
+  font-family: inherit !important;
+  line-height: 1.6 !important;
+  border: none !important;
+  border-radius: 6px !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  resize: none;
+  opacity: 0;
+  z-index: 2;
+  cursor: text;
+}
+
+.formula-edit-box:focus-within {
+  border-color: var(--gold, #c98a2c) !important;
+  box-shadow: 0 0 0 3px var(--gold-soft, #f3e4c6);
+}
+
+.formula-edit-box:focus-within .formula-edit-box-input {
+  opacity: 1;
+  background: #fffefb !important;
+  outline: none !important;
+}
+
+.formula-edit-box:focus-within .formula-edit-box-preview {
+  opacity: 0;
+}
+
+/* Bên trong .option-row đã có sẵn khung viền riêng cho từng đáp án - bỏ
+   viền của formula-edit-box để không bị viền lồng viền. */
+.option-row .formula-edit-box {
+  border: none !important;
+  background: transparent !important;
+}
+
+.option-row .formula-edit-box:focus-within {
+  box-shadow: none;
+}
+
+/* ==========================================================================
+   Bảng điều hướng câu hỏi khi làm bài thi (ExamPage)
+   ========================================================================== */
+
+.exam-question-nav {
+  position: fixed;
+  top: 96px;
+  right: 24px;
+  width: 216px;
+  max-height: calc(100vh - 120px);
+  overflow-y: auto;
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  padding: 16px;
+  box-shadow: var(--shadow-md);
+  z-index: 30;
+}
+
+.exam-question-nav-title {
+  font-weight: 700;
+  font-size: 13px;
+  color: var(--text-main);
+  margin-bottom: 12px;
+}
+
+.exam-question-nav-body {
+  max-height: calc(100vh - 260px);
+  overflow-y: auto;
+  margin-bottom: 4px;
+}
+
+.exam-question-nav-group + .exam-question-nav-group {
+  margin-top: 14px;
+}
+
+.exam-question-nav-group-title {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  margin-bottom: 8px;
+}
+
+.exam-question-nav-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 8px;
+}
+
+.exam-question-nav-item {
+  aspect-ratio: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  border: 1.5px solid var(--border-color);
+  background: #ffffff;
+  font-weight: 700;
+  font-size: 13px;
+  font-family: inherit;
+  cursor: pointer;
+  color: var(--text-muted);
+  padding: 0;
+  transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+
+.exam-question-nav-item:hover {
+  border-color: var(--primary);
+  color: var(--primary);
+}
+
+.exam-question-nav-item:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
+
+.exam-question-nav-item.answered {
+  background: var(--success-bg);
+  border-color: var(--success-border);
+  color: var(--success-text);
+}
+
+.exam-question-nav-legend {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 11.5px;
+  color: var(--text-muted);
+  border-top: 1px solid var(--border-light);
+  padding-top: 10px;
+}
+
+.exam-question-nav-dot {
+  display: inline-block;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  margin-right: 6px;
+}
+
+.exam-question-nav-dot.done {
+  background: var(--success);
+}
+
+.exam-question-nav-dot.pending {
+  background: var(--border-color);
+  border: 1px solid var(--text-light);
+}
+
+/* Chỉ hiện trên màn hình đủ rộng để không đè lên nội dung đề thi (vốn căn
+   giữa với max-width 860px) - dưới ngưỡng này ẩn đi, học sinh vẫn theo dõi
+   tiến độ qua thanh progress bar sẵn có phía trên. */
+@media (max-width: 1300px) {
+  .exam-question-nav {
+    display: none;
+  }
+}
+
+/* ==========================================================================
    Math Formula & Equation Synchronization (Đồng bộ font chữ công thức Toán)
    ========================================================================== */
 
@@ -1001,6 +1246,10 @@ img.math-img,
   background: transparent !important;
   display: inline-block !important;
   margin: 0 2px !important;
+  /* Ảnh công thức xuất từ Word/MathType có nền trắng đục thật trong file ảnh
+     (không phải nền CSS) — dùng multiply để nền trắng tự hoà vào nền phía
+     sau (kể cả nền tô màu khi chọn đáp án), chỉ giữ lại nét mực đen. */
+  mix-blend-mode: multiply;
 }
 
 /* 2. Kích thước THỰC của từng công thức được tính riêng lúc import file Word
@@ -1094,10 +1343,10 @@ img.formula-img.formula-selected {
 }
 
 .formula-batch-toolbar .btn-preset.active {
-  background: #2563eb !important;
+  background: var(--primary) !important;
   color: #ffffff !important;
-  border-color: #1d4ed8 !important;
-  box-shadow: 0 2px 8px rgba(37, 99, 235, 0.35);
+  border-color: var(--primary-hover) !important;
+  box-shadow: 0 2px 8px rgba(138, 97, 31, 0.35);
 }
 
 @keyframes slideUpToolbar {
@@ -1124,6 +1373,11 @@ img.diagram-img {
   margin: 14px auto !important;
   border-radius: var(--radius-sm) !important;
   object-fit: contain !important;
+  /* Đồ thị/bảng biến thiên xuất từ Word cũng là ảnh nền trắng đục thật
+     (giống ảnh công thức) - dùng multiply để hoà vào nền trang thay vì để
+     khung trắng lộ liễu. */
+  mix-blend-mode: multiply;
+  background: transparent !important;
 }
 
 /* Đoạn văn (thường do mammoth dựng thành <p>) chỉ chứa 1 ảnh đồ thị/hình vẽ
@@ -1135,52 +1389,304 @@ img.diagram-img {
 }
 
 /* ==========================================================================
+   Form Panel — đồng bộ form (giáo viên) với phong cách "vở bài tập Toán"
+   của trang đăng nhập: nền giấy, viền mực, điểm nhấn vàng bút-đánh-dấu.
+   Chỉ áp dụng bên trong .form-panel để không ảnh hưởng sidebar/card/bảng.
+   ========================================================================== */
+
+.form-panel .form-group label {
+  color: var(--ink);
+  font-weight: 600;
+}
+
+.form-panel input[type='text'],
+.form-panel input[type='email'],
+.form-panel input[type='password'],
+.form-panel input[type='number'],
+.form-panel select,
+.form-panel textarea {
+  border: 1.5px solid var(--paper-line);
+  background: #fffefb;
+}
+
+.form-panel input[type='text']:focus,
+.form-panel input[type='email']:focus,
+.form-panel input[type='password']:focus,
+.form-panel input[type='number']:focus,
+.form-panel select:focus,
+.form-panel textarea:focus {
+  outline: none;
+}
+
+.form-panel input:focus-visible,
+.form-panel select:focus-visible,
+.form-panel textarea:focus-visible {
+  border-color: var(--gold);
+  box-shadow: 0 0 0 3px var(--gold-soft);
+}
+
+.form-panel button.btn:not(.secondary):not(.danger):not(.outline-danger):not(.success),
+.form-panel a.btn:not(.secondary):not(.danger):not(.outline-danger):not(.success) {
+  background: var(--gold);
+  color: var(--ink) !important;
+}
+
+.form-panel button.btn:not(.secondary):not(.danger):not(.outline-danger):not(.success):hover,
+.form-panel a.btn:not(.secondary):not(.danger):not(.outline-danger):not(.success):hover {
+  background: var(--gold-hover);
+  color: var(--ink) !important;
+  box-shadow: 0 4px 14px rgba(201, 138, 44, 0.3);
+}
+
+.form-panel button.btn:not(.secondary):not(.danger):not(.outline-danger):not(.success):disabled {
+  background: #e2e8f0 !important;
+  color: #94a3b8 !important;
+}
+
+/* ==========================================================================
    Auth Pages
    ========================================================================== */
 
 .auth-page {
   min-height: 100vh;
+  display: grid;
+  grid-template-columns: 1.1fr 1fr;
+  background: var(--paper);
+}
+
+/* Panel trái: "trang bìa vở" — mực navy + hoa văn lưới ô vuông */
+.auth-hero {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 56px 56px 40px;
+  background: var(--ink);
+  color: #eef0f8;
+  overflow: hidden;
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.055) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.055) 1px, transparent 1px);
+  background-size: 34px 34px;
+}
+
+.auth-hero::after {
+  content: '';
+  position: absolute;
+  right: -90px;
+  bottom: -90px;
+  width: 320px;
+  height: 320px;
+  border-radius: 50%;
+  border: 1.5px solid rgba(201, 138, 44, 0.25);
+}
+
+.auth-hero-mark {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 46px;
+  height: 46px;
+  border: 1.5px solid rgba(238, 240, 248, 0.35);
+  border-radius: 10px;
+  font-family: var(--font-display);
+  font-size: 24px;
+  font-weight: 600;
+  color: var(--gold-soft);
+}
+
+.auth-hero-body {
+  max-width: 420px;
+}
+
+.auth-hero-body h1 {
+  font-family: var(--font-display);
+  font-size: 40px;
+  font-weight: 600;
+  line-height: 1.18;
+  letter-spacing: -0.01em;
+  margin: 28px 0 14px;
+  color: #f7f5ee;
+  text-wrap: balance;
+}
+
+.auth-hero-body p {
+  font-size: 15px;
+  line-height: 1.7;
+  color: #b9c0d9;
+  margin: 0;
+  max-width: 340px;
+}
+
+.auth-hero-foot {
+  position: relative;
+  font-size: 13px;
+  color: #8990ac;
+  border-top: 1px solid rgba(238, 240, 248, 0.14);
+  padding-top: 18px;
+}
+
+/* Panel phải: form trên nền giấy */
+.auth-form-side {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: var(--bg-app);
-  padding: 20px;
+  padding: 40px 32px;
 }
 
 .auth-card {
   width: 100%;
-  max-width: 400px;
-  background: #ffffff;
-  border: 1px solid var(--border-color);
-  border-radius: var(--radius-lg);
-  padding: 32px 28px;
-  box-shadow: var(--shadow-sm);
+  max-width: 380px;
 }
 
 .auth-brand {
-  text-align: center;
-  margin-bottom: 20px;
+  margin-bottom: 28px;
 }
 
 .auth-brand-icon {
-  width: 42px;
-  height: 42px;
-  background: var(--primary);
-  color: white;
-  border-radius: var(--radius-md);
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 20px;
-  font-weight: 700;
-  margin-bottom: 10px;
+  display: none;
 }
 
 .auth-card h2 {
-  font-size: 20px;
+  font-family: var(--font-display);
+  font-size: 26px;
+  font-weight: 600;
+  color: var(--ink);
+  margin: 0 0 6px;
+}
+
+.auth-card .auth-subtitle {
+  font-size: 14px;
+  color: var(--ink-soft);
+  margin: 0;
+}
+
+.auth-page .form-group label {
+  color: var(--ink);
+  font-weight: 600;
+}
+
+.auth-page input[type='text'],
+.auth-page input[type='email'],
+.auth-page input[type='password'] {
+  border: 1.5px solid var(--paper-line);
+  background: #fffefb;
+  padding: 10px 12px;
+  font-size: 14.5px;
+}
+
+.auth-page input[type='text']:focus,
+.auth-page input[type='email']:focus,
+.auth-page input[type='password']:focus {
+  outline: none;
+}
+
+.auth-page input[type='text']:focus:not(:focus-visible),
+.auth-page input[type='email']:focus:not(:focus-visible),
+.auth-page input[type='password']:focus:not(:focus-visible) {
+  border-color: var(--paper-line);
+  box-shadow: none;
+}
+
+.auth-page input[type='text']:focus-visible,
+.auth-page input[type='email']:focus-visible,
+.auth-page input[type='password']:focus-visible {
+  border-color: var(--gold);
+  box-shadow: 0 0 0 3px var(--gold-soft);
+}
+
+.auth-page .btn {
+  background: var(--gold);
+  color: var(--ink) !important;
+  font-family: var(--font-sans);
   font-weight: 700;
-  color: var(--text-main);
-  text-align: center;
+  font-size: 14.5px;
+  padding: 11px 16px;
+  border-radius: var(--radius-md);
+  box-shadow: none;
+  transition: background-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
+}
+
+.auth-page .btn:hover {
+  background: var(--gold-hover);
+  color: var(--ink) !important;
+  box-shadow: 0 4px 14px rgba(201, 138, 44, 0.3);
+}
+
+.auth-password-field {
+  position: relative;
+}
+
+.auth-password-field input {
+  padding-right: 42px;
+}
+
+.auth-password-toggle {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: none;
+  color: var(--ink-soft);
+  cursor: pointer;
+  padding: 0;
+}
+
+.auth-password-toggle:hover {
+  color: var(--ink);
+}
+
+.auth-password-toggle:focus-visible {
+  outline: 2px solid var(--gold);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+.auth-error {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin-bottom: 14px;
+  padding: 10px 14px;
+  background: var(--danger-bg);
+  border: 1px solid var(--danger-border);
+  color: var(--danger-text);
+  border-radius: var(--radius-md);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+@media (max-width: 860px) {
+  .auth-page {
+    grid-template-columns: 1fr;
+  }
+
+  .auth-hero {
+    padding: 32px 24px 28px;
+    background-size: 26px 26px;
+  }
+
+  .auth-hero-body h1 {
+    font-size: 28px;
+    margin: 18px 0 8px;
+  }
+
+  .auth-hero-body p {
+    display: none;
+  }
+
+  .auth-hero-foot {
+    display: none;
+  }
+
+  .auth-form-side {
+    padding: 32px 20px 48px;
+  }
 }
 
 .empty-state {
@@ -1288,3 +1794,23 @@ img.diagram-img {
   padding: 4px 0;
 }
 
+
+/* Xuất PDF bằng window.print(): mặc định ẩn khối .print-only trên màn hình
+   bình thường, chỉ hiện + ẩn toàn bộ phần còn lại của trang khi đang in
+   (sidebar, chuông thông báo, khung chat, nút bấm quản lý...). */
+.print-only {
+  display: none;
+}
+@media print {
+  .sidebar,
+  .no-print {
+    display: none !important;
+  }
+  .container > *:not(.print-only) {
+    display: none !important;
+  }
+  .print-only {
+    display: block !important;
+    padding: 0;
+  }
+}
