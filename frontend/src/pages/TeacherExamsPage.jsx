@@ -32,6 +32,7 @@ function isLongOptionQuestion(options) {
 export default function TeacherExamsPage() {
   const [exams, setExams] = useState([]);
   const [students, setStudents] = useState([]);
+  const [groups, setGroups] = useState([]);
   const [submissions, setSubmissions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showCreateForm, setShowCreateForm] = useState(false);
@@ -49,6 +50,11 @@ export default function TeacherExamsPage() {
   const [uploadError, setUploadError] = useState('');
   const [createAnswerKeyFile, setCreateAnswerKeyFile] = useState(null);
   const [createAssignedStudents, setCreateAssignedStudents] = useState([]);
+  // Nút "Chọn theo lớp/nhóm" nào đang được coi là "đang áp dụng" (chỉ để tô
+  // nổi bật đúng 1 nút vừa bấm) - KHÔNG suy ra từ việc trùng khớp học sinh
+  // ngẫu nhiên giữa lớp và nhóm (VD: chọn 1 nhóm mà vô tình đủ hết học sinh
+  // của 1 lớp khác cũng không được tô nổi bật nhầm nút lớp đó).
+  const [activeQuickSelect, setActiveQuickSelect] = useState({ type: null, key: null });
   const [createAssignSearch, setCreateAssignSearch] = useState('');
   const [createAssignClassFilter, setCreateAssignClassFilter] = useState('all');
 
@@ -151,14 +157,16 @@ export default function TeacherExamsPage() {
   async function loadData() {
     setLoading(true);
     try {
-      const [examsRes, studentsRes, subsRes] = await Promise.all([
+      const [examsRes, studentsRes, subsRes, groupsRes] = await Promise.all([
         api.get('/exams'),
         api.get('/teacher/students'),
         api.get('/teacher/submissions').catch(() => ({ data: [] })),
+        api.get('/teacher/groups').catch(() => ({ data: [] })),
       ]);
       setExams(examsRes.data);
       setStudents(studentsRes.data);
       setSubmissions(subsRes.data || []);
+      setGroups(groupsRes.data || []);
     } catch (err) {
       console.error(err);
     } finally {
@@ -171,6 +179,10 @@ export default function TeacherExamsPage() {
   }, []);
 
   function toggleStudentInCreate(id) {
+    // Bấm tay từng học sinh -> không còn coi là "đang chọn theo đúng 1 lớp/nhóm
+    // nào" nữa, tắt trạng thái nổi bật của nút lớp/nhóm (nếu có) để tránh nổi
+    // bật nhầm do trùng học sinh ngẫu nhiên giữa lớp và nhóm.
+    setActiveQuickSelect({ type: null, key: null });
     if (createAssignedStudents.includes(id)) {
       setCreateAssignedStudents(createAssignedStudents.filter((s) => s !== id));
     } else {
@@ -183,13 +195,29 @@ export default function TeacherExamsPage() {
     const allInClassSelected = classStudentIds.every((id) => createAssignedStudents.includes(id));
     if (allInClassSelected) {
       setCreateAssignedStudents(createAssignedStudents.filter((id) => !classStudentIds.includes(id)));
+      setActiveQuickSelect({ type: null, key: null });
     } else {
       const merged = Array.from(new Set([...createAssignedStudents, ...classStudentIds]));
       setCreateAssignedStudents(merged);
+      setActiveQuickSelect({ type: 'class', key: cls });
+    }
+  }
+
+  function toggleGroupInCreate(group) {
+    const groupStudentIds = group.studentIds;
+    const allInGroupSelected = groupStudentIds.every((id) => createAssignedStudents.includes(id));
+    if (allInGroupSelected) {
+      setCreateAssignedStudents(createAssignedStudents.filter((id) => !groupStudentIds.includes(id)));
+      setActiveQuickSelect({ type: null, key: null });
+    } else {
+      const merged = Array.from(new Set([...createAssignedStudents, ...groupStudentIds]));
+      setCreateAssignedStudents(merged);
+      setActiveQuickSelect({ type: 'group', key: group.id });
     }
   }
 
   function toggleAllInCreate() {
+    setActiveQuickSelect({ type: null, key: null });
     if (createAssignedStudents.length === students.length) {
       setCreateAssignedStudents([]);
     } else {
@@ -1173,16 +1201,37 @@ export default function TeacherExamsPage() {
                   <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-muted)' }}>⚡ CHỌN THEO LỚP:</span>
                   {distinctClasses.map((cls) => {
                     const classStudentIds = students.filter((s) => s.className === cls).map((s) => s.id);
-                    const allSelected = classStudentIds.length > 0 && classStudentIds.every((id) => createAssignedStudents.includes(id));
+                    const isActive = activeQuickSelect.type === 'class' && activeQuickSelect.key === cls;
                     return (
                       <button
                         key={cls}
                         type="button"
                         onClick={() => toggleClassInCreate(cls)}
-                        className={`btn sm ${allSelected ? '' : 'secondary'}`}
+                        className={`btn sm ${isActive ? '' : 'secondary'}`}
                         style={{ padding: '4px 10px', fontSize: 12 }}
                       >
-                        🏫 Lớp {cls} ({classStudentIds.length}) {allSelected ? '✓' : ''}
+                        🏫 Lớp {cls} ({classStudentIds.length}) {isActive ? '✓' : ''}
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+
+              {/* Chọn nhanh theo nhóm học sinh (tạo trong mục Quản lý học sinh) */}
+              {groups.length > 0 && (
+                <div style={{ marginBottom: 12, display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                  <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-muted)' }}>⚡ CHỌN THEO NHÓM:</span>
+                  {groups.map((g) => {
+                    const isActive = activeQuickSelect.type === 'group' && activeQuickSelect.key === g.id;
+                    return (
+                      <button
+                        key={g.id}
+                        type="button"
+                        onClick={() => toggleGroupInCreate(g)}
+                        className={`btn sm ${isActive ? '' : 'secondary'}`}
+                        style={{ padding: '4px 10px', fontSize: 12 }}
+                      >
+                        🗂️ {g.name} ({g.studentIds.length}) {isActive ? '✓' : ''}
                       </button>
                     );
                   })}

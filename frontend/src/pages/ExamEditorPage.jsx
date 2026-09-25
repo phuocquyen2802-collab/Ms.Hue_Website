@@ -36,7 +36,9 @@ export default function ExamEditorPage() {
   const navigate = useNavigate();
   const [exam, setExam] = useState(null);
   const [students, setStudents] = useState([]);
+  const [groups, setGroups] = useState([]);
   const [selectedStudents, setSelectedStudents] = useState([]);
+  const [activeQuickSelect, setActiveQuickSelect] = useState({ type: null, key: null });
   const [submissions, setSubmissions] = useState([]);
 
   // UI Modes
@@ -87,6 +89,7 @@ export default function ExamEditorPage() {
   useEffect(() => {
     loadExam();
     api.get('/teacher/students').then((res) => setStudents(res.data || []));
+    api.get('/teacher/groups').then((res) => setGroups(res.data || [])).catch(() => setGroups([]));
   }, [examId]);
 
   // Tải file Word lên Server
@@ -584,6 +587,9 @@ export default function ExamEditorPage() {
   }
 
   function toggleStudent(studentId) {
+    // Bấm tay từng học sinh -> tắt trạng thái nổi bật của nút lớp/nhóm nhanh
+    // (nếu có), tránh nổi bật nhầm do trùng học sinh ngẫu nhiên.
+    setActiveQuickSelect({ type: null, key: null });
     setSelectedStudents((prev) =>
       prev.includes(studentId) ? prev.filter((id) => id !== studentId) : [...prev, studentId]
     );
@@ -595,12 +601,27 @@ export default function ExamEditorPage() {
 
     if (allSelected) {
       setSelectedStudents((prev) => prev.filter((id) => !classStudentIds.includes(id)));
+      setActiveQuickSelect({ type: null, key: null });
     } else {
       setSelectedStudents((prev) => Array.from(new Set([...prev, ...classStudentIds])));
+      setActiveQuickSelect({ type: 'class', key: className });
+    }
+  }
+
+  function toggleGroup(group) {
+    const groupStudentIds = group.studentIds;
+    const allSelected = groupStudentIds.every((id) => selectedStudents.includes(id));
+    if (allSelected) {
+      setSelectedStudents((prev) => prev.filter((id) => !groupStudentIds.includes(id)));
+      setActiveQuickSelect({ type: null, key: null });
+    } else {
+      setSelectedStudents((prev) => Array.from(new Set([...prev, ...groupStudentIds])));
+      setActiveQuickSelect({ type: 'group', key: group.id });
     }
   }
 
   function toggleAllStudents() {
+    setActiveQuickSelect({ type: null, key: null });
     if (selectedStudents.length === students.length) {
       setSelectedStudents([]);
     } else {
@@ -1342,8 +1363,10 @@ export default function ExamEditorPage() {
                   {distinctClasses.map((cls) => {
                     const classStudents = students.filter((s) => s.className === cls);
                     const selectedCount = classStudents.filter((s) => selectedStudents.includes(s.id)).length;
-                    const isAllSelected = selectedCount === classStudents.length && classStudents.length > 0;
-                    const isPartial = selectedCount > 0 && !isAllSelected;
+                    // Chỉ tô đậm nút vừa được BẤM chọn (activeQuickSelect), không suy ra từ
+                    // việc trùng khớp học sinh ngẫu nhiên với nhóm/lớp khác.
+                    const isAllSelected = activeQuickSelect.type === 'class' && activeQuickSelect.key === cls;
+                    const isPartial = !isAllSelected && selectedCount > 0 && selectedCount < classStudents.length;
 
                     return (
                       <button
@@ -1379,6 +1402,56 @@ export default function ExamEditorPage() {
                   >
                     {selectedStudents.length === students.length ? 'Bỏ chọn tất cả' : 'Chọn tất cả'}
                   </button>
+                </div>
+              </div>
+            )}
+
+            {/* Chọn nhanh theo NHÓM (tạo trong mục Quản lý học sinh) */}
+            {groups.length > 0 && (
+              <div
+                style={{
+                  marginBottom: 14,
+                  padding: '12px 14px',
+                  background: 'var(--bg-subtle)',
+                  borderRadius: 'var(--radius-md)',
+                  border: '1px solid var(--border-light)',
+                }}
+              >
+                <div style={{ fontSize: 11.5, fontWeight: 700, color: 'var(--text-muted)', marginBottom: 8, textTransform: 'uppercase' }}>
+                  ⚡ Chọn nhanh theo Nhóm:
+                </div>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                  {groups.map((g) => {
+                    const selectedCount = g.studentIds.filter((id) => selectedStudents.includes(id)).length;
+                    const isAllSelected = activeQuickSelect.type === 'group' && activeQuickSelect.key === g.id;
+                    const isPartial = !isAllSelected && selectedCount > 0 && selectedCount < g.studentIds.length;
+
+                    return (
+                      <button
+                        key={g.id}
+                        type="button"
+                        className="btn sm"
+                        onClick={() => toggleGroup(g)}
+                        style={{
+                          background: isAllSelected ? 'var(--primary)' : isPartial ? 'var(--primary-light)' : '#ffffff',
+                          color: isAllSelected ? '#ffffff' : isPartial ? 'var(--primary)' : 'var(--text-main)',
+                          border: isAllSelected ? '1px solid var(--primary)' : '1px solid var(--border-color)',
+                          fontSize: 12,
+                          fontWeight: 600,
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: 4,
+                          cursor: 'pointer',
+                        }}
+                      >
+                        <span>🗂️ {g.name}</span>
+                        <span style={{ fontSize: 11, fontWeight: 700 }}>
+                          ({selectedCount}/{g.studentIds.length})
+                        </span>
+                        {isAllSelected && <span>✓</span>}
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
             )}

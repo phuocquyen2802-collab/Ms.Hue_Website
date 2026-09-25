@@ -17,6 +17,7 @@ import StudentWeakTopicsPage from './pages/StudentWeakTopicsPage';
 import StudentRoadmapsPage from './pages/StudentRoadmapsPage';
 import StudentHistoryDetailPage from './pages/StudentHistoryDetailPage';
 import SettingsPage from './pages/SettingsPage';
+import AnnouncementsPage from './pages/AnnouncementsPage';
 import AiAssistantPage from './pages/AiAssistantPage';
 
 function HomeRedirect() {
@@ -158,6 +159,14 @@ export default function App() {
       />
 
       {/* Shared Routes */}
+      <Route
+        path="/announcements"
+        element={
+          <ProtectedRoute>
+            <AnnouncementsPage />
+          </ProtectedRoute>
+        }
+      />
       <Route
         path="/settings"
         element={

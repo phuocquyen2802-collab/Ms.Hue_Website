@@ -70,11 +70,13 @@ export default function NotificationBell() {
         items.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
         setNotifications(items);
       } else {
-        // Học sinh: đề thi mới & lộ trình AI
-        const [examsRes, submissionsRes, roadmapsRes] = await Promise.all([
+        // Học sinh: đề thi mới, lộ trình AI, được thêm vào nhóm & thông báo chung
+        const [examsRes, submissionsRes, roadmapsRes, groupsRes, announcementsRes] = await Promise.all([
           api.get('/student/exams'),
           api.get('/student/submissions'),
           api.get('/student/me/roadmaps').catch(() => ({ data: [] })),
+          api.get('/student/me/groups').catch(() => ({ data: [] })),
+          api.get('/announcements').catch(() => ({ data: [] })),
         ]);
         const submittedIds = new Set(submissionsRes.data.map((s) => s.examId));
         const pending = examsRes.data.filter((e) => !submittedIds.has(e.id));
@@ -130,7 +132,35 @@ export default function NotificationBell() {
           };
         });
 
-        const items = [...examItems, ...roadmapItems];
+        const groupItems = (groupsRes.data || []).map((g) => ({
+          id: `group-${g.id}`,
+          type: 'group',
+          avatarText: '🗂️',
+          avatarBg: 'linear-gradient(135deg, #f59e0b, #d97706)',
+          badgeIcon: '👥',
+          badgeBg: '#7c3aed',
+          title: 'Được thêm vào nhóm',
+          desc: `Bạn vừa được thêm vào nhóm "${g.name}" (${g.memberCount} thành viên)`,
+          timestamp: g.createdAt,
+          targetPath: '/student',
+          read: readSet.has(`group-${g.id}`),
+        }));
+
+        const announcementItems = (announcementsRes.data || []).map((a) => ({
+          id: `announcement-${a.id}`,
+          type: 'announcement',
+          avatarText: '📢',
+          avatarBg: 'linear-gradient(135deg, #1d4ed8, #1e3a8a)',
+          badgeIcon: '📌',
+          badgeBg: '#2563eb',
+          title: a.authorName,
+          desc: `đã đăng thông báo${a.title ? ` "${a.title}"` : ''}: ${a.content.slice(0, 60)}${a.content.length > 60 ? '…' : ''}`,
+          timestamp: a.createdAt,
+          targetPath: '/announcements',
+          read: readSet.has(`announcement-${a.id}`),
+        }));
+
+        const items = [...examItems, ...roadmapItems, ...groupItems, ...announcementItems];
         items.sort((a, b) => new Date(b.timestamp || 0) - new Date(a.timestamp || 0));
         setNotifications(items);
       }
@@ -190,29 +220,12 @@ export default function NotificationBell() {
     setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
   }
 
-  // Trước đây chỉ đánh dấu "đã đọc" khi bấm hẳn vào 1 thông báo cụ thể - nếu
-  // người dùng chỉ MỞ chuông ra xem lướt qua rồi đóng lại (không bấm vào),
-  // hệ thống vẫn coi là "chưa đọc", nên sang trang khác lại hiện y như cũ.
-  // Giờ tự đánh dấu đã đọc sau khi mở chuông 1.5 giây (đủ thời gian để thấy
-  // huy hiệu đỏ trước khi nó biến mất, giống Messenger/Gmail).
-  useEffect(() => {
-    if (!open || !user) return;
-    const timer = setTimeout(() => {
-      const readSet = loadReadSet(user.role, user.id);
-      let changed = false;
-      notifications.forEach((n) => {
-        if (!readSet.has(n.id)) {
-          readSet.add(n.id);
-          changed = true;
-        }
-      });
-      if (changed) {
-        saveReadSet(user.role, user.id, readSet);
-        setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
-      }
-    }, 1500);
-    return () => clearTimeout(timer);
-  }, [open, user, notifications]);
+  // LƯU Ý: KHÔNG tự đánh dấu "đã đọc" chỉ vì mở chuông ra xem - số lượng
+  // thông báo chưa đọc phải giữ nguyên cho tới khi người dùng thực sự bấm
+  // vào đúng thông báo đó (handleItemClick) hoặc bấm "Đã đọc tất cả"
+  // (handleMarkAllAsRead). Trước đây có thử tự đánh dấu đã đọc sau 1.5 giây
+  // mở chuông, nhưng gây hiểu nhầm ngược lại: số lượng biến mất dù người
+  // dùng chưa thật sự đọc/xử lý thông báo nào cả.
 
   if (!user) return null;
 

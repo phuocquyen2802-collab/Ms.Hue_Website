@@ -153,13 +153,13 @@ h1, h2, h3, h4, h5, h6 {
   align-items: center;
   justify-content: center;
   font-size: 16px;
-  font-family: var(--font-display);
-  font-weight: 600;
+  font-family: var(--font-sans);
+  font-weight: 700;
 }
 
 .sidebar-brand-text {
-  font-family: var(--font-display);
-  font-weight: 600;
+  font-family: var(--font-sans);
+  font-weight: 700;
   font-size: 15px;
   color: #f7f5ee;
   white-space: nowrap;
@@ -314,9 +314,13 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 .page-title {
-  font-family: var(--font-display);
+  /* Trước đây dùng font chữ nghệ thuật (--font-display, Fraunces) riêng cho
+     tiêu đề trang, khác hẳn font chữ thường (--font-sans) của phần nội dung
+     bên dưới - gây cảm giác không đồng bộ trong cùng 1 trang. Đổi về cùng
+     font chữ với toàn bộ nội dung còn lại. */
+  font-family: var(--font-sans);
   font-size: 26px;
-  font-weight: 600;
+  font-weight: 700;
   color: var(--text-main);
 }
 

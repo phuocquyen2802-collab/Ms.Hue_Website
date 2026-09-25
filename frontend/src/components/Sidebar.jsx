@@ -2,6 +2,7 @@ import { NavLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 
 const TEACHER_MENU = [
+  { to: '/announcements', icon: '📢', label: 'Thông tin chung' },
   { to: '/teacher', icon: '👥', label: 'Quản lý học sinh', end: true },
   { to: '/teacher/exams', icon: '📝', label: 'Quản lý bài tập' },
   { to: '/teacher/analytics', icon: '📊', label: 'Giám sát chất lượng' },
@@ -9,6 +10,7 @@ const TEACHER_MENU = [
 ];
 
 const STUDENT_MENU = [
+  { to: '/announcements', icon: '📢', label: 'Thông tin chung' },
   { to: '/student', icon: '🏠', label: 'Luyện đề', end: true },
   { to: '/student/weak-topics', icon: '📈', label: 'Kết quả của tôi' },
   { to: '/student/roadmaps', icon: '🗺️', label: 'Lộ trình ôn tập' },

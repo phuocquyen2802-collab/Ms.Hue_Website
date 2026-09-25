@@ -7,6 +7,7 @@ export default function StudentDashboard() {
   const [exams, setExams] = useState([]);
   const [submissions, setSubmissions] = useState([]);
   const [roadmaps, setRoadmaps] = useState([]);
+  const [groups, setGroups] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -15,11 +16,13 @@ export default function StudentDashboard() {
       api.get('/student/exams'),
       api.get('/student/submissions'),
       api.get('/student/me/roadmaps'),
+      api.get('/student/me/groups').catch(() => ({ data: [] })),
     ])
-      .then(([examsRes, subsRes, roadmapsRes]) => {
+      .then(([examsRes, subsRes, roadmapsRes, groupsRes]) => {
         setExams(examsRes.data);
         setSubmissions(subsRes.data);
         setRoadmaps(roadmapsRes.data);
+        setGroups(groupsRes.data || []);
       })
       .finally(() => setLoading(false));
   }, []);
@@ -106,6 +109,33 @@ export default function StudentDashboard() {
           <div className="metric-icon-box purple">✨</div>
         </div>
       </div>
+
+      {/* Nhóm học sinh mà mình là thành viên - xem có bao nhiêu bạn cùng nhóm */}
+      {groups.length > 0 && (
+        <div className="card" style={{ padding: '18px 22px', borderRadius: 14 }}>
+          <h2 style={{ fontSize: 16, margin: '0 0 12px' }}>🗂️ Nhóm của tôi</h2>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+            {groups.map((g) => (
+              <div
+                key={g.id}
+                style={{
+                  padding: '10px 14px',
+                  border: '1px solid #e2e8f0',
+                  borderRadius: 10,
+                  background: '#fafafa',
+                }}
+              >
+                <div style={{ fontWeight: 700, fontSize: 14, color: '#1e293b' }}>
+                  {g.name} <span style={{ fontWeight: 500, color: '#64748b', fontSize: 12.5 }}>({g.memberCount} thành viên)</span>
+                </div>
+                <div style={{ fontSize: 12.5, color: '#64748b', marginTop: 4 }}>
+                  {g.members.map((m) => (m.isMe ? `${m.name} (Bạn)` : m.name)).join(', ')}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Modern Exam Card List */}
       <div className="card" style={{ padding: '20px 24px', borderRadius: 14 }}>

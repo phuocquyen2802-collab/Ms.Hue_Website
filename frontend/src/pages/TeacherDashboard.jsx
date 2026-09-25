@@ -6,9 +6,18 @@ const EMPTY_STUDENT_FORM = { name: '', email: '', password: '', className: '' };
 
 export default function TeacherDashboard() {
   const [students, setStudents] = useState([]);
+  const [groups, setGroups] = useState([]);
   const [loading, setLoading] = useState(true);
   const [studentSearch, setStudentSearch] = useState('');
   const [classFilter, setClassFilter] = useState('all');
+
+  // Modal tạo/sửa nhóm học sinh
+  const [showGroupModal, setShowGroupModal] = useState(false);
+  const [editingGroup, setEditingGroup] = useState(null); // null = tạo mới, object = đang sửa
+  const [groupForm, setGroupForm] = useState({ name: '', studentIds: [] });
+  const [groupSearch, setGroupSearch] = useState('');
+  const [groupError, setGroupError] = useState('');
+  const [savingGroup, setSavingGroup] = useState(false);
 
   // Modal thêm học sinh
   const [showAddModal, setShowAddModal] = useState(false);
@@ -24,8 +33,12 @@ export default function TeacherDashboard() {
   async function loadData() {
     setLoading(true);
     try {
-      const studentsRes = await api.get('/teacher/students');
+      const [studentsRes, groupsRes] = await Promise.all([
+        api.get('/teacher/students'),
+        api.get('/teacher/groups'),
+      ]);
       setStudents(studentsRes.data);
+      setGroups(groupsRes.data);
     } catch (err) {
       console.error('Lỗi khi tải dữ liệu:', err);
     } finally {
@@ -75,6 +88,69 @@ export default function TeacherDashboard() {
       loadData();
     } catch (err) {
       alert(err.response?.data?.message || 'Lỗi xoá tài khoản');
+    }
+  }
+
+  function openCreateGroupModal() {
+    setEditingGroup(null);
+    setGroupForm({ name: '', studentIds: [] });
+    setGroupSearch('');
+    setGroupError('');
+    setShowGroupModal(true);
+  }
+
+  function openEditGroupModal(group) {
+    setEditingGroup(group);
+    setGroupForm({ name: group.name, studentIds: group.studentIds });
+    setGroupSearch('');
+    setGroupError('');
+    setShowGroupModal(true);
+  }
+
+  function toggleGroupStudent(studentId) {
+    setGroupForm((prev) => {
+      const has = prev.studentIds.includes(studentId);
+      return {
+        ...prev,
+        studentIds: has ? prev.studentIds.filter((id) => id !== studentId) : [...prev.studentIds, studentId],
+      };
+    });
+  }
+
+  async function handleSaveGroup(e) {
+    e.preventDefault();
+    setGroupError('');
+    if (!groupForm.name.trim()) {
+      setGroupError('Vui lòng đặt tên nhóm');
+      return;
+    }
+    if (groupForm.studentIds.length === 0) {
+      setGroupError('Vui lòng chọn ít nhất 1 học sinh cho nhóm');
+      return;
+    }
+    setSavingGroup(true);
+    try {
+      if (editingGroup) {
+        await api.put(`/teacher/groups/${editingGroup.id}`, groupForm);
+      } else {
+        await api.post('/teacher/groups', groupForm);
+      }
+      setShowGroupModal(false);
+      loadData();
+    } catch (err) {
+      setGroupError(err.response?.data?.message || 'Lỗi khi lưu nhóm');
+    } finally {
+      setSavingGroup(false);
+    }
+  }
+
+  async function handleDeleteGroup(group) {
+    if (!window.confirm(`Xoá nhóm "${group.name}"? (không ảnh hưởng đề đã giao trước đó)`)) return;
+    try {
+      await api.delete(`/teacher/groups/${group.id}`);
+      loadData();
+    } catch (err) {
+      alert(err.response?.data?.message || 'Lỗi xoá nhóm');
     }
   }
 
@@ -287,6 +363,184 @@ export default function TeacherDashboard() {
           </div>
         )}
       </div>
+
+      {/* Quản lý nhóm học sinh - dùng để giao bài nhanh cho 1 tập học sinh tuỳ ý (không nhất thiết cùng lớp) */}
+      <div className="card">
+        <div className="card-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12 }}>
+          <div>
+            <h2 style={{ margin: 0 }}>Nhóm học sinh ({groups.length})</h2>
+            <p style={{ margin: '2px 0 0', fontSize: 12.5, color: 'var(--text-muted)' }}>
+              Gom học sinh tuỳ ý thành nhóm để giao bài nhanh (VD: nhóm ôn thêm, đội tuyển…)
+            </p>
+          </div>
+          <button className="btn sm" onClick={openCreateGroupModal}>
+            + Tạo nhóm
+          </button>
+        </div>
+
+        {groups.length === 0 ? (
+          <div className="empty-state">
+            <div className="empty-state-icon">🗂️</div>
+            <div className="empty-state-title">Chưa có nhóm nào</div>
+            <p className="empty-state-desc">Tạo nhóm để giao bài nhanh cho nhiều học sinh cùng lúc, không cần chọn tay từng người mỗi lần.</p>
+          </div>
+        ) : (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+            {groups.map((g) => (
+              <div
+                key={g.id}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  gap: 12,
+                  flexWrap: 'wrap',
+                  padding: '12px 16px',
+                  border: '1px solid var(--border-color)',
+                  borderRadius: 'var(--radius-md)',
+                  background: '#ffffff',
+                }}
+              >
+                <div style={{ minWidth: 220 }}>
+                  <div style={{ fontWeight: 700, fontSize: 14.5, color: 'var(--text-main)' }}>
+                    🗂️ {g.name} <span style={{ fontWeight: 500, color: 'var(--text-muted)', fontSize: 12.5 }}>({g.students.length} học sinh)</span>
+                  </div>
+                  <div style={{ fontSize: 12.5, color: 'var(--text-muted)', marginTop: 4 }}>
+                    {g.students.map((s) => s.name).join(', ') || '—'}
+                  </div>
+                </div>
+                <div className="action-buttons">
+                  <button type="button" className="btn sm secondary" onClick={() => openEditGroupModal(g)}>
+                    Sửa
+                  </button>
+                  <button type="button" className="btn sm outline-danger" onClick={() => handleDeleteGroup(g)}>
+                    Xoá
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Modal Tạo/Sửa nhóm học sinh */}
+      {showGroupModal && (
+        <div
+          style={{
+            position: 'fixed',
+            inset: 0,
+            background: 'rgba(15, 23, 42, 0.4)',
+            backdropFilter: 'blur(4px)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 100,
+            padding: 20,
+          }}
+          onClick={() => setShowGroupModal(false)}
+        >
+          <div
+            className="card"
+            style={{ width: '100%', maxWidth: 480, margin: 0, boxShadow: 'var(--shadow-lg)' }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="card-header">
+              <h2>{editingGroup ? 'Sửa nhóm học sinh' : 'Tạo nhóm học sinh'}</h2>
+              <button
+                type="button"
+                aria-label="Đóng"
+                style={{ background: 'none', border: 'none', fontSize: 20, cursor: 'pointer', color: 'var(--text-muted)' }}
+                onClick={() => setShowGroupModal(false)}
+              >
+                ✕
+              </button>
+            </div>
+
+            <form className="form-panel" onSubmit={handleSaveGroup}>
+              <div className="form-group">
+                <label htmlFor="group-name">Tên nhóm <span style={{ color: 'var(--danger)' }}>*</span></label>
+                <input
+                  id="group-name"
+                  type="text"
+                  placeholder="VD: Nhóm ôn thi lại, Đội tuyển HSG…"
+                  value={groupForm.name}
+                  onChange={(e) => setGroupForm({ ...groupForm, name: e.target.value })}
+                  autoComplete="off"
+                  required
+                />
+              </div>
+
+              <div className="form-group">
+                <label>
+                  Chọn học sinh <span style={{ color: 'var(--danger)' }}>*</span>{' '}
+                  <span style={{ fontWeight: 500, color: 'var(--text-muted)' }}>({groupForm.studentIds.length} đã chọn)</span>
+                </label>
+                <input
+                  type="text"
+                  placeholder="Tìm tên học sinh…"
+                  value={groupSearch}
+                  onChange={(e) => setGroupSearch(e.target.value)}
+                  spellCheck={false}
+                  style={{ marginBottom: 8 }}
+                />
+                <div
+                  style={{
+                    maxHeight: 260,
+                    overflowY: 'auto',
+                    border: '1px solid var(--border-color)',
+                    borderRadius: 'var(--radius-md)',
+                    padding: 8,
+                  }}
+                >
+                  {students
+                    .filter((s) => s.name.toLowerCase().includes(groupSearch.toLowerCase()))
+                    .map((s) => (
+                      <label
+                        key={s.id}
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: 8,
+                          padding: '6px 8px',
+                          borderRadius: 6,
+                          cursor: 'pointer',
+                          fontSize: 13.5,
+                        }}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={groupForm.studentIds.includes(s.id)}
+                          onChange={() => toggleGroupStudent(s.id)}
+                          style={{ width: 'auto' }}
+                        />
+                        <span>{s.name}</span>
+                        {s.className && <span style={{ color: 'var(--text-muted)', fontSize: 12 }}>({s.className})</span>}
+                      </label>
+                    ))}
+                  {students.length === 0 && (
+                    <p style={{ fontSize: 13, color: 'var(--text-muted)', margin: 0 }}>Chưa có học sinh nào.</p>
+                  )}
+                </div>
+              </div>
+
+              {groupError && (
+                <p className="error-text" role="alert" aria-live="polite">
+                  <span aria-hidden="true">⚠️</span> {groupError}
+                </p>
+              )}
+
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10, marginTop: 14 }}>
+                <button type="button" className="btn secondary" onClick={() => setShowGroupModal(false)}>
+                  Huỷ
+                </button>
+                <button className="btn" type="submit" disabled={savingGroup}>
+                  {savingGroup ? 'Đang lưu…' : editingGroup ? 'Lưu thay đổi' : 'Tạo nhóm'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
 
       {/* Modal Thêm học sinh */}
       {showAddModal && (
