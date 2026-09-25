@@ -3,25 +3,113 @@ import { useAuth } from '../context/AuthContext';
 import api from '../services/api';
 import { renderMath } from '../utils/mathRender';
 
+function greetingMessage(user) {
+  return {
+    role: 'assistant',
+    content: `Xin chào ${user?.name ? `**${user.name}**` : ''}! 👋 Tôi là **Trợ lý AI Toán 12**, có thể:\n- 💡 Giải chi tiết từng bước\n- 📚 Tóm tắt lý thuyết\n- ⚙️ Mẹo bấm máy tính Casio\n- 📝 Tạo đề thi/câu hỏi\n\nNhập câu hỏi bên dưới để bắt đầu nhé! ✨`,
+    timestamp: new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }),
+  };
+}
+
+// Lịch sử các đoạn chat lưu riêng theo từng người dùng (chưa có backend lưu
+// chat AI, nên lưu tạm ở localStorage - giống cơ chế lưu "đã đọc thông báo"
+// đang dùng trong NotificationBell.jsx).
+function historyKey(userId) {
+  return `ai_chat_history_${userId}`;
+}
+
+function loadHistory(userId) {
+  try {
+    return JSON.parse(localStorage.getItem(historyKey(userId)) || '[]');
+  } catch {
+    return [];
+  }
+}
+
+function saveHistory(userId, list) {
+  localStorage.setItem(historyKey(userId), JSON.stringify(list));
+}
+
+// Tiêu đề đoạn chat = rút gọn câu hỏi đầu tiên của người dùng trong đoạn đó
+function buildConversationTitle(messages) {
+  const firstUserMsg = messages.find((m) => m.role === 'user');
+  if (!firstUserMsg) return 'Đoạn chat mới';
+  const text = firstUserMsg.content.trim().replace(/\s+/g, ' ');
+  return text.length > 40 ? `${text.slice(0, 40)}…` : text;
+}
+
 export default function AiAssistantPage() {
   const { user } = useAuth();
-  const [messages, setMessages] = useState([
-    {
-      role: 'assistant',
-      content: `Xin chào ${user?.name ? `**${user.name}**` : ''}! 👋\n\nTôi là **Trợ lý AI Toán 12 (Google Gemini)**. Tôi có thể giúp bạn:\n- 💡 **Giải chi tiết từng bước** các bài toán THPT Quốc gia (Đại số, Hình học Oxyz, Giải tích).\n- 📚 **Tóm tắt và củng cố lý thuyết trọng tâm** theo chương trình SGK mới.\n- ⚙️ **Hướng dẫn mẹo bấm máy tính Casio 580VNX / 880BTG**.\n- 📝 **Tạo đề thi và câu hỏi phân hóa** theo từng mức độ (Nhận biết, Thông hiểu, Vận dụng, Vận dụng cao).\n\nHãy nhập câu hỏi bên dưới để bắt đầu nhé! ✨`,
-      timestamp: new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }),
-    },
-  ]);
+  const [messages, setMessages] = useState([greetingMessage(user)]);
   const [inputText, setInputText] = useState('');
   const [loading, setLoading] = useState(false);
   const [copiedIndex, setCopiedIndex] = useState(null);
+  const [history, setHistory] = useState([]);
+  const [activeConversationId, setActiveConversationId] = useState(null);
+  const [showHistory, setShowHistory] = useState(false);
 
   const chatEndRef = useRef(null);
   const textareaRef = useRef(null);
 
   useEffect(() => {
+    if (user?.id) setHistory(loadHistory(user.id));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.id]);
+
+  useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, loading]);
+
+  // Tự động lưu đoạn chat hiện tại vào lịch sử mỗi khi có tin nhắn mới (chỉ
+  // lưu khi đã có ít nhất 1 câu hỏi thật của người dùng, không lưu đoạn chat
+  // trống chỉ có mỗi lời chào ban đầu).
+  useEffect(() => {
+    if (!user?.id) return;
+    const hasUserMessage = messages.some((m) => m.role === 'user');
+    if (!hasUserMessage) return;
+
+    const conversationId = activeConversationId || `conv-${Date.now()}`;
+    if (!activeConversationId) setActiveConversationId(conversationId);
+
+    const entry = {
+      id: conversationId,
+      title: buildConversationTitle(messages),
+      messages,
+      updatedAt: new Date().toISOString(),
+    };
+
+    setHistory((prev) => {
+      const next = [entry, ...prev.filter((c) => c.id !== conversationId)];
+      saveHistory(user.id, next);
+      return next;
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [messages]);
+
+  function handleNewChat() {
+    setMessages([greetingMessage(user)]);
+    setActiveConversationId(null);
+    setShowHistory(false);
+  }
+
+  function handleLoadConversation(conv) {
+    setMessages(conv.messages);
+    setActiveConversationId(conv.id);
+    setShowHistory(false);
+  }
+
+  function handleDeleteConversation(convId, e) {
+    e.stopPropagation();
+    if (!window.confirm('Xoá đoạn chat này khỏi lịch sử?')) return;
+    setHistory((prev) => {
+      const next = prev.filter((c) => c.id !== convId);
+      saveHistory(user.id, next);
+      return next;
+    });
+    if (activeConversationId === convId) {
+      handleNewChat();
+    }
+  }
 
   const handleSend = async (textToSend) => {
     const query = (textToSend || inputText).trim();
@@ -83,18 +171,6 @@ export default function AiAssistantPage() {
     }
   };
 
-  const handleClearChat = () => {
-    if (window.confirm('Bạn có chắc chắn muốn làm mới toàn bộ cuộc trò chuyện?')) {
-      setMessages([
-        {
-          role: 'assistant',
-          content: `Đoạn chat đã được đặt lại. Tôi sẵn sàng hỗ trợ bài toán mới của bạn! 🚀`,
-          timestamp: new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }),
-        },
-      ]);
-    }
-  };
-
   const handleCopy = (text, index) => {
     navigator.clipboard.writeText(text);
     setCopiedIndex(index);
@@ -152,7 +228,22 @@ export default function AiAssistantPage() {
 
         <div className="header-actions" style={{ gap: 8 }}>
           <button
-            onClick={handleClearChat}
+            onClick={() => setShowHistory((v) => !v)}
+            className={`btn ${showHistory ? '' : 'btn-outline'}`}
+            style={{
+              fontSize: 13,
+              padding: '6px 12px',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 6,
+              borderColor: '#e2e8f0',
+            }}
+            title="Xem lịch sử các đoạn chat trước đó"
+          >
+            📜 Lịch sử {history.length > 0 && `(${history.length})`}
+          </button>
+          <button
+            onClick={handleNewChat}
             className="btn btn-outline"
             style={{
               fontSize: 13,
@@ -175,15 +266,90 @@ export default function AiAssistantPage() {
         style={{
           flex: 1,
           display: 'flex',
-          flexDirection: 'column',
+          flexDirection: 'row',
           minHeight: 0,
           padding: 0,
           borderRadius: 14,
           boxShadow: '0 8px 30px rgba(0,0,0,0.06)',
           border: '1px solid #e2e8f0',
-          background: '#f8fafc',
           overflow: 'hidden',
         }}
+      >
+        {/* Sidebar Lịch sử đoạn chat - chỉ hiện khi bật */}
+        {showHistory && (
+          <div
+            style={{
+              width: 260,
+              flexShrink: 0,
+              borderRight: '1px solid #e2e8f0',
+              background: '#f8fafc',
+              display: 'flex',
+              flexDirection: 'column',
+              overflow: 'hidden',
+            }}
+          >
+            <div style={{ padding: '12px 14px', borderBottom: '1px solid #e2e8f0', fontSize: 12.5, fontWeight: 700, color: '#64748b' }}>
+              💬 Lịch sử đoạn chat
+            </div>
+            <div style={{ flex: 1, overflowY: 'auto', padding: 8 }}>
+              {history.length === 0 ? (
+                <div style={{ padding: 16, textAlign: 'center', fontSize: 12.5, color: '#94a3b8' }}>
+                  Chưa có đoạn chat nào được lưu
+                </div>
+              ) : (
+                history
+                  .slice()
+                  .sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt))
+                  .map((conv) => (
+                    <div
+                      key={conv.id}
+                      onClick={() => handleLoadConversation(conv)}
+                      style={{
+                        padding: '10px 12px',
+                        borderRadius: 8,
+                        cursor: 'pointer',
+                        marginBottom: 4,
+                        background: conv.id === activeConversationId ? '#e0e7ff' : 'transparent',
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'flex-start',
+                        gap: 6,
+                      }}
+                      onMouseEnter={(e) => { if (conv.id !== activeConversationId) e.currentTarget.style.background = '#f1f5f9'; }}
+                      onMouseLeave={(e) => { if (conv.id !== activeConversationId) e.currentTarget.style.background = 'transparent'; }}
+                    >
+                      <div style={{ minWidth: 0 }}>
+                        <div style={{ fontSize: 13, fontWeight: 600, color: '#1e293b', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                          {conv.title}
+                        </div>
+                        <div style={{ fontSize: 11, color: '#94a3b8', marginTop: 2 }}>
+                          {new Date(conv.updatedAt).toLocaleString('vi-VN')}
+                        </div>
+                      </div>
+                      <button
+                        onClick={(e) => handleDeleteConversation(conv.id, e)}
+                        title="Xoá đoạn chat này"
+                        style={{ background: 'none', border: 'none', color: '#f87171', cursor: 'pointer', fontSize: 12, flexShrink: 0 }}
+                      >
+                        🗑️
+                      </button>
+                    </div>
+                  ))
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Vùng chat chính */}
+        <div
+          style={{
+            flex: 1,
+            display: 'flex',
+            flexDirection: 'column',
+            minHeight: 0,
+            background: '#f8fafc',
+            overflow: 'hidden',
+          }}
       >
         {/* Messages Stream Area */}
         <div
@@ -441,7 +607,7 @@ export default function AiAssistantPage() {
               value={inputText}
               onChange={(e) => setInputText(e.target.value)}
               onKeyDown={handleKeyDown}
-              placeholder="Nhập câu hỏi Toán 12 (VD: Cho hàm số y = x^3 - 3x + 1, tìm cực trị...) hoặc dán công thức LaTeX..."
+              placeholder="Vui lòng nhập câu hỏi..."
               rows={2}
               style={{
                 width: '100%',
@@ -465,12 +631,9 @@ export default function AiAssistantPage() {
                 fontSize: 11,
                 color: '#94a3b8',
                 marginTop: 2,
-                display: 'flex',
-                justifyContent: 'space-between',
               }}
             >
               <span>Nhấn <b>Enter</b> để gửi, <b>Shift + Enter</b> để xuống dòng</span>
-              <span>Hỗ trợ định dạng LaTeX: <code>$công thức$</code></span>
             </div>
           </div>
 
@@ -502,6 +665,7 @@ export default function AiAssistantPage() {
             <span>Gửi</span>
             <span>➤</span>
           </button>
+        </div>
         </div>
       </div>
     </div>

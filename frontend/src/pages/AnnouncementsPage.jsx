@@ -28,11 +28,15 @@ export default function AnnouncementsPage() {
 
   const [announcements, setAnnouncements] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [classesList, setClassesList] = useState([]);
+  const [groups, setGroups] = useState([]);
 
   // Đăng thông báo mới (chỉ giáo viên)
   const [newTitle, setNewTitle] = useState('');
   const [newContent, setNewContent] = useState('');
   const [newFiles, setNewFiles] = useState([]);
+  const [newAudienceType, setNewAudienceType] = useState('all'); // 'all' | 'class' | 'group'
+  const [newAudienceValue, setNewAudienceValue] = useState('');
   const [posting, setPosting] = useState(false);
   const [postError, setPostError] = useState('');
 
@@ -42,6 +46,8 @@ export default function AnnouncementsPage() {
   const [editContent, setEditContent] = useState('');
   const [editRemoveAttachments, setEditRemoveAttachments] = useState([]);
   const [editNewFiles, setEditNewFiles] = useState([]);
+  const [editAudienceType, setEditAudienceType] = useState('all');
+  const [editAudienceValue, setEditAudienceValue] = useState('');
 
   // Ô nhập bình luận theo từng bài (key = announcementId)
   const [commentDrafts, setCommentDrafts] = useState({});
@@ -61,6 +67,16 @@ export default function AnnouncementsPage() {
 
   useEffect(() => {
     loadData();
+    if (isTeacher) {
+      api.get('/teacher/students')
+        .then(({ data }) => {
+          const classes = Array.from(new Set((data || []).map((s) => (s.className || '').trim()).filter(Boolean))).sort();
+          setClassesList(classes);
+        })
+        .catch(() => {});
+      api.get('/teacher/groups').then(({ data }) => setGroups(data || [])).catch(() => {});
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   async function handlePost(e) {
@@ -70,16 +86,24 @@ export default function AnnouncementsPage() {
       setPostError('Vui lòng nhập nội dung thông báo');
       return;
     }
+    if (newAudienceType !== 'all' && !newAudienceValue) {
+      setPostError('Vui lòng chọn lớp hoặc nhóm nhận thông báo');
+      return;
+    }
     setPosting(true);
     try {
       const formData = new FormData();
       formData.append('title', newTitle);
       formData.append('content', newContent);
+      formData.append('audienceType', newAudienceType);
+      if (newAudienceType !== 'all') formData.append('audienceValue', newAudienceValue);
       newFiles.forEach((f) => formData.append('files', f));
       await api.post('/announcements', formData, { headers: { 'Content-Type': 'multipart/form-data' } });
       setNewTitle('');
       setNewContent('');
       setNewFiles([]);
+      setNewAudienceType('all');
+      setNewAudienceValue('');
       window.dispatchEvent(new Event('app:refresh-notifications'));
       await loadData();
     } catch (err) {
@@ -95,6 +119,8 @@ export default function AnnouncementsPage() {
     setEditContent(a.content);
     setEditRemoveAttachments([]);
     setEditNewFiles([]);
+    setEditAudienceType(a.audienceType || 'all');
+    setEditAudienceValue(a.audienceValue || '');
   }
 
   function toggleRemoveAttachment(filename) {
@@ -105,10 +131,16 @@ export default function AnnouncementsPage() {
 
   async function handleSaveEdit(id) {
     if (!editContent.trim()) return;
+    if (editAudienceType !== 'all' && !editAudienceValue) {
+      alert('Vui lòng chọn lớp hoặc nhóm nhận thông báo');
+      return;
+    }
     try {
       const formData = new FormData();
       formData.append('title', editTitle);
       formData.append('content', editContent);
+      formData.append('audienceType', editAudienceType);
+      if (editAudienceType !== 'all') formData.append('audienceValue', editAudienceValue);
       editRemoveAttachments.forEach((filename) => formData.append('removeAttachments', filename));
       editNewFiles.forEach((f) => formData.append('files', f));
       await api.put(`/announcements/${id}`, formData, { headers: { 'Content-Type': 'multipart/form-data' } });
@@ -189,6 +221,30 @@ export default function AnnouncementsPage() {
                 style={{ resize: 'vertical', width: '100%', padding: '8px 12px', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-color)', fontFamily: 'inherit', fontSize: 14 }}
               />
             </div>
+            <div className="form-group" style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap', marginBottom: 10 }}>
+              <span style={{ fontSize: 12.5, fontWeight: 700, color: 'var(--text-muted)' }}>Gửi tới:</span>
+              <select
+                value={newAudienceType}
+                onChange={(e) => { setNewAudienceType(e.target.value); setNewAudienceValue(''); }}
+                style={{ fontSize: 13, padding: '5px 8px' }}
+              >
+                <option value="all">🌐 Tất cả học sinh</option>
+                <option value="class">🏫 Theo lớp</option>
+                <option value="group">🗂️ Theo nhóm</option>
+              </select>
+              {newAudienceType === 'class' && (
+                <select value={newAudienceValue} onChange={(e) => setNewAudienceValue(e.target.value)} style={{ fontSize: 13, padding: '5px 8px' }}>
+                  <option value="">-- Chọn lớp --</option>
+                  {classesList.map((c) => <option key={c} value={c}>Lớp {c}</option>)}
+                </select>
+              )}
+              {newAudienceType === 'group' && (
+                <select value={newAudienceValue} onChange={(e) => setNewAudienceValue(e.target.value)} style={{ fontSize: 13, padding: '5px 8px' }}>
+                  <option value="">-- Chọn nhóm --</option>
+                  {groups.map((g) => <option key={g.id} value={g.id}>{g.name}</option>)}
+                </select>
+              )}
+            </div>
             <div className="form-group">
               <label htmlFor="ann-files" className="btn sm secondary" style={{ display: 'inline-flex', cursor: 'pointer' }}>
                 🖼️ Đính kèm ảnh / tệp
@@ -265,6 +321,11 @@ export default function AnnouncementsPage() {
                   <div>
                     <div style={{ fontWeight: 700, fontSize: 14, color: 'var(--text-main)' }}>
                       {a.authorName} <span className="tag-badge" style={{ marginLeft: 6, fontSize: 10.5 }}>Giáo viên</span>
+                      {a.audienceType !== 'all' && (
+                        <span className="tag-badge" style={{ marginLeft: 6, fontSize: 10.5, background: 'var(--primary-light)' }}>
+                          {a.audienceType === 'class' ? '🏫' : '🗂️'} {a.audienceLabel}
+                        </span>
+                      )}
                     </div>
                     <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>
                       {timeAgo(a.createdAt)}{a.updatedAt ? ' (đã chỉnh sửa)' : ''}
@@ -295,6 +356,31 @@ export default function AnnouncementsPage() {
                     rows={3}
                     style={{ resize: 'vertical', width: '100%', padding: '8px 12px', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-color)', fontFamily: 'inherit', fontSize: 14, marginBottom: 8 }}
                   />
+
+                  <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap', marginBottom: 8 }}>
+                    <span style={{ fontSize: 12.5, fontWeight: 700, color: 'var(--text-muted)' }}>Gửi tới:</span>
+                    <select
+                      value={editAudienceType}
+                      onChange={(e) => { setEditAudienceType(e.target.value); setEditAudienceValue(''); }}
+                      style={{ fontSize: 13, padding: '5px 8px' }}
+                    >
+                      <option value="all">🌐 Tất cả học sinh</option>
+                      <option value="class">🏫 Theo lớp</option>
+                      <option value="group">🗂️ Theo nhóm</option>
+                    </select>
+                    {editAudienceType === 'class' && (
+                      <select value={editAudienceValue} onChange={(e) => setEditAudienceValue(e.target.value)} style={{ fontSize: 13, padding: '5px 8px' }}>
+                        <option value="">-- Chọn lớp --</option>
+                        {classesList.map((c) => <option key={c} value={c}>Lớp {c}</option>)}
+                      </select>
+                    )}
+                    {editAudienceType === 'group' && (
+                      <select value={editAudienceValue} onChange={(e) => setEditAudienceValue(e.target.value)} style={{ fontSize: 13, padding: '5px 8px' }}>
+                        <option value="">-- Chọn nhóm --</option>
+                        {groups.map((g) => <option key={g.id} value={g.id}>{g.name}</option>)}
+                      </select>
+                    )}
+                  </div>
 
                   {a.attachments.length > 0 && (
                     <div style={{ marginBottom: 8 }}>

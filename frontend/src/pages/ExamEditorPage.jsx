@@ -118,6 +118,9 @@ export default function ExamEditorPage() {
 
         const res = await api.post(`/exams/${examId}/import-preview`, formData, {
           headers: { 'Content-Type': 'multipart/form-data' },
+          // Tách công thức ảnh (LibreOffice, độ phân giải cao) có thể mất vài
+          // phút với file nhiều công thức - dài hơn giới hạn 90s mặc định.
+          timeout: 300000,
           onUploadProgress: (evt) => {
             if (!evt.total) return;
             const uploadPercent = Math.round((evt.loaded / evt.total) * 30);

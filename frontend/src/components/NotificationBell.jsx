@@ -38,6 +38,7 @@ export default function NotificationBell() {
   const [notifications, setNotifications] = useState([]);
   const [open, setOpen] = useState(false);
   const [tab, setTab] = useState('all'); // 'all' | 'unread'
+  const [searchText, setSearchText] = useState('');
   const wrapperRef = useRef(null);
 
   const isTeacher = user?.role === 'teacher';
@@ -230,7 +231,11 @@ export default function NotificationBell() {
   if (!user) return null;
 
   const unreadCount = notifications.filter((n) => !n.read).length;
-  const filteredList = tab === 'unread' ? notifications.filter((n) => !n.read) : notifications;
+  const tabFiltered = tab === 'unread' ? notifications.filter((n) => !n.read) : notifications;
+  const q = searchText.trim().toLowerCase();
+  const filteredList = q
+    ? tabFiltered.filter((n) => `${n.title} ${n.desc}`.toLowerCase().includes(q))
+    : tabFiltered;
 
   return (
     <div ref={wrapperRef} className="no-print" style={{ position: 'fixed', top: 16, right: 24, zIndex: 200 }}>
@@ -343,6 +348,47 @@ export default function NotificationBell() {
               )}
             </div>
 
+            {/* Ô tìm kiếm thông báo theo tên/nội dung */}
+            <div style={{ position: 'relative', marginBottom: 10 }}>
+              <span style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', fontSize: 13, color: '#94a3b8' }}>🔍</span>
+              <input
+                type="text"
+                value={searchText}
+                onChange={(e) => setSearchText(e.target.value)}
+                placeholder="Tìm thông báo…"
+                style={{
+                  width: '100%',
+                  boxSizing: 'border-box',
+                  padding: '7px 10px 7px 30px',
+                  fontSize: 13,
+                  borderRadius: 20,
+                  border: '1px solid #e2e8f0',
+                  background: '#f8fafc',
+                  outline: 'none',
+                }}
+              />
+              {searchText && (
+                <button
+                  type="button"
+                  onClick={() => setSearchText('')}
+                  title="Xoá tìm kiếm"
+                  style={{
+                    position: 'absolute',
+                    right: 8,
+                    top: '50%',
+                    transform: 'translateY(-50%)',
+                    background: 'none',
+                    border: 'none',
+                    cursor: 'pointer',
+                    color: '#94a3b8',
+                    fontSize: 13,
+                  }}
+                >
+                  ✕
+                </button>
+              )}
+            </div>
+
             {/* Filter Pills: Tất cả / Chưa đọc */}
             <div style={{ display: 'flex', gap: 8 }}>
               <button
@@ -387,15 +433,17 @@ export default function NotificationBell() {
             {filteredList.length === 0 ? (
               <div style={{ padding: '40px 20px', textAlign: 'center', color: '#94a3b8' }}>
                 <div style={{ fontSize: 36, marginBottom: 8 }}>
-                  {tab === 'unread' ? '🎉' : '🔔'}
+                  {q ? '🔍' : tab === 'unread' ? '🎉' : '🔔'}
                 </div>
                 <div style={{ fontSize: 14, fontWeight: 600, color: '#334155' }}>
-                  {tab === 'unread' ? 'Bạn đã đọc hết thông báo!' : 'Không có thông báo nào'}
+                  {q ? 'Không tìm thấy thông báo phù hợp' : tab === 'unread' ? 'Bạn đã đọc hết thông báo!' : 'Không có thông báo nào'}
                 </div>
                 <div style={{ fontSize: 12, marginTop: 4 }}>
-                  {tab === 'unread'
-                    ? 'Tất cả các thông báo đã được xem.'
-                    : 'Khi có bài nộp hoặc đề mới, thông báo sẽ xuất hiện ở đây.'}
+                  {q
+                    ? `Không có thông báo nào khớp với "${searchText.trim()}"`
+                    : tab === 'unread'
+                      ? 'Tất cả các thông báo đã được xem.'
+                      : 'Khi có bài nộp hoặc đề mới, thông báo sẽ xuất hiện ở đây.'}
                 </div>
               </div>
             ) : (

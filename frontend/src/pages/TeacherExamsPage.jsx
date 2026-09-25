@@ -49,6 +49,9 @@ export default function TeacherExamsPage() {
   const [parsedQuestions, setParsedQuestions] = useState([]);
   const [uploadError, setUploadError] = useState('');
   const [createAnswerKeyFile, setCreateAnswerKeyFile] = useState(null);
+  const [answerKeyCoverage, setAnswerKeyCoverage] = useState(null);
+  const [checkingCoverage, setCheckingCoverage] = useState(false);
+  const [forceCreateDespiteMissing, setForceCreateDespiteMissing] = useState(false);
   const [createAssignedStudents, setCreateAssignedStudents] = useState([]);
   // Nút "Chọn theo lớp/nhóm" nào đang được coi là "đang áp dụng" (chỉ để tô
   // nổi bật đúng 1 nút vừa bấm) - KHÔNG suy ra từ việc trùng khớp học sinh
@@ -93,6 +96,57 @@ export default function TeacherExamsPage() {
 
   const navigate = useNavigate();
 
+  // So khớp thử file đáp án chi tiết với số câu hỏi CỦA TỪNG CHỦ ĐỀ (đề
+  // thường đánh số lại từ Câu 1 ở mỗi chủ đề, VD chủ đề 1 có 10 câu, chủ đề 2
+  // đánh số lại 1-15) - dùng chung cho cả lúc tạo đề mới (biết trước số câu
+  // mỗi chủ đề từ file Word vừa tách) lẫn lúc tải đáp án cho đề đã có sẵn.
+  async function checkCoverage(file, topicCounts) {
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('topicCounts', JSON.stringify(topicCounts));
+    const { data } = await api.post('/exams/check-answer-key-coverage', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+    return data;
+  }
+
+  // Gom danh sách câu hỏi (đã có field `topic`/`tags`) thành mảng số câu của
+  // từng chủ đề THEO ĐÚNG THỨ TỰ xuất hiện (không gộp 2 chủ đề trùng tên
+  // nhưng xuất hiện ở 2 vị trí khác nhau thành 1, vì đề vẫn đánh số lại theo
+  // từng LẦN xuất hiện của tiêu đề chủ đề, không theo tên).
+  function computeTopicCounts(questions, getTopic) {
+    const counts = [];
+    let lastTopic;
+    let hasLastTopic = false;
+    questions.forEach((q) => {
+      const topic = getTopic(q);
+      if (!hasLastTopic || topic !== lastTopic) {
+        counts.push(0);
+        lastTopic = topic;
+        hasLastTopic = true;
+      }
+      counts[counts.length - 1] += 1;
+    });
+    return counts;
+  }
+
+  useEffect(() => {
+    if (!createAnswerKeyFile || parsedQuestions.length === 0) {
+      setAnswerKeyCoverage(null);
+      setForceCreateDespiteMissing(false);
+      return;
+    }
+    let cancelled = false;
+    setCheckingCoverage(true);
+    const topicCounts = computeTopicCounts(parsedQuestions, (q) => q.topic);
+    checkCoverage(createAnswerKeyFile, topicCounts)
+      .then((data) => { if (!cancelled) setAnswerKeyCoverage(data); })
+      .catch(() => { if (!cancelled) setAnswerKeyCoverage(null); })
+      .finally(() => { if (!cancelled) setCheckingCoverage(false); });
+    return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [createAnswerKeyFile, parsedQuestions.length]);
+
   function handlePickAnswerKeyFile(examId) {
     const input = answerKeyInputRefs.current[examId];
     if (input) input.click();
@@ -102,12 +156,36 @@ export default function TeacherExamsPage() {
     if (!file) return;
     setUploadingAnswerKeyExamId(examId);
     try {
+      try {
+        const { data: examDetail } = await api.get(`/exams/${examId}`);
+        const questions = examDetail.questions || [];
+        if (questions.length > 0) {
+          const topicCounts = computeTopicCounts(questions, (q) => (q.tags && q.tags[0]) || 'Kiến thức chung');
+          const coverage = await checkCoverage(file, topicCounts);
+          if (coverage.supported && !coverage.isComplete) {
+            const proceed = window.confirm(
+              `⚠️ File đáp án chi tiết này có vẻ THIẾU lời giải cho ${coverage.missingNumbers.length} số câu ` +
+              `(thiếu Câu: ${coverage.missingNumbers.join(', ')} - tính theo từng chủ đề).\n\nVẫn tiếp tục tải lên?`
+            );
+            if (!proceed) {
+              setUploadingAnswerKeyExamId(null);
+              return;
+            }
+          }
+        }
+      } catch (err) {
+        console.error('Lỗi khi so khớp đáp án chi tiết:', err);
+        // Không chặn upload nếu bước so khớp bị lỗi (VD: mạng chậm) - chỉ là cảnh báo hỗ trợ.
+      }
+
       const formData = new FormData();
       formData.append('file', file);
       await api.post(`/exams/${examId}/answer-key`, formData, {
         headers: { 'Content-Type': 'multipart/form-data' },
       });
-      await loadData();
+      // Không await: file đã tải lên thành công rồi, làm mới danh sách chỉ để
+      // cập nhật UI - không được để bước này treo nút bấm nếu nó chậm/lỗi.
+      loadData().catch((err) => console.error('Lỗi làm mới danh sách:', err));
     } catch (err) {
       console.error(err);
       alert(err.response?.data?.message || 'Lỗi khi tải lên file đáp án chi tiết');
@@ -121,7 +199,7 @@ export default function TeacherExamsPage() {
     setUploadingAnswerKeyExamId(examId);
     try {
       await api.delete(`/exams/${examId}/answer-key`);
-      await loadData();
+      loadData().catch((err) => console.error('Lỗi làm mới danh sách:', err));
     } catch (err) {
       console.error(err);
       alert(err.response?.data?.message || 'Lỗi khi gỡ file đáp án chi tiết');
@@ -267,6 +345,10 @@ export default function TeacherExamsPage() {
     try {
       const res = await api.post('/exams/import-preview', formData, {
         headers: { 'Content-Type': 'multipart/form-data' },
+        // Tách công thức ảnh (LibreOffice, độ phân giải cao) có thể mất vài
+        // phút với file nhiều công thức - dài hơn hẳn giới hạn 90s mặc định
+        // dùng cho các request thông thường khác, nên đặt riêng ở đây.
+        timeout: 300000,
         onUploadProgress: (evt) => {
           if (!evt.total) return;
           const uploadPercent = Math.round((evt.loaded / evt.total) * 30); // tải file chiếm ~30% thanh tiến trình
@@ -571,6 +653,16 @@ export default function TeacherExamsPage() {
       return;
     }
 
+    if (
+      createAnswerKeyFile &&
+      answerKeyCoverage?.supported &&
+      !answerKeyCoverage.isComplete &&
+      !forceCreateDespiteMissing
+    ) {
+      setCreateError('Đáp án chi tiết đang thiếu lời giải cho một số câu - vui lòng bổ sung hoặc tick xác nhận "Vẫn tạo đề" ở trên trước khi tạo đề.');
+      return;
+    }
+
     if (createAssignedStudents.length === 0) {
       setCreateError('Vui lòng chọn ít nhất một học sinh để giao đề thi!');
       return;
@@ -620,12 +712,18 @@ export default function TeacherExamsPage() {
       setParsedQuestions([]);
       setCreateAssignedStudents([]);
       setCreateAnswerKeyFile(null);
+      setAnswerKeyCoverage(null);
+      setForceCreateDespiteMissing(false);
       setShowCreateForm(false);
       window.dispatchEvent(new Event('app:refresh-notifications'));
       setSuccessMessage(
         `🎉 Tạo đề thi "${createdExam.title}" thành công! 🚀 Đã giao ngay cho ${assignedCount} học sinh.${importedCount > 0 ? ` (Đã nạp ${importedCount} câu hỏi)` : ''}${answerKeyUploaded ? ' (Đã đính kèm đáp án chi tiết)' : ''}`
       );
-      await loadData();
+      // KHÔNG await ở đây: việc tạo/giao đề đã XONG và THÀNH CÔNG ở trên rồi -
+      // làm mới danh sách chỉ là cập nhật UI, lỡ bị treo/chậm (mất mạng, backend
+      // đang bận xử lý file khác) không được phép giữ nút bấm ở trạng thái
+      // "Đang tạo..." vĩnh viễn dù việc tạo đề thật đã xong từ trước đó.
+      loadData().catch((err) => console.error('Lỗi làm mới danh sách sau khi tạo đề:', err));
     } catch (err) {
       setCreateError(err.response?.data?.message || 'Tạo đề thi thất bại');
     } finally {
@@ -1162,9 +1260,53 @@ export default function TeacherExamsPage() {
               />
               <p style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 4 }}>
                 {createAnswerKeyFile
-                  ? `Upload thành công: ${createAnswerKeyFile.name}`
+                  ? `Đã chọn: ${createAnswerKeyFile.name}`
                   : 'Học sinh sẽ xem/tải/quét QR file này ngay sau khi nộp bài. Có thể bỏ qua và thêm sau ở danh sách đề thi.'}
               </p>
+
+              {createAnswerKeyFile && checkingCoverage && (
+                <p style={{ fontSize: 12.5, color: 'var(--text-muted)', marginTop: 8 }}>
+                  ⏳ Đang so khớp đáp án chi tiết với đề thi...
+                </p>
+              )}
+
+              {createAnswerKeyFile && !checkingCoverage && answerKeyCoverage && (
+                answerKeyCoverage.supported === false ? (
+                  <p style={{ fontSize: 12.5, color: 'var(--text-muted)', marginTop: 8 }}>
+                    ℹ️ {answerKeyCoverage.message}
+                  </p>
+                ) : answerKeyCoverage.isComplete ? (
+                  <div
+                    style={{
+                      marginTop: 8, padding: '8px 12px', background: '#f0fdf4', border: '1.5px solid #bbf7d0',
+                      borderRadius: 'var(--radius-sm)', color: '#166534', fontSize: 12.5,
+                    }}
+                  >
+                    ✓ Đáp án chi tiết có đủ lời giải cho toàn bộ {answerKeyCoverage.totalQuestions} câu.
+                  </div>
+                ) : (
+                  <div
+                    style={{
+                      marginTop: 8, padding: '10px 14px', background: '#fef2f2', border: '1.5px solid #fecaca',
+                      borderRadius: 'var(--radius-sm)', color: '#991b1b', fontSize: 12.5,
+                    }}
+                  >
+                    <div>
+                      ⚠️ Đáp án chi tiết THIẾU lời giải cho <strong>{answerKeyCoverage.missingNumbers.length}/{answerKeyCoverage.totalQuestions}</strong> câu
+                      (thiếu Câu: {answerKeyCoverage.missingNumbers.join(', ')}).
+                    </div>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 8, fontWeight: 600, cursor: 'pointer' }}>
+                      <input
+                        type="checkbox"
+                        checked={forceCreateDespiteMissing}
+                        onChange={(e) => setForceCreateDespiteMissing(e.target.checked)}
+                        style={{ width: 'auto' }}
+                      />
+                      Tôi đã kiểm tra, vẫn tạo đề và giao ngay
+                    </label>
+                  </div>
+                )
+              )}
             </div>
 
             {/* GIAO ĐỀ CHO HỌC SINH / LỚP HỌC */}
@@ -1361,7 +1503,11 @@ export default function TeacherExamsPage() {
                 <button
                   className="btn"
                   type="submit"
-                  disabled={creating || uploadingWord}
+                  disabled={
+                    creating ||
+                    uploadingWord ||
+                    (createAnswerKeyFile && answerKeyCoverage?.supported && !answerKeyCoverage.isComplete && !forceCreateDespiteMissing)
+                  }
                   style={{ background: 'linear-gradient(135deg, #10b981, #059669)', fontSize: 14, fontWeight: 700 }}
                 >
                   {creating
@@ -1436,10 +1582,10 @@ export default function TeacherExamsPage() {
             <table>
               <thead>
                 <tr>
-                  <th style={{ minWidth: 260 }}>Tên đề thi</th>
-                  <th className="nowrap" style={{ width: 110 }}>Trạng thái</th>
-                  <th className="nowrap" style={{ minWidth: 260 }}>Học sinh & Tiến độ nộp bài</th>
-                  <th className="nowrap" style={{ textAlign: 'right', width: 220 }}>Thao tác</th>
+                  <th style={{ minWidth: 160 }}>Tên đề thi</th>
+                  <th className="nowrap" style={{ width: 100 }}>Trạng thái</th>
+                  <th className="nowrap" style={{ minWidth: 200 }}>Học sinh & Tiến độ nộp bài</th>
+                  <th className="nowrap" style={{ textAlign: 'right' }}>Thao tác</th>
                 </tr>
               </thead>
               <tbody>
@@ -1467,7 +1613,7 @@ export default function TeacherExamsPage() {
                   return (
                     <React.Fragment key={exam.id}>
                       <tr>
-                        <td style={{ verticalAlign: 'middle', minWidth: 260 }}>
+                        <td style={{ verticalAlign: 'middle', minWidth: 160 }}>
                           <div style={{ fontWeight: 700, color: 'var(--text-main)', fontSize: 15 }}>
                             <Link to={`/teacher/exams/${exam.id}`}>{exam.title}</Link>
                           </div>
@@ -1508,7 +1654,7 @@ export default function TeacherExamsPage() {
                             {exam.status === 'assigned' ? '✓ Đang giao' : '○ Bản nháp'}
                           </span>
                         </td>
-                        <td style={{ verticalAlign: 'middle', minWidth: 260 }}>
+                        <td style={{ verticalAlign: 'middle', minWidth: 200 }}>
                           {assignedStudentIds.length === 0 ? (
                             <span className="tag-badge" style={{ margin: 0, color: 'var(--text-muted)' }}>
                               Chưa giao cho học sinh nào
@@ -1519,11 +1665,6 @@ export default function TeacherExamsPage() {
                                 <div style={{ fontWeight: 700, fontSize: 13, color: submittedCount > 0 ? 'var(--text-main)' : 'var(--text-muted)' }}>
                                   {submittedCount > 0 ? `✅ Đã nộp: ${submittedCount}/${assignedStudentIds.length} HS` : `⏳ 0/${assignedStudentIds.length} HS đã nộp`}
                                 </div>
-                                {avgScore !== null && (
-                                  <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 2 }}>
-                                    Điểm TB: <strong style={{ color: avgScore >= 5 ? 'var(--success)' : 'var(--danger)' }}>{avgScore}/10</strong>
-                                  </div>
-                                )}
                               </div>
                               <button
                                 type="button"
@@ -1546,7 +1687,7 @@ export default function TeacherExamsPage() {
                           )}
                         </td>
                         <td className="nowrap" style={{ textAlign: 'right', verticalAlign: 'middle' }}>
-                          <div className="action-buttons" style={{ justifyContent: 'flex-end', gap: 8 }}>
+                          <div className="action-buttons" style={{ justifyContent: 'flex-end', gap: 5 }}>
                             {exam.status === 'assigned' ? (
                               <Link
                                 to={`/teacher/exams/${exam.id}`}
@@ -1583,25 +1724,25 @@ export default function TeacherExamsPage() {
                               className="btn sm secondary"
                               onClick={() => handlePickAnswerKeyFile(exam.id)}
                               disabled={uploadingAnswerKeyExamId === exam.id}
-                              title={exam.answerKeyFile ? 'Thay file đáp án chi tiết' : 'Tải lên file đáp án chi tiết (PDF/ảnh) cho học sinh xem sau khi nộp bài'}
+                              title={exam.answerKeyFile ? 'Đã có đáp án chi tiết - bấm để thay file khác' : 'Tải lên file đáp án chi tiết (PDF/ảnh) cho học sinh xem sau khi nộp bài'}
                               style={{ whiteSpace: 'nowrap' }}
                             >
                               {uploadingAnswerKeyExamId === exam.id
-                                ? '⏳ Đang tải...'
+                                ? '⏳...'
                                 : exam.answerKeyFile
-                                  ? '📄 Đã có đáp án chi tiết'
-                                  : '📄 Đáp án chi tiết'}
+                                  ? '📄 Đáp án ✓'
+                                  : '📄 Đáp án'}
                             </button>
                             {exam.answerKeyFile && (
                               <button
                                 type="button"
-                                className="btn sm outline-danger"
+                                className="btn sm secondary"
                                 onClick={() => handleRemoveAnswerKey(exam.id)}
                                 disabled={uploadingAnswerKeyExamId === exam.id}
                                 title="Gỡ file đáp án chi tiết"
-                                style={{ whiteSpace: 'nowrap' }}
+                                style={{ whiteSpace: 'nowrap', color: 'var(--text-muted)' }}
                               >
-                                🗑️
+                                ✕ Gỡ đáp án
                               </button>
                             )}
 
@@ -1701,22 +1842,24 @@ export default function TeacherExamsPage() {
                                         style={{
                                           display: 'flex',
                                           alignItems: 'center',
-                                          justifyContent: 'space-between',
-                                          padding: '12px 18px',
+                                          justifyContent: 'flex-start',
+                                          padding: '10px 16px',
                                           borderRadius: 10,
                                           background: '#ffffff',
                                           border: '1px solid #e2e8f0',
                                           boxShadow: '0 1px 3px rgba(0,0,0,0.03)',
                                           flexWrap: 'wrap',
-                                          gap: 16,
+                                          gap: 14,
                                         }}
                                       >
-                                        {/* 1. Student Info */}
-                                        <div style={{ display: 'flex', alignItems: 'center', gap: 12, minWidth: 220 }}>
+                                        {/* 1. Student Info - width CỐ ĐỊNH (không chỉ minWidth) để cột điểm ở
+                                            giữa luôn thẳng hàng nhau giữa các dòng học sinh, không bị lệch theo
+                                            độ dài tên từng học sinh */}
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: 10, width: 260, flexShrink: 0 }}>
                                           <div
                                             style={{
-                                              width: 36,
-                                              height: 36,
+                                              width: 32,
+                                              height: 32,
                                               borderRadius: '50%',
                                               background: 'linear-gradient(135deg, #4f46e5, #7c3aed)',
                                               color: '#fff',
@@ -1724,31 +1867,42 @@ export default function TeacherExamsPage() {
                                               alignItems: 'center',
                                               justifyContent: 'center',
                                               fontWeight: 800,
-                                              fontSize: 14,
+                                              fontSize: 13,
+                                              flexShrink: 0,
                                               boxShadow: '0 2px 5px rgba(79,70,229,0.2)',
                                             }}
                                           >
                                             {initial}
                                           </div>
-                                          <div>
-                                            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                                              <strong style={{ color: '#0f172a', fontSize: 14.5 }}>
+                                          <div style={{ minWidth: 0 }}>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                                              <strong
+                                                title={studentName}
+                                                style={{
+                                                  color: '#0f172a',
+                                                  fontSize: 13.5,
+                                                  whiteSpace: 'nowrap',
+                                                  overflow: 'hidden',
+                                                  textOverflow: 'ellipsis',
+                                                  maxWidth: 170,
+                                                }}
+                                              >
                                                 {studentName}
                                               </strong>
                                               {className && (
-                                                <span style={{ fontSize: 11.5, background: '#ede9fe', color: '#6d28d9', padding: '2px 8px', borderRadius: 6, fontWeight: 700 }}>
+                                                <span style={{ fontSize: 10.5, background: '#ede9fe', color: '#6d28d9', padding: '1px 6px', borderRadius: 6, fontWeight: 700, whiteSpace: 'nowrap', flexShrink: 0 }}>
                                                   {className}
                                                 </span>
                                               )}
                                             </div>
-                                            <div style={{ fontSize: 12, color: '#64748b', marginTop: 3 }}>
-                                              🕒 Nộp lúc: {latestSub.submittedAt ? new Date(latestSub.submittedAt).toLocaleString('vi-VN') : '---'}
+                                            <div style={{ fontSize: 11.5, color: '#64748b', marginTop: 2, whiteSpace: 'nowrap' }}>
+                                              🕒 {latestSub.submittedAt ? new Date(latestSub.submittedAt).toLocaleString('vi-VN') : '---'}
                                             </div>
                                           </div>
                                         </div>
 
-                                        {/* 2. Middle: Scorecard Progress (Centered) */}
-                                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 1, minWidth: 260 }}>
+                                        {/* 2. Middle: Scorecard Progress */}
+                                        <div style={{ display: 'flex', alignItems: 'center' }}>
                                           {attemptsCount > 1 ? (
                                             <div
                                               style={{
@@ -1839,8 +1993,8 @@ export default function TeacherExamsPage() {
                                           )}
                                         </div>
 
-                                        {/* 3. Right: Action button */}
-                                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end' }}>
+                                        {/* 3. Right: Action button - đẩy về mép phải, gần bên trái là tên/điểm */}
+                                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', marginLeft: 'auto' }}>
                                           <Link
                                             to={`/teacher/exams/${exam.id}/submissions/${latestSub.id || latestSub.submissionId}`}
                                             className="btn sm"
