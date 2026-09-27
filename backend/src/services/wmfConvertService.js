@@ -14,7 +14,10 @@ const { execFile } = require('child_process');
 const sharp = require('sharp');
 const wmfFontParser = require('./wmfFontParser');
 
-const BATCH_SIZE = 100; // Tăng kích thước lô để giảm số lần khởi động LibreOffice, tăng tốc xử lý x3-x5 lần
+// Tăng kích thước lô để giảm số lần khởi động LibreOffice, tăng tốc xử lý x3-x5 lần
+const BATCH_SIZE = 100;
+// Thời gian chờ tối đa cho 1 lần gọi LibreOffice.
+const SOFFICE_TIMEOUT_MS = 60000;
 
 // Các đường dẫn cài đặt mặc định của LibreOffice trên Windows/macOS/Linux
 const CANDIDATE_PATHS = [
@@ -74,13 +77,30 @@ function isLibreOfficeAvailable() {
 // Placeable Header, định dạng lạ, EMF thiếu thông tin DPI...) - quay lại
 // cách quy đổi tuyến tính thuần theo pixel như Bước 30, đảm bảo luôn có kết
 // quả hợp lý dù không phân tích được font.
+// Xuất PNG ở độ phân giải CAO HƠN mặc định của LibreOffice (qua tham số
+// PixelWidth/PixelHeight của draw_png_Export) từng được thử (x2, x3) để ảnh
+// công thức nét hơn - đã TẮT vì tốc độ đổi lấy được không đáng: x2 mất
+// ~112s, x3 mất ~172s cho 1 đề ~143 công thức, so với mặc định NHANH HƠN
+// NHIỀU LẦN - ưu tiên tốc độ theo yêu cầu, giữ lại PNG_RENDER_SCALE=1 (dùng
+// đúng độ phân giải mặc định của LibreOffice, không đổi filter xuất ảnh) để
+// dễ bật lại sau này nếu cần (chỉ cần đổi số này) mà không phải viết lại các
+// hằng số PX_TO_EM/PX_PER_PT phụ thuộc bên dưới.
+const PNG_RENDER_SCALE = 1;
+const PNG_EXPORT_FILTER = PNG_RENDER_SCALE === 1
+  ? 'png'
+  : `png:draw_png_Export:{"PixelWidth":{"type":"long","value":"${992 * PNG_RENDER_SCALE}"},"PixelHeight":{"type":"long","value":"${1403 * PNG_RENDER_SCALE}"}}`;
+
 const EM_PER_PT = 0.135; // 1pt cỡ chữ MathType -> bao nhiêu em cho 1 dòng công thức
-const GLOBAL_PX_TO_EM = 0.043; // dự phòng (Tầng 2): 1px chiều cao gốc -> bao nhiêu em
+// Các hằng số dưới đây đo bằng PIXEL THẬT trên ảnh xuất ra - phải nhân theo
+// đúng PNG_RENDER_SCALE ở trên để khớp với độ phân giải mới, nếu không toàn
+// bộ ngưỡng phân loại "hình vẽ" / cỡ chữ dự phòng sẽ tính sai theo tỉ lệ 3
+// lần đã tăng lên.
+const GLOBAL_PX_TO_EM = 0.043 / PNG_RENDER_SCALE; // dự phòng (Tầng 2): 1px chiều cao gốc -> bao nhiêu em
 const MIN_FORMULA_HEIGHT_EM = 1.1;
 const MAX_FORMULA_HEIGHT_EM = 4.8;
 const DEFAULT_FORMULA_HEIGHT_EM = 1.55; // dùng khi không đo được kích thước gốc (ảnh lỗi/thiếu)
 const DEFAULT_FORMULA_VALIGN_EM = -0.3;
-const DEFAULT_PX_PER_PT = 3.8; // dùng khi 1 lượt import không có đủ mẫu để tự hiệu chỉnh
+const DEFAULT_PX_PER_PT = 3.8 * PNG_RENDER_SCALE; // dùng khi 1 lượt import không có đủ mẫu để tự hiệu chỉnh
 
 function clampHeightEm(raw) {
   return Math.min(MAX_FORMULA_HEIGHT_EM, Math.max(MIN_FORMULA_HEIGHT_EM, raw));
@@ -388,9 +408,11 @@ async function trimWhitespace(pngBuffer) {
     // đúng kích thước pixel gốc không giới hạn, gây ra công thức bị phóng to bất thường (không
     // phải do sai kích thước tính toán, mà do bị nhận NHẦM LOẠI ẢNH). Yêu cầu CẢ 2 chiều đủ lớn
     // (hoặc diện tích thật lớn, cho hình chữ nhật dẹt) mới coi là hình vẽ thật.
+    // Ngưỡng gốc đo được ở độ phân giải xuất PNG mặc định (150px/100px/40000px²)
+    // - nhân theo PNG_RENDER_SCALE để khớp với ảnh xuất ra ở độ phân giải cao hơn hiện tại.
     const isDiagram = Boolean(
-      (w >= 150 && h >= 100) ||
-      (w * h >= 40000)
+      (w >= 150 * PNG_RENDER_SCALE && h >= 100 * PNG_RENDER_SCALE) ||
+      (w * h >= 40000 * PNG_RENDER_SCALE * PNG_RENDER_SCALE)
     );
     const bandCount = !isDiagram && w > 0 && h > 0 ? await countInkBands(trimmed, w, h) : 0;
 
@@ -416,12 +438,26 @@ async function trimWhitespace(pngBuffer) {
 function runSoffice(args) {
   return new Promise((resolve, reject) => {
     const sofficePath = findSofficePath();
-    execFile(sofficePath, args, { timeout: 60000 }, (err, stdout, stderr) => {
+    execFile(sofficePath, args, { timeout: SOFFICE_TIMEOUT_MS }, (err, stdout, stderr) => {
       if (err) return reject(new Error(`LibreOffice lỗi: ${err.message}\n${stderr}`));
       resolve(stdout);
     });
   });
 }
+
+// ĐÃ THỬ (Bước x): ép bảng thay thế font của LibreOffice (Tools > Options >
+// Fonts > Bảng thay thế, cấu hình qua registrymodifications.xcu) để gộp các
+// font "chữ/biến số thường" khác nhau giữa các file (đo thực tế: file dùng
+// lẫn lộn "Times New Roman" và "Palatino Linotype") về chung 1 kiểu, mong
+// giảm bất đồng bộ font giữa các công thức. ĐÃ KIỂM CHỨNG TRỰC TIẾP: cấu
+// hình này KHÔNG có tác dụng khi convert qua đường Draw-document headless
+// dùng ở đây (font gốc trong SVG xuất ra vẫn giữ nguyên "Palatino Linotype"
+// dù đã bật "Always" trong bảng thay thế) - có thể bảng thay thế này chỉ áp
+// dụng cho luồng mở/hiển thị tài liệu Writer thông thường, không áp dụng cho
+// đường import WMF/EMF làm "trang Draw" như wmfConvertService đang dùng. Đã
+// GỠ BỎ hướng này (không giữ code không hoạt động) - xem lại đề xuất khác
+// (chuẩn hoá font ngay từ khâu soạn thảo, hoặc đổi hẳn sang OMML+KaTeX) nếu
+// muốn tiếp tục xử lý vấn đề bất đồng bộ font giữa các công thức.
 
 // Chuyển 1 file Word (.doc/.docx) bất kỳ sang PDF bằng LibreOffice - dùng để
 // giáo viên "xem trước trên web" file đáp án chi tiết dạng Word (trình duyệt
@@ -492,7 +528,7 @@ async function convertWmfBuffersToPng(wmfItems) {
           `-env:UserInstallation=file:///${profileDir}`,
           '--headless',
           '--convert-to',
-          'png',
+          PNG_EXPORT_FILTER,
           '--outdir',
           tmpDir,
           ...filePaths,

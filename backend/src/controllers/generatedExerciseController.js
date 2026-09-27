@@ -43,8 +43,16 @@ async function generateForSubmission(req, res) {
       content: q ? q.content : '',
       options: q ? q.options : [],
       correctAnswer: q ? q.correctAnswer : '',
-      selectedOption: ans.selectedOption,
+      // Field lưu trong 'submission_answers' tên là 'selectedAnswer' (xem
+      // studentExamController.js:submitExam), KHÔNG phải 'selectedOption' -
+      // nhầm tên field khiến giá trị luôn undefined, hiển thị sai thành
+      // "Chưa chọn" dù học sinh đã chọn đáp án.
+      selectedOption: ans.selectedAnswer,
       tags: q && q.tags ? q.tags : ans.tags,
+      // Dữ liệu hình vẽ GỐC (nếu câu này có) - gửi kèm để Gemini vẽ hình
+      // TƯƠNG TỰ chính xác (cùng loại + cùng cấu trúc dữ liệu) cho bài tập
+      // sinh thêm, thay vì phải đoán loại hình chỉ dựa vào chữ trong đề bài.
+      diagram: q ? q.diagram || null : null,
     };
   });
 
@@ -83,6 +91,12 @@ async function generateForSubmission(req, res) {
     cacheKey,
     roadmap: { summary: aiResult.summary, steps: aiResult.steps },
     exercises: aiResult.exercises,
+    // Phân tích riêng từng câu học sinh làm sai (vì sao chọn nhầm + lời giải
+    // đúng chi tiết cho chính câu đó) - kèm luôn câu hỏi gốc để hiển thị đối
+    // chiếu, vì "questionIndex" AI trả về chỉ là số thứ tự trong danh sách
+    // gửi lên, không phải id câu hỏi thật.
+    questionAnalyses: aiResult.questionAnalyses || [],
+    wrongQuestions,
     status: 'pending_review',
     reviewedBy: null,
     generatedAt: new Date().toISOString(),
@@ -235,10 +249,11 @@ function updateGeneratedExercise(req, res) {
     return res.status(404).json({ message: 'Không tìm thấy đề xuất' });
   }
 
-  const { roadmap, exercises, weakTags } = req.body || {};
+  const { roadmap, exercises, weakTags, questionAnalyses } = req.body || {};
   const payload = {};
   if (roadmap) payload.roadmap = roadmap;
   if (Array.isArray(exercises)) payload.exercises = exercises;
+  if (Array.isArray(questionAnalyses)) payload.questionAnalyses = questionAnalyses;
   if (Array.isArray(weakTags)) payload.weakTags = weakTags;
   payload.updatedAt = new Date().toISOString();
 

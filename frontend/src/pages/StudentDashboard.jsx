@@ -210,25 +210,25 @@ function ExamCardItem({ exam, examSubs, submitted, aiChildren = [], submissions 
           display: 'flex',
           justifyContent: 'space-between',
           alignItems: 'center',
-          padding: '18px 24px',
+          padding: '12px 18px',
           flexWrap: 'wrap',
-          gap: 16,
+          gap: 12,
           background: expanded ? 'rgba(37,99,235,0.02)' : '#ffffff',
         }}
       >
         {/* Left: Icon + Title & Description */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 14, minWidth: 260, flex: 1 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12, minWidth: 220, flex: 1 }}>
           <div
             style={{
-              width: 46,
-              height: 46,
-              borderRadius: 12,
+              width: 38,
+              height: 38,
+              borderRadius: 10,
               background: submitted ? 'rgba(37,99,235,0.08)' : '#f1f5f9',
               color: submitted ? 'var(--primary)' : '#64748b',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              fontSize: 22,
+              fontSize: 18,
               flexShrink: 0,
             }}
           >
@@ -236,7 +236,7 @@ function ExamCardItem({ exam, examSubs, submitted, aiChildren = [], submissions 
           </div>
 
           <div>
-            <div style={{ fontWeight: 700, fontSize: 16, color: '#1e293b', marginBottom: 4 }}>
+            <div style={{ fontWeight: 700, fontSize: 14.5, color: '#1e293b', marginBottom: 2 }}>
               {exam.title}
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, color: '#64748b', flexWrap: 'wrap' }}>
@@ -269,7 +269,7 @@ function ExamCardItem({ exam, examSubs, submitted, aiChildren = [], submissions 
         </div>
 
         {/* Right: Action Buttons */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0, justifyContent: 'flex-end' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0, justifyContent: 'flex-end', flexWrap: 'wrap' }}>
           {submitted ? (
             <>
               <Link
@@ -332,6 +332,13 @@ function ExamCardItem({ exam, examSubs, submitted, aiChildren = [], submissions 
                   ▼
                 </span>
               </button>
+
+              {/* Đáp án chi tiết (nếu giáo viên có đính kèm) - gọn trong
+                  cùng 1 hàng với "Làm lại"/"Lịch sử" thay vì để riêng 1 khối
+                  bên dưới cho đỡ chiếm diện tích */}
+              {exam.answerKeyFile && (
+                <AnswerKeyPanel examId={exam.id} answerKeyFile={exam.answerKeyFile} compact />
+              )}
             </>
           ) : (
             <Link
@@ -353,13 +360,6 @@ function ExamCardItem({ exam, examSubs, submitted, aiChildren = [], submissions 
           )}
         </div>
       </div>
-
-      {/* Đáp án chi tiết (nếu giáo viên có đính kèm) - chỉ hiện sau khi đã nộp bài */}
-      {submitted && exam.answerKeyFile && (
-        <div style={{ padding: '0 24px 18px' }}>
-          <AnswerKeyPanel examId={exam.id} answerKeyFile={exam.answerKeyFile} />
-        </div>
-      )}
 
       {/* Expanded History Sub-list for All Attempts */}
       {expanded && examSubs.length > 0 && (

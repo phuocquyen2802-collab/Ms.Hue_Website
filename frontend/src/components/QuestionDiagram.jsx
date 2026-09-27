@@ -1,6 +1,8 @@
 import FunctionGraphChart from './FunctionGraphChart';
 import VariationTableDiagram from './VariationTableDiagram';
 import SolidGeometryDiagram from './SolidGeometryDiagram';
+import OxyzDiagram from './OxyzDiagram';
+import RoundSolidDiagram from './RoundSolidDiagram';
 
 // Điểm gọi DUY NHẤT để hiển thị hình minh hoạ cho 1 câu hỏi (nếu có) - AI
 // (Gemini) chỉ trả về DỮ LIỆU có cấu trúc (công thức hàm số / bảng số liệu),
@@ -25,6 +27,22 @@ export default function QuestionDiagram({ diagram }) {
         apexLabel={diagram.apexLabel}
         topLabels={diagram.topLabels}
         extraPoints={diagram.extraPoints}
+      />
+    );
+  }
+
+  if (diagram.type === 'oxyz') {
+    return <OxyzDiagram points={diagram.points} vectors={diagram.vectors} plane={diagram.plane} />;
+  }
+
+  if (diagram.type === 'round-solid' && diagram.shape) {
+    return (
+      <RoundSolidDiagram
+        shape={diagram.shape}
+        radiusLabel={diagram.radiusLabel}
+        heightLabel={diagram.heightLabel}
+        apexLabel={diagram.apexLabel}
+        centerLabel={diagram.centerLabel}
       />
     );
   }

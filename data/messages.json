@@ -88,5 +88,35 @@
     "attachment": null,
     "createdAt": "2026-09-21T14:39:31.677Z",
     "read": true
+  },
+  {
+    "id": "49e33c31-6e05-4bb4-a148-7af07af90f41",
+    "senderId": "u-98741842-4faa-4754-9ac8-e0e46af5d42f",
+    "receiverId": "u-teacher-1",
+    "text": "Hi",
+    "image": null,
+    "attachment": null,
+    "createdAt": "2026-09-25T01:38:13.472Z",
+    "read": true
+  },
+  {
+    "id": "d62a78c8-0112-4ec2-ba09-daf4639a5776",
+    "senderId": "u-98741842-4faa-4754-9ac8-e0e46af5d42f",
+    "receiverId": "u-teacher-1",
+    "text": "Alo",
+    "image": null,
+    "attachment": null,
+    "createdAt": "2026-09-25T01:38:20.478Z",
+    "read": true
+  },
+  {
+    "id": "eba7012c-03cc-49e2-92a5-356ca9f600e8",
+    "senderId": "u-teacher-1",
+    "receiverId": "u-98741842-4faa-4754-9ac8-e0e46af5d42f",
+    "text": "đá",
+    "image": null,
+    "attachment": null,
+    "createdAt": "2026-09-25T01:59:32.249Z",
+    "read": true
   }
 ]

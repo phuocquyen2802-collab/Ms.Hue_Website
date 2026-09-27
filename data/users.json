@@ -7,16 +7,35 @@
     "role": "teacher",
     "className": null,
     "createdAt": "2026-09-01T00:00:00.000Z",
-    "lastActiveAt": "2026-09-21T15:47:02.539Z"
+    "lastActiveAt": "2026-09-26T15:39:29.168Z"
   },
   {
-    "id": "u-98741842-4faa-4754-9ac8-e0e46af5d42f",
-    "name": "Nguyễn Phước Quyền",
-    "email": "phuocquyen@gmail.com",
-    "passwordHash": "$2a$10$dOhDdYBg43a16ZsnzHd.NOaZnK5rorWj9es4Tx9ajf6045H4BcTru",
+    "id": "u-c536c54e-c7d6-4b6a-b8b2-c4669380e7a9",
+    "name": "Nguyễn Văn A",
+    "email": "nguyenvana@gmail.com",
+    "passwordHash": "$2a$10$TGKavsfMCXYL6gsRabU7vepL3N6UzVnMbfdqclVjBAkEYTIzmn8kW",
     "role": "student",
     "className": "12A2",
-    "createdAt": "2026-09-21T14:38:10.307Z",
-    "lastActiveAt": "2026-09-21T15:47:14.634Z"
+    "createdAt": "2026-09-25T01:30:04.522Z",
+    "lastActiveAt": "2026-09-25T10:17:31.995Z"
+  },
+  {
+    "id": "u-ca091ccf-ef61-4670-b01c-df5e8a0b6cba",
+    "name": "Nguyễn Văn B",
+    "email": "nguyenvanb@gmail.com",
+    "passwordHash": "$2a$10$vf.feKpNMLyA1vbgMXKzQuBX7DvAAiui8Xy4xIEPxe0Ai8b5Jn1HO",
+    "role": "student",
+    "className": "12A3",
+    "createdAt": "2026-09-25T01:30:40.627Z"
+  },
+  {
+    "id": "u-6ad4ebcd-31dd-4be1-b8a1-f3deb98f75cc",
+    "name": "Nguyễn Văn C",
+    "email": "nguyenvanc@gmail.com",
+    "passwordHash": "$2a$10$DZ6CBaRcwAXOj.8F99P1NexNbRsxLtR7AmPna7ZnA19X4ul.TJhI6",
+    "role": "student",
+    "className": "12A1",
+    "createdAt": "2026-09-25T01:31:00.311Z",
+    "lastActiveAt": "2026-09-25T10:08:53.330Z"
   }
 ]

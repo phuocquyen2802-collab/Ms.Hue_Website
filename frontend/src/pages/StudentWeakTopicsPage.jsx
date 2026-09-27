@@ -207,6 +207,24 @@ export default function StudentWeakTopicsPage() {
                         >
                           Lần {s.attempt}
                         </span>
+                        {s.roadmapStatus !== 'approved' && (
+                          <span
+                            title="Giáo viên chưa duyệt & gửi lộ trình ôn tập AI cho đợt làm này"
+                            style={{
+                              flexShrink: 0,
+                              fontSize: 10.5,
+                              fontWeight: 700,
+                              color: '#b45309',
+                              background: '#fffbeb',
+                              border: '1px solid #fde68a',
+                              padding: '1px 7px',
+                              borderRadius: 10,
+                              whiteSpace: 'nowrap',
+                            }}
+                          >
+                            ⚠️ Chưa có lộ trình
+                          </span>
+                        )}
                         {isSelected && <span style={{ color: 'var(--gold-text, #8a611f)', fontSize: 13 }}>✓</span>}
                       </button>
                     );
@@ -298,6 +316,24 @@ export default function StudentWeakTopicsPage() {
                                   >
                                     Lần {s.attempt}
                                   </span>
+                                  {s.roadmapStatus !== 'approved' && (
+                                    <span
+                                      title="Giáo viên chưa duyệt & gửi lộ trình ôn tập AI cho đợt làm này"
+                                      style={{
+                                        flexShrink: 0,
+                                        fontSize: 10,
+                                        fontWeight: 700,
+                                        color: '#b45309',
+                                        background: '#fffbeb',
+                                        border: '1px solid #fde68a',
+                                        padding: '1px 6px',
+                                        borderRadius: 10,
+                                        whiteSpace: 'nowrap',
+                                      }}
+                                    >
+                                      ⚠️ Chưa có lộ trình
+                                    </span>
+                                  )}
                                   {isSelected && <span style={{ color: 'var(--gold-text, #8a611f)', fontSize: 13 }}>✓</span>}
                                 </button>
                               );
@@ -453,6 +489,55 @@ export default function StudentWeakTopicsPage() {
                 </div>
               ))}
             </div>
+
+            {/* Phân tích riêng từng câu em đã làm sai - ngoài lộ trình chung ở trên */}
+            {activeRoadmap.questionAnalyses && activeRoadmap.questionAnalyses.length > 0 && (
+              <div style={{ marginTop: 20 }}>
+                <div style={{ fontWeight: 800, fontSize: 15, marginBottom: 12, color: 'var(--text-main)' }}>
+                  🔍 Phân tích từng câu em đã làm sai
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+                  {activeRoadmap.questionAnalyses.map((qa, idx) => {
+                    const wrongQ = (activeRoadmap.wrongQuestions || [])[qa.questionIndex - 1] || (activeRoadmap.wrongQuestions || [])[idx];
+                    return (
+                      <div
+                        key={idx}
+                        style={{
+                          background: '#ffffff',
+                          border: '1px solid var(--border-color)',
+                          borderRadius: 10,
+                          padding: '16px 18px',
+                          boxShadow: '0 2px 6px rgba(0,0,0,0.02)',
+                        }}
+                      >
+                        <div style={{ fontWeight: 800, fontSize: 14, marginBottom: 10, color: '#be123c' }}>
+                          Câu sai {qa.questionIndex || idx + 1}
+                        </div>
+                        {wrongQ && (
+                          <div style={{ background: '#f8fafc', padding: '10px 14px', borderRadius: 8, fontSize: 13.5, color: '#334155', marginBottom: 8 }}>
+                            <div dangerouslySetInnerHTML={{ __html: renderMath(wrongQ.content) }} />
+                            <div style={{ marginTop: 4, fontSize: 12.5, color: '#64748b' }}>
+                              Đáp án đúng: <strong style={{ color: '#16a34a' }}>{wrongQ.correctAnswer}</strong>
+                              {' · '}Em đã chọn: <strong style={{ color: '#dc2626' }}>{wrongQ.selectedOption || 'Chưa chọn'}</strong>
+                            </div>
+                          </div>
+                        )}
+                        {qa.mistakeAnalysis && (
+                          <p style={{ fontSize: 14, lineHeight: 1.7, marginBottom: 8, color: '#b91c1c' }}>
+                            ⚠️ <strong>Lỗ hổng kiến thức:</strong> <span dangerouslySetInnerHTML={{ __html: renderMath(qa.mistakeAnalysis) }} />
+                          </p>
+                        )}
+                        {qa.correctSolution && (
+                          <p style={{ fontSize: 14, lineHeight: 1.7, margin: 0, color: '#047857' }}>
+                            ✅ <strong>Cách khắc phục:</strong> <span dangerouslySetInnerHTML={{ __html: renderMath(qa.correctSolution) }} />
+                          </p>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
 
             {/* Nút Làm lại đề thi */}
             {activeSubmission?.examId && (

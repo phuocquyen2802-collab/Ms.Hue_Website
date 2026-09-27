@@ -1,68 +1,71 @@
 [
   {
-    "id": "e-cb9c66e6-5653-49b0-85f2-5baecf837c64",
-    "title": "Đề ôn tập số 1",
+    "id": "e-206afe22-cbcd-4858-ae2c-bc2e8c1e2071",
+    "title": "Đề 1",
     "description": "",
     "createdBy": "u-teacher-1",
     "assignedTo": [
-      "u-98741842-4faa-4754-9ac8-e0e46af5d42f"
+      "u-c536c54e-c7d6-4b6a-b8b2-c4669380e7a9"
     ],
     "durationMinutes": 15,
     "status": "assigned",
-    "createdAt": "2026-09-21T14:45:35.653Z",
-    "answerKeyFile": {
-      "filename": "e0ad8add-1d9f-4357-ae29-d5b668e70394.docx",
-      "originalName": "Đáp án chi tiết đề 1.docx",
-      "mimeType": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-      "uploadedAt": "2026-09-21T14:45:36.220Z",
-      "previewPdfFilename": "7706cf9b-03a8-4726-9c83-44380b0a828f.pdf"
-    }
+    "createdAt": "2026-09-25T07:40:24.090Z"
   },
   {
-    "id": "e-a4fc650c-9fda-4ab2-a9b5-dca195f472fd",
-    "title": "Bài tập tiếp theo cho đề \"Đề ôn tập số 1\" - Nguyễn Phước Quyền",
-    "description": "Đề tự động sinh dựa trên các chủ đề yếu: PHƯƠNG TRÌNH LƯỢNG GIÁC",
-    "createdBy": "u-teacher-1",
-    "assignedTo": [
-      "u-98741842-4faa-4754-9ac8-e0e46af5d42f"
-    ],
-    "durationMinutes": 30,
-    "status": "assigned",
-    "createdAt": "2026-09-21T14:51:44.429Z",
-    "sourceExamId": "e-cb9c66e6-5653-49b0-85f2-5baecf837c64",
-    "isAiGenerated": true
-  },
-  {
-    "id": "e-b26bab22-9fcc-45da-9db5-994790e09082",
-    "title": "Đề chuẩn 2",
+    "id": "e-d0ebe987-3356-4f51-a122-15b41638ed8c",
+    "title": "Đề 2",
     "description": "",
     "createdBy": "u-teacher-1",
     "assignedTo": [
-      "u-98741842-4faa-4754-9ac8-e0e46af5d42f"
+      "u-c536c54e-c7d6-4b6a-b8b2-c4669380e7a9"
     ],
     "durationMinutes": 15,
     "status": "assigned",
-    "createdAt": "2026-09-21T15:05:35.489Z",
-    "answerKeyFile": {
-      "filename": "e32796d0-620e-421f-8649-e8fd79e9ac10.docx",
-      "originalName": "Đáp án chi tiết đề 1.docx",
-      "mimeType": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-      "uploadedAt": "2026-09-21T15:05:36.106Z",
-      "previewPdfFilename": "bb77c629-ae81-4d88-9fc9-dfdb135b164a.pdf"
-    }
+    "createdAt": "2026-09-25T07:58:44.674Z"
   },
   {
-    "id": "e-7a671e9b-f807-4243-848c-c83c5412a3af",
-    "title": "Bài tập tiếp theo cho đề \"Đề chuẩn 2\" - Nguyễn Phước Quyền",
-    "description": "Đề tự động sinh dựa trên các chủ đề yếu: KHẢO SÁT HÀM SỐ",
+    "id": "e-fbe42662-c576-4e63-b86f-75a8c0fa20c0",
+    "title": "Bài tập tiếp theo cho đề \"Đề 2\" - Nguyễn Văn A",
+    "description": "Đề tự động sinh dựa trên các chủ đề yếu: ĐẠO HÀM VÀ ỨNG DỤNG ĐẠO HÀM ĐỂ KHẢO SÁT HÀM SỐ, CẤP SỐ CỘNG VÀ CẤP SỐ NHÂN",
     "createdBy": "u-teacher-1",
     "assignedTo": [
-      "u-98741842-4faa-4754-9ac8-e0e46af5d42f"
+      "u-c536c54e-c7d6-4b6a-b8b2-c4669380e7a9"
     ],
-    "durationMinutes": 18,
+    "durationMinutes": 88,
     "status": "assigned",
-    "createdAt": "2026-09-21T15:10:27.808Z",
-    "sourceExamId": "e-b26bab22-9fcc-45da-9db5-994790e09082",
+    "createdAt": "2026-09-25T08:06:15.568Z",
+    "sourceExamId": "e-d0ebe987-3356-4f51-a122-15b41638ed8c",
     "isAiGenerated": true
+  },
+  {
+    "id": "e-c6b8a726-fb80-4dfd-923c-e71078496ac5",
+    "title": "đề mẫu",
+    "description": "",
+    "createdBy": "u-teacher-1",
+    "assignedTo": [
+      "u-c536c54e-c7d6-4b6a-b8b2-c4669380e7a9"
+    ],
+    "durationMinutes": 15,
+    "status": "assigned",
+    "createdAt": "2026-09-25T09:14:30.231Z"
+  },
+  {
+    "id": "e-1abc6be3-2d29-4d99-ad31-811b870f4d44",
+    "title": "Đề 3",
+    "description": "",
+    "createdBy": "u-teacher-1",
+    "assignedTo": [
+      "u-c536c54e-c7d6-4b6a-b8b2-c4669380e7a9"
+    ],
+    "durationMinutes": 15,
+    "status": "assigned",
+    "createdAt": "2026-09-25T09:44:14.014Z",
+    "answerKeyFile": {
+      "filename": "ec406a5b-c55b-45e1-878a-6264eed1a6de.docx",
+      "originalName": "Đáp án chi tiết đề 3.docx",
+      "mimeType": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+      "uploadedAt": "2026-09-25T09:44:15.188Z",
+      "previewPdfFilename": "95427a2c-7150-4d83-a192-476d36cbc5b0.pdf"
+    }
   }
 ]

@@ -11,6 +11,7 @@ const {
   updateGeneratedExercise,
 } = require('../controllers/generatedExerciseController');
 const { createStudent, updateStudent, deleteStudent } = require('../controllers/studentAccountController');
+const { listGroups, createGroup, updateGroup, deleteGroup } = require('../controllers/studentGroupController');
 
 const router = express.Router();
 
@@ -21,6 +22,11 @@ router.post('/students', createStudent);
 router.put('/students/:studentId', updateStudent);
 router.delete('/students/:studentId', deleteStudent);
 router.get('/students/:studentId/stats', getStudentStats);
+router.get('/groups', listGroups);
+router.post('/groups', createGroup);
+router.put('/groups/:groupId', updateGroup);
+router.delete('/groups/:groupId', deleteGroup);
+
 router.get('/class-weak-topics', getClassWeakTopics);
 router.get('/submissions', listAllSubmissions);
 

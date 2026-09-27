@@ -6,6 +6,7 @@ import LoginPage from './pages/LoginPage';
 import TeacherDashboard from './pages/TeacherDashboard';
 import TeacherExamsPage from './pages/TeacherExamsPage';
 import TeacherAnalyticsPage from './pages/TeacherAnalyticsPage';
+import TeacherScoreStatsPage from './pages/TeacherScoreStatsPage';
 import ExamEditorPage from './pages/ExamEditorPage';
 import TeacherStudentDetailPage from './pages/TeacherStudentDetailPage';
 import TeacherSubmissionDetailPage from './pages/TeacherSubmissionDetailPage';
@@ -56,6 +57,14 @@ export default function App() {
         element={
           <ProtectedRoute role="teacher">
             <TeacherAnalyticsPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/teacher/score-stats"
+        element={
+          <ProtectedRoute role="teacher">
+            <TeacherScoreStatsPage />
           </ProtectedRoute>
         }
       />

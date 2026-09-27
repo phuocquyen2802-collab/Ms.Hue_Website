@@ -41,11 +41,14 @@ function buildPrompt(studentName, weakTags = [], wrongQuestions = []) {
         const optionsText = (q.options || [])
           .map((opt) => `    ${opt.key}. ${cleanMathContent(opt.text)}`)
           .join('\n');
+        const diagramLine = q.diagram
+          ? `\n- Hình minh hoạ gốc (dữ liệu CHÍNH XÁC, dùng làm mẫu để vẽ hình tương tự): ${JSON.stringify(q.diagram)}`
+          : '';
         return `[Câu sai ${idx + 1}] (Chuyên đề: ${(q.tags || []).join(', ') || 'Toán 12'})
 - Đề bài gốc: ${cleanContent}
 - 4 đáp án gốc:
 ${optionsText}
-- Đáp án đúng: ${q.correctAnswer || 'A'} | Học sinh đã chọn sai: ${q.selectedOption || 'Chưa chọn'}`;
+- Đáp án đúng: ${q.correctAnswer || 'A'} | Học sinh đã chọn sai: ${q.selectedOption || 'Chưa chọn'}${diagramLine}`;
       })
       .join('\n\n');
 
@@ -53,14 +56,17 @@ ${optionsText}
 ${list}\n`;
   }
 
-  const exerciseCountPerQuestion = 3;
+  const exerciseCountPerQuestion = 2;
   const totalExercises = wrongQuestions.length > 0
     ? wrongQuestions.length * exerciseCountPerQuestion
     : Math.max(weakTags.length * 3, 3);
 
+  const wantQuestionAnalyses = wrongQuestions && wrongQuestions.length > 0;
+
   return `Bạn là một giáo viên Toán lớp 12 chuyên luyện thi THPT Quốc gia tại Việt Nam. Bạn đang phân tích bài làm của học sinh "${studentName}" để:
 1. Viết một Lộ trình ôn tập tự học chi tiết, chuẩn mực, công thức Toán học chuẩn LaTeX 100%.
-2. Phân loại và sinh ra BỘ BÀI TẬP TRẮC NGHIỆM TƯƠNG TỰ THEO TỪNG CHUYÊN ĐỀ (mỗi câu học sinh làm sai hoặc mỗi chủ đề yếu sinh đúng ${exerciseCountPerQuestion} câu tương tự cùng dạng) với ĐỀ BÀI ĐẦY ĐỦ CÔNG THỨC / PHƯƠNG TRÌNH TOÁN, TUYỆT ĐỐI KHÔNG CỤT ĐỀ.
+2. ${wantQuestionAnalyses ? 'Phân tích RIÊNG TỪNG CÂU học sinh đã làm sai (xem "questionAnalyses" trong cấu trúc JSON bên dưới): chỉ ra LỖ HỔNG KIẾN THỨC cụ thể đứng sau lỗi sai đó (thiếu/nhầm kiến thức nền nào khiến học sinh chọn sai đáp án đã chọn) và CÁCH KHẮC PHỤC lỗ hổng đó (nên ôn lại phần lý thuyết/dạng bài nào, luyện tập theo hướng nào) - KHÔNG giải lại chi tiết từng bước của câu hỏi (lời giải chi tiết đầy đủ đã có sẵn trong file đáp án riêng giáo viên phát cho học sinh).' : ''}
+3. Phân loại và sinh ra BỘ BÀI TẬP TRẮC NGHIỆM TƯƠNG TỰ THEO TỪNG CHUYÊN ĐỀ (mỗi câu học sinh làm sai hoặc mỗi chủ đề yếu sinh đúng ${exerciseCountPerQuestion} câu tương tự cùng dạng) với ĐỀ BÀI ĐẦY ĐỦ CÔNG THỨC / PHƯƠNG TRÌNH TOÁN, TUYỆT ĐỐI KHÔNG CỤT ĐỀ.
 
 CHUYÊN ĐỀ YẾU CỦA HỌC SINH:
 ${tagList}
@@ -78,7 +84,14 @@ HÃY TRẢ VỀ DUY NHẤT MỘT OBJECT JSON THEO ĐÚNG CẤU TRÚC SAU (KHÔNG
       "action": "Bước 1: Chuyển vế đưa về dạng chuẩn $\\\\sin x = m$, $\\\\cos x = m$.\\nBước 2: Sử dụng bảng giá trị lượng giác hoặc bấm máy tính SHIFT SIN, SHIFT COS để tìm góc $\\\\alpha$.\\nBước 3: Viết đầy đủ 2 họ nghiệm kèm đuôi $k2\\\\pi$ ($k \\\\in \\\\mathbb{Z}$)."
     }
   ],
-  "exercises": [
+${wantQuestionAnalyses ? `  "questionAnalyses": [
+    {
+      "questionIndex": 1,
+      "mistakeAnalysis": "Học sinh chưa nắm chắc công thức nghiệm ĐẦY ĐỦ của phương trình lượng giác cơ bản dạng $\\\\sin x = \\\\sin\\\\alpha$ - chỉ nhớ 1 họ nghiệm $x = \\\\frac{\\\\pi}{3} + k2\\\\pi$ mà quên mất còn 1 họ nghiệm nữa là $x = \\\\pi - \\\\frac{\\\\pi}{3} + k2\\\\pi$, đây là lỗ hổng rất phổ biến khi mới học phương trình lượng giác cơ bản.",
+      "correctSolution": "Ôn lại bảng công thức nghiệm của cả 3 loại phương trình lượng giác cơ bản (sin, cos, tan) - đặc biệt chú ý: sin và cos luôn cho 2 họ nghiệm, chỉ riêng tan mới cho 1 họ nghiệm. Nên luyện thêm 3-5 bài dạng phương trình lượng giác cơ bản để ghi nhớ chắc quy tắc này."
+    }
+  ],
+` : ''}  "exercises": [
     {
       "content": "Các nghiệm của phương trình $2\\\\sin x - 1 = 0$ là:",
       "options": [
@@ -133,7 +146,7 @@ QUY TẮC SỐNG CÒN BẮT BUỘC:
 1. PHÂN LOẠI BÀI TẬP THEO CHỦ ĐỀ:
    - Trong mỗi phần tử 'exercises', trường 'tags' BẮT BUỘC chứa đúng tên chuyên đề tương ứng (ví dụ: ['Phương trình lượng giác'], ['Phương trình mũ và lôgarit'], ['Cấp số cộng và cấp số nhân'], ['Khảo sát hàm số']).
    - Tên chuyên đề trong 'tags' phải khớp với tên chuyên đề trong 'steps' để hệ thống nhóm bài tập theo từng chuyên đề.
-2. HÌNH ẢNH/HÌNH VẼ - CHỈ ĐƯỢC DÙNG 3 LOẠI HÌNH CÓ CẤU TRÚC SAU (do hệ thống tự vẽ lại chính xác từ dữ liệu bạn cung cấp, KHÔNG phải bạn tự vẽ ảnh):
+2. HÌNH ẢNH/HÌNH VẼ - CHỈ ĐƯỢC DÙNG 5 LOẠI HÌNH CÓ CẤU TRÚC SAU (do hệ thống tự vẽ lại chính xác từ dữ liệu bạn cung cấp, KHÔNG phải bạn tự vẽ ảnh):
    a) ĐỒ THỊ HÀM SỐ - thêm trường 'diagram' dạng:
       "diagram": { "type": "function-graph", "expression": "<biểu thức theo x, cú pháp: + - * / ^, ngoặc, sin cos tan sqrt abs ln log exp, hằng số pi>", "domain": [xMin, xMax] }
       - 'expression' PHẢI khớp CHÍNH XÁC với hàm số $y = ...$ đã nêu trong 'content' (không được vẽ hàm khác).
@@ -146,9 +159,17 @@ QUY TẮC SỐNG CÒN BẮT BUỘC:
       "diagram": { "type": "solid-geometry", "shape": "pyramid3"|"pyramid4"|"prism3"|"prism4", "baseLabels": ["A","B","C"] hoặc ["A","B","C","D"], "apexLabel": "S" (bắt buộc với pyramid3/pyramid4, bỏ qua với prism), "topLabels": ["A'","B'",...] (tuỳ chọn, chỉ dùng cho prism3/prism4, mặc định tự thêm dấu ' nếu bỏ trống), "extraPoints": [{ "name": "M", "type": "midpoint", "points": ["A","D"] }, { "name": "O", "type": "intersection", "points": ["A","C","B","D"] }] (tuỳ chọn, dùng khi đề có nhắc trung điểm/giao điểm 2 đường chéo đáy) }
       - 'shape' = "pyramid3"/"pyramid4": hình chóp đáy tam giác/tứ giác (đỉnh 'apexLabel'). 'shape' = "prism3"/"prism4": hình lăng trụ đứng đáy tam giác/tứ giác (kể cả hình hộp chữ nhật/hình lập phương, dùng "prism4").
       - 'baseLabels' PHẢI khớp ĐÚNG tên các đỉnh đáy đã nêu trong 'content' (ví dụ content nói "$S.ABCD$" thì baseLabels = ["A","B","C","D"], apexLabel = "S").
-      - CHỈ dùng cho hình chóp/lăng trụ ĐƠN GIẢN có thể mô tả bằng đúng các trường trên - KHÔNG dùng cho hình phức tạp hơn (đa diện lồng nhau, hình cầu/nón/trụ tròn xoay, khối đa diện ghép nhiều khối).
-   - CHỈ thêm trường 'diagram' khi câu hỏi THẬT SỰ cần và đúng 1 trong 3 dạng trên - các chủ đề khác không vẽ được bằng 3 dạng này (lượng giác, mũ-logarit, cấp số, hình cầu/nón/trụ tròn xoay, hệ trục Oxyz...) thì KHÔNG có trường 'diagram', chỉ mô tả bằng lời/công thức như bình thường.
-   - QUAN TRỌNG: nếu câu hỏi gốc học sinh làm sai (trong DANH SÁCH CÂU HỎI CỤ THỂ bên dưới, nếu có) có kèm hình vẽ minh hoạ, hãy XÁC ĐỊNH LOẠI HÌNH đó dựa vào chính nội dung văn bản của câu hỏi gốc (ví dụ câu gốc ghi "Cho hình chóp $S.ABCD$..." nghĩa là có hình chóp tứ giác) rồi DÙNG ĐÚNG loại 'diagram' tương ứng (a/b/c) cho bài tập tương tự bạn sinh ra - KHÔNG bỏ qua hình chỉ vì chủ đề không phải Khảo sát hàm số.
+      - CHỈ dùng cho hình chóp/lăng trụ ĐƠN GIẢN có thể mô tả bằng đúng các trường trên - KHÔNG dùng cho hình phức tạp hơn (đa diện lồng nhau, khối đa diện ghép nhiều khối).
+   d) HỆ TRỤC TOẠ ĐỘ OXYZ - thêm trường 'diagram' dạng:
+      "diagram": { "type": "oxyz", "points": [{ "name": "A", "coords": [1, 2, 3] }, ...], "vectors": [{ "from": "O", "to": "A" }, ...] (tuỳ chọn), "plane": ["A", "B", "C"] (tuỳ chọn, tô mờ mặt phẳng qua 3-4 điểm đã khai báo) }
+      - 'coords' PHẢI khớp CHÍNH XÁC toạ độ đã nêu trong 'content' (ví dụ content ghi "$A(1;2;3)$" thì coords = [1,2,3]).
+      - CHỈ dùng khi đề cho SẴN toạ độ cụ thể của điểm/vectơ (không dùng khi đề chỉ nói chung chung về mặt phẳng/đường thẳng bằng phương trình tổng quát mà không có điểm/vectơ cụ thể để vẽ).
+   e) KHỐI TRÒN XOAY CƠ BẢN (nón/trụ/cầu) - thêm trường 'diagram' dạng:
+      "diagram": { "type": "round-solid", "shape": "cone"|"cylinder"|"sphere", "radiusLabel": "r" (tuỳ chọn, mặc định "r"), "heightLabel": "h" (tuỳ chọn, mặc định "h", bỏ qua với sphere), "apexLabel": "S" (tuỳ chọn, chỉ cone), "centerLabel": "O" (tuỳ chọn) }
+      - Hình vẽ MANG TÍNH MINH HOẠ (không theo tỉ lệ số liệu đề bài) - 'radiusLabel'/'heightLabel' PHẢI khớp đúng ký hiệu chữ (r, h...) hoặc số cụ thể đã dùng trong 'content'.
+      - CHỈ dùng cho nón/trụ/cầu ĐƠN GIẢN (không dùng cho khối tròn xoay phức tạp, ghép nhiều khối, hoặc mặt cầu ngoại tiếp/nội tiếp đa diện - trường hợp đó vẫn dùng shape "solid-geometry" ở mục (c) cho khối đa diện, không vẽ thêm mặt cầu).
+   - CHỈ thêm trường 'diagram' khi câu hỏi THẬT SỰ cần và đúng 1 trong 5 dạng trên - các chủ đề khác không vẽ được bằng các dạng này (lượng giác, mũ-logarit, cấp số...) thì KHÔNG có trường 'diagram', chỉ mô tả bằng lời/công thức như bình thường.
+   - QUAN TRỌNG: nếu câu hỏi gốc học sinh làm sai (trong DANH SÁCH CÂU HỎI CỤ THỂ bên dưới, nếu có) có kèm dòng "Hình minh hoạ gốc (dữ liệu CHÍNH XÁC...)", đây LÀ dữ liệu 'diagram' THẬT của chính câu hỏi đó - PHẢI dùng đúng 'type' của nó (và giữ đúng cấu trúc a/b/c/d/e tương ứng) cho các bài tập tương tự sinh ra từ câu này, chỉ được đổi các con số/nhãn cụ thể (VD: đổi hệ số hàm số, đổi tên đỉnh, đổi mốc bảng biến thiên) sao cho khớp với đề bài MỚI - TUYỆT ĐỐI KHÔNG tự đổi sang loại hình khác. Nếu câu gốc KHÔNG có dòng "Hình minh hoạ gốc" này (không có hình) thì cũng KHÔNG tự thêm hình cho bài tập tương tự. Nếu câu hỏi gốc không nằm trong DANH SÁCH CÂU HỎI CỤ THỂ (trường hợp chỉ có CHUYÊN ĐỀ YẾU, không có câu cụ thể), mới XÁC ĐỊNH LOẠI HÌNH dựa vào nội dung văn bản như mô tả (ví dụ "Cho hình chóp $S.ABCD$..." nghĩa là có hình chóp tứ giác) - KHÔNG bỏ qua hình chỉ vì chủ đề không phải Khảo sát hàm số.
    - NGHIÊM CẤM mọi hình thức khác: KHÔNG được viết "như hình vẽ" mà không có trường 'diagram' đi kèm đúng cấu trúc trên, KHÔNG được mô tả hình học không gian/hình vẽ tự do bằng lời rồi bảo học sinh tự hình dung, KHÔNG được chèn mã vẽ vector/SVG path/toạ độ rác vào 'content'.
 3. ĐỀ BÀI CÂU HỎI VÀ ĐÁP ÁN PHẢI CHUẨN XÁC VÀ ĐẦY ĐỦ CÔNG THỨC TOÁN:
    - Trong mỗi phần tử 'exercises', trường 'content' BẮT BUỘC PHẢI CHỨA PHƯƠNG TRÌNH / BIỂU THỨC / HÀM SỐ CỤ THỂ bọc trong $...$.
@@ -157,7 +178,11 @@ QUY TẮC SỐNG CÒN BẮT BUỘC:
 4. TẤT CẢ CÔNG THỨC VÀ BIẾN SỐ PHẢI BỌC TRONG $...$:
    - BẮT BUỘC: $2\\\\sin x - 1 = 0$, $x = \\\\frac{\\\\pi}{6} + k2\\\\pi$, $u_n = 2^n$, $y = \\\\frac{2x-1}{x+1}$, $a > 0, a \\\\neq 1$.
    - TUYỆT ĐỐI KHÔNG dùng dấu backtick (\`...\`) để bọc công thức.
-5. SỐ LƯỢNG: Sinh ĐÚNG ${totalExercises} câu hỏi trắc nghiệm tương tự, phân bố đều theo từng chuyên đề yếu.`;
+5. SỐ LƯỢNG: Sinh ĐÚNG ${totalExercises} câu hỏi trắc nghiệm tương tự, phân bố đều theo từng chuyên đề yếu.${wantQuestionAnalyses ? `
+6. PHÂN TÍCH TỪNG CÂU SAI ("questionAnalyses") LÀ BẮT BUỘC:
+   - PHẢI có ĐÚNG ${wrongQuestions.length} phần tử trong 'questionAnalyses', mỗi phần tử ứng với ĐÚNG 1 câu trong "DANH SÁCH CÁC CÂU HỎI CỤ THỂ" theo thứ tự [Câu sai 1], [Câu sai 2], ... - trường 'questionIndex' = số thứ tự đó (1, 2, 3...).
+   - 'mistakeAnalysis' (LỖ HỔNG KIẾN THỨC): chỉ ra CỤ THỂ đây là lỗ hổng kiến thức nào (thiếu công thức gì, nhầm quy tắc/điều kiện gì, hiểu sai khái niệm gì) khiến học sinh chọn nhầm đáp án đã chọn - KHÔNG viết chung chung kiểu "học sinh chưa nắm vững kiến thức", và KHÔNG giải lại chi tiết bài toán.
+   - 'correctSolution' (CÁCH KHẮC PHỤC): đưa ra HƯỚNG KHẮC PHỤC lỗ hổng đó cho học sinh - nên ôn lại phần lý thuyết/công thức/dạng bài nào, cần luyện tập thêm theo hướng nào để không lặp lại lỗi này - TUYỆT ĐỐI KHÔNG trình bày lời giải chi tiết từng "Bước 1, Bước 2..." của CHÍNH câu hỏi đó vì lời giải chi tiết đầy đủ đã có sẵn trong file đáp án riêng giáo viên phát cho học sinh, viết lại ở đây là thừa và trùng lặp.` : ''}`;
 }
 
 const FALLBACK_MODELS = Array.from(new Set([
@@ -240,13 +265,25 @@ function normalizeMathText(text) {
     return `$${trimmed}$`;
   });
 
-  // 2. Chuyển đổi \left\{ \begin{aligned} ... \end{aligned} \right. sang \begin{cases} ... \end{cases}
-  res = res.replace(/\\left\\{\s*\\begin\{aligned\}([\s\S]*?)\\end\{aligned\}\s*\\right\.?/g, (match, inner) => {
+  // 2. Chuyển đổi \left\{ \begin{aligned} ... \end{aligned} \right. (và biến
+  // thể dùng ngoặc vuông \left[ ... \right. để biểu diễn "hoặc" giữa các họ
+  // nghiệm - cách viết phổ biến trong SGK Việt Nam) sang \begin{cases} ...
+  // \end{cases} - KaTeX không tự hỗ trợ ngoặc vuông bọc \aligned nên nếu
+  // không đổi, công thức vỡ hoàn toàn không hiển thị được.
+  res = res.replace(/\\left(?:\\\{|\[)\s*\\begin\{aligned\}([\s\S]*?)\\end\{aligned\}\s*\\right(?:\.|\])?/g, (_match, inner) => {
     const cleanedInner = inner.replace(/&/g, '').trim();
     return `\\begin{cases} ${cleanedInner} \\end{cases}`;
   });
 
   // 3. Khắc phục phân tách điều kiện và lỗi unicode
+  // QUAN TRỌNG: đôi khi Gemini không dùng lệnh LaTeX \neq mà lại chèn thẳng
+  // 1 ký tự unicode "trông giống" dấu khác (≠, ⊟ boxminus, ≢, ∄...) do lỗi
+  // sinh token - các ký tự này gần như KHÔNG BAO GIỜ có nghĩa hợp lệ nào
+  // khác trong ngữ cảnh Toán 12, nên thay thế THẲNG về \neq trước, áp dụng
+  // rộng (không chỉ riêng khuôn mẫu "a > 0, a ≠ 1") để chặn lỗi dạng này ở
+  // mọi vị trí xuất hiện.
+  res = res.replace(/[≠⊟≢∄]/g, ' \\neq ');
+
   res = res
     .replace(/\$\s*0\s*<\s*\$?\s*a\s*\\neq\s*1\s*\$?/gi, '$0 < a \\neq 1$')
     .replace(/\$\s*0\s*<\s*\$?\s*a\s*≠\s*1\s*\$?/gi, '$0 < a \\neq 1$')
@@ -293,6 +330,14 @@ function normalizeAIOutput(data) {
         text: normalizeMathText(opt.text),
       })),
       tags: (ex.tags || []).map(normalizeMathText),
+    }));
+  }
+
+  if (Array.isArray(data.questionAnalyses)) {
+    data.questionAnalyses = data.questionAnalyses.map((qa) => ({
+      ...qa,
+      mistakeAnalysis: normalizeMathText(qa.mistakeAnalysis),
+      correctSolution: normalizeMathText(qa.correctSolution),
     }));
   }
 

@@ -4,6 +4,7 @@ const { v4: uuidv4 } = require('uuid');
 const dataAccess = require('../models/dataAccess');
 const weaknessAnalysisService = require('../services/weaknessAnalysisService');
 const wmfConvertService = require('../services/wmfConvertService');
+const answerKeyCoverageService = require('../services/answerKeyCoverageService');
 
 // Thư mục lưu file đáp án chi tiết (lời giải) giáo viên tải lên cho từng đề -
 // giống cơ chế lưu file đính kèm chat (chatController.js), dùng tên file
@@ -45,41 +46,51 @@ function removeAnswerKeyFilesFromDisk(answerKeyFile) {
 // không tự hiển thị được .doc/.docx, nhưng hiển thị PDF trực tiếp rất tốt) -
 // bản gốc Word vẫn giữ nguyên để tải về, bản PDF chỉ dùng để xem trên web.
 async function uploadAnswerKey(req, res) {
-  const exam = dataAccess.findById('exams', req.params.examId);
-  if (!exam || exam.createdBy !== req.user.id) {
-    return res.status(404).json({ message: 'Không tìm thấy đề thi' });
-  }
-  if (!req.file) {
-    return res.status(400).json({ message: 'Không có tệp nào được tải lên' });
-  }
-
-  removeAnswerKeyFilesFromDisk(exam.answerKeyFile);
-
-  const originalName = decodeUtf8FileName(req.file.originalname);
-  const answerKeyFile = {
-    filename: req.file.filename,
-    originalName,
-    mimeType: req.file.mimetype,
-    uploadedAt: new Date().toISOString(),
-  };
-
-  if (WORD_MIME_TYPES.includes(req.file.mimetype)) {
-    try {
-      const fileBuffer = fs.readFileSync(path.join(ANSWER_KEY_DIR, req.file.filename));
-      const ext = path.extname(originalName) || '.docx';
-      const pdfBuffer = await wmfConvertService.convertDocumentToPdfBuffer(fileBuffer, ext);
-      if (pdfBuffer) {
-        const previewPdfFilename = `${uuidv4()}.pdf`;
-        fs.writeFileSync(path.join(ANSWER_KEY_DIR, previewPdfFilename), pdfBuffer);
-        answerKeyFile.previewPdfFilename = previewPdfFilename;
-      }
-    } catch (err) {
-      console.error('Lỗi tạo bản xem trước PDF cho file đáp án Word:', err.message);
+  try {
+    const exam = dataAccess.findById('exams', req.params.examId);
+    if (!exam || exam.createdBy !== req.user.id) {
+      return res.status(404).json({ message: 'Không tìm thấy đề thi' });
     }
-  }
+    if (!req.file) {
+      return res.status(400).json({ message: 'Không có tệp nào được tải lên' });
+    }
 
-  dataAccess.updateById('exams', exam.id, { answerKeyFile });
-  return res.json({ answerKeyFile });
+    removeAnswerKeyFilesFromDisk(exam.answerKeyFile);
+
+    const originalName = decodeUtf8FileName(req.file.originalname);
+    const answerKeyFile = {
+      filename: req.file.filename,
+      originalName,
+      mimeType: req.file.mimetype,
+      uploadedAt: new Date().toISOString(),
+    };
+
+    if (WORD_MIME_TYPES.includes(req.file.mimetype)) {
+      try {
+        const fileBuffer = fs.readFileSync(path.join(ANSWER_KEY_DIR, req.file.filename));
+        const ext = path.extname(originalName) || '.docx';
+        const pdfBuffer = await wmfConvertService.convertDocumentToPdfBuffer(fileBuffer, ext);
+        if (pdfBuffer) {
+          const previewPdfFilename = `${uuidv4()}.pdf`;
+          fs.writeFileSync(path.join(ANSWER_KEY_DIR, previewPdfFilename), pdfBuffer);
+          answerKeyFile.previewPdfFilename = previewPdfFilename;
+        }
+      } catch (err) {
+        console.error('Lỗi tạo bản xem trước PDF cho file đáp án Word:', err.message);
+      }
+    }
+
+    dataAccess.updateById('exams', exam.id, { answerKeyFile });
+    return res.json({ answerKeyFile });
+  } catch (err) {
+    // Bọc toàn bộ hàm trong try/catch: đây là 1 async function dùng trực
+    // tiếp làm route handler, nếu lỗi ném ra ngoài phạm vi try/catch cũ (VD
+    // từ dataAccess/fs) sẽ trở thành 1 unhandled rejection làm SẬP CẢ SERVER
+    // (xem giải thích trong server.js) thay vì chỉ trả lỗi 500 cho riêng
+    // request này.
+    console.error('Lỗi tải lên đáp án chi tiết:', err);
+    return res.status(500).json({ message: `Tải lên đáp án chi tiết thất bại: ${err.message}` });
+  }
 }
 
 // [Giáo viên] Gỡ file đáp án chi tiết khỏi đề thi
@@ -122,6 +133,49 @@ function downloadAnswerKey(req, res) {
     return res.status(404).json({ message: 'Tệp đáp án đã bị xoá khỏi máy chủ' });
   }
   return res.download(filePath, originalName || filename);
+}
+
+// [Giáo viên] So khớp THỬ xem file đáp án chi tiết (Word/PDF) có nhắc tới
+// đủ "Câu N" cho từng câu trong đề hay không - dùng để cảnh báo TRƯỚC khi
+// giao đề cho học sinh, tránh thiếu trang/thiếu câu trong file đáp án.
+// Đứng độc lập (không cần examId) để dùng được cả lúc TẠO đề mới (đã biết
+// trước số câu từ file Word vừa tách) lẫn lúc tải đáp án cho đề đã có sẵn.
+async function checkAnswerKeyCoverage(req, res) {
+  if (!req.file) {
+    return res.status(400).json({ message: 'Không có tệp nào được tải lên' });
+  }
+
+  // `topicCounts`: mảng JSON số câu của TỪNG CHỦ ĐỀ theo đúng thứ tự (VD
+  // "[10,15]") - PHẢN ÁNH ĐÚNG việc đề đánh số lại từ Câu 1 ở mỗi chủ đề,
+  // xem giải thích chi tiết trong answerKeyCoverageService.js. Vẫn nhận
+  // `totalQuestions` (số nguyên) làm phương án dự phòng cho client cũ/đơn
+  // giản chưa gửi được breakdown theo chủ đề - khi đó coi cả đề là 1 chủ đề.
+  let topicCounts;
+  try {
+    topicCounts = req.body.topicCounts ? JSON.parse(req.body.topicCounts) : null;
+  } catch {
+    topicCounts = null;
+  }
+  if (!Array.isArray(topicCounts) || topicCounts.length === 0) {
+    const totalQuestions = parseInt(req.body.totalQuestions, 10);
+    if (!totalQuestions || totalQuestions <= 0) {
+      return res.status(400).json({ message: 'Thiếu topicCounts hoặc totalQuestions hợp lệ' });
+    }
+    topicCounts = [totalQuestions];
+  }
+
+  try {
+    const result = await answerKeyCoverageService.checkAnswerKeyCoverage(
+      req.file.buffer,
+      req.file.mimetype,
+      req.file.originalname,
+      topicCounts
+    );
+    return res.json(result);
+  } catch (err) {
+    console.error('Lỗi khi so khớp đáp án chi tiết:', err.message);
+    return res.status(500).json({ message: `Không đọc được nội dung file để so khớp: ${err.message}` });
+  }
 }
 
 // Tạo đề thi mới (có thể kèm danh sách học sinh được giao ngay)
@@ -518,4 +572,5 @@ module.exports = {
   uploadAnswerKey,
   deleteAnswerKey,
   downloadAnswerKey,
+  checkAnswerKeyCoverage,
 };

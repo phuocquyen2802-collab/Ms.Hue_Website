@@ -48,9 +48,14 @@ export default function NotificationBell() {
     const readSet = loadReadSet(user.role, user.id);
     try {
       if (isTeacher) {
-        // Giáo viên: thông báo học sinh nộp bài
-        const { data } = await api.get('/teacher/submissions');
-        const items = data
+        // Giáo viên: thông báo học sinh nộp bài + thông báo học sinh bình
+        // luận vào bài đăng "Thông tin chung"
+        const [subsRes, announcementsRes] = await Promise.all([
+          api.get('/teacher/submissions'),
+          api.get('/announcements').catch(() => ({ data: [] })),
+        ]);
+
+        const submissionItems = subsRes.data
           .filter((s) => !s.attempt || s.attempt === 1)
           .map((s) => {
             const initial = s.studentName ? s.studentName.trim().charAt(0).toUpperCase() : 'H';
@@ -68,6 +73,30 @@ export default function NotificationBell() {
               read: readSet.has(s.id),
             };
           });
+
+        const commentItems = [];
+        (announcementsRes.data || []).forEach((a) => {
+          (a.comments || [])
+            .filter((c) => c.authorRole === 'student')
+            .forEach((c) => {
+              const initial = c.authorName ? c.authorName.trim().charAt(0).toUpperCase() : 'H';
+              commentItems.push({
+                id: `comment-${c.id}`,
+                type: 'comment',
+                avatarText: initial,
+                avatarBg: 'linear-gradient(135deg, #f59e0b, #d97706)',
+                badgeIcon: '💬',
+                badgeBg: '#2563eb',
+                title: c.authorName,
+                desc: `đã bình luận vào bài "${a.title || 'Thông tin chung'}": ${c.content.slice(0, 60)}${c.content.length > 60 ? '…' : ''}`,
+                timestamp: c.createdAt,
+                targetPath: '/announcements',
+                read: readSet.has(`comment-${c.id}`),
+              });
+            });
+        });
+
+        const items = [...submissionItems, ...commentItems];
         items.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
         setNotifications(items);
       } else {

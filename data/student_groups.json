@@ -1,0 +1,12 @@
+[
+  {
+    "id": "grp-d989eee9-2517-4f3d-a153-5e2993ef6cde",
+    "name": "Ôn thi cấp tốc",
+    "studentIds": [
+      "u-98741842-4faa-4754-9ac8-e0e46af5d42f",
+      "u-ca091ccf-ef61-4670-b01c-df5e8a0b6cba"
+    ],
+    "createdBy": "u-teacher-1",
+    "createdAt": "2026-09-25T04:32:05.707Z"
+  }
+]

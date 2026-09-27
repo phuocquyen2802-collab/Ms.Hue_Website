@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useMemo } from 'react';
+import React, { useEffect, useState, useMemo, useRef } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import api from '../services/api';
 import { renderMath } from '../utils/mathRender';
@@ -12,6 +12,12 @@ export default function TeacherSubmissionDetailPage() {
 
   // AI Generation & Editing state
   const [generating, setGenerating] = useState(false);
+  // % tiến độ MÔ PHỎNG khi đang chờ Gemini trả lời (backend không có cách
+  // báo tiến độ thật giữa chừng vì chỉ có 1 lệnh gọi API duy nhất) - tăng dần
+  // theo thời gian, dừng ở 90% cho tới khi có phản hồi thật để tránh cảm
+  // giác thanh chạy xong nhưng vẫn phải chờ thêm.
+  const [generateProgress, setGenerateProgress] = useState(0);
+  const generateProgressTimerRef = useRef(null);
   const [generateError, setGenerateError] = useState('');
   const [includeExercises, setIncludeExercises] = useState(true);
   const [reviewing, setReviewing] = useState(false);
@@ -82,13 +88,29 @@ export default function TeacherSubmissionDetailPage() {
   async function handleGenerateAI(force = false) {
     const isForce = force === true;
     setGenerating(true);
+    setGenerateProgress(2);
     setGenerateError('');
     setActionMessage('');
+
+    // Tăng % mô phỏng dần đều, chậm lại khi gần tới mốc trần 90% (Gemini
+    // sinh lộ trình + phân tích từng câu + bài tập thường mất 15-40 giây) -
+    // KHÔNG bao giờ tự chạm 100% ở đây, chỉ set 100% thật khi API trả về.
+    clearInterval(generateProgressTimerRef.current);
+    generateProgressTimerRef.current = setInterval(() => {
+      setGenerateProgress((prev) => {
+        if (prev >= 90) return prev;
+        const step = prev < 50 ? 6 : prev < 75 ? 3 : 1;
+        return Math.min(90, prev + step);
+      });
+    }, 500);
+
     try {
       await api.post(`/teacher/submissions/${submissionId}/generate-roadmap`, {
         force: isForce,
         includeExercises: Boolean(includeExercises),
       });
+      clearInterval(generateProgressTimerRef.current);
+      setGenerateProgress(100);
       await loadData();
       setIsEditing(false);
       window.dispatchEvent(new Event('app:refresh-notifications'));
@@ -97,7 +119,9 @@ export default function TeacherSubmissionDetailPage() {
       console.error(err);
       setGenerateError(err.response?.data?.message || 'Lỗi khi gọi Gemini AI.');
     } finally {
+      clearInterval(generateProgressTimerRef.current);
       setGenerating(false);
+      setTimeout(() => setGenerateProgress(0), 600);
     }
   }
 
@@ -450,8 +474,22 @@ export default function TeacherSubmissionDetailPage() {
                 boxShadow: '0 4px 14px rgba(124, 58, 237, 0.3)',
               }}
             >
-              {generating ? '⏳ Gemini AI đang phân tích lỗi sai & sinh đề...' : '✨ Bắt đầu Phân tích lỗi sai bằng Gemini AI'}
+              {generating ? `⏳ Gemini AI đang phân tích lỗi sai & sinh đề... ${generateProgress}%` : '✨ Bắt đầu Phân tích lỗi sai bằng Gemini AI'}
             </button>
+
+            {generating && (
+              <div style={{ width: '100%', maxWidth: 360, height: 8, background: '#ede9fe', borderRadius: 20, overflow: 'hidden' }}>
+                <div
+                  style={{
+                    width: `${generateProgress}%`,
+                    height: '100%',
+                    background: 'linear-gradient(90deg, #7c3aed, #6366f1)',
+                    borderRadius: 20,
+                    transition: 'width 0.4s ease',
+                  }}
+                />
+              </div>
+            )}
           </div>
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 14, marginTop: 14 }}>
@@ -703,7 +741,203 @@ export default function TeacherSubmissionDetailPage() {
                 )
               )}
             </div>
+          </div>
+        )}
+      </div>
 
+      {/* Chi tiết từng câu hỏi trong bài làm của học sinh - đặt ngay sau
+          phần Nhận xét tổng thể, trước Bài tập bổ sung & Xác nhận giáo viên */}
+      <div className="card">
+        <div className="card-header">
+          <h2>Chi tiết từng câu trong bài làm ({submission.answers?.length || 0} câu)</h2>
+        </div>
+
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+          {(() => {
+            let currentTopicName = null;
+            let qNumInTopic = 0;
+
+            return (submission.answers || []).map((ans, idx) => {
+              const isCorrect = ans.isCorrect;
+              const topicName = (ans.tags && ans.tags.length > 0) ? ans.tags[0] : 'Toán 12';
+              const isNewTopic = topicName !== currentTopicName;
+              if (isNewTopic) {
+                currentTopicName = topicName;
+                qNumInTopic = 1;
+              } else {
+                qNumInTopic += 1;
+              }
+              const displayQNum = qNumInTopic;
+
+              return (
+                <React.Fragment key={ans.questionId || idx}>
+                  {isNewTopic && (
+                    <div
+                      style={{
+                        marginTop: idx > 0 ? 10 : 0,
+                        marginBottom: 2,
+                        padding: '10px 16px',
+                        background: 'linear-gradient(135deg, #2563eb 0%, #3b82f6 100%)',
+                        color: '#fff',
+                        borderRadius: 'var(--radius-md)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        boxShadow: '0 2px 4px rgba(0,0,0,0.06)',
+                      }}
+                    >
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                        <span style={{ fontSize: 16 }}>📚</span>
+                        <strong style={{ fontSize: 14.5, letterSpacing: '0.02em', color: '#f8fafc' }}>
+                          CHỦ ĐỀ: {topicName.toUpperCase()}
+                        </strong>
+                      </div>
+                    </div>
+                  )}
+
+                  <div
+                    className="question-card"
+                    style={{
+                      borderLeft: `5px solid ${isCorrect ? 'var(--success)' : 'var(--danger)'}`,
+                      background: '#ffffff',
+                    }}
+                  >
+                    <div className="question-header">
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                        <span style={{ fontWeight: 800, color: 'var(--primary)', fontSize: 14 }}>
+                          Câu {displayQNum}:
+                        </span>
+                        <span className={`status-pill ${isCorrect ? 'approved' : 'rejected'}`}>
+                          {isCorrect ? '✓ Làm đúng' : '✕ Làm sai'}
+                        </span>
+                      </div>
+                    </div>
+
+                    <div
+                      className="question-content"
+                      dangerouslySetInnerHTML={{ __html: renderMath(ans.content) }}
+                    />
+
+                    <QuestionDiagram diagram={ans.diagram} />
+
+                    {/* 4 Phương án */}
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginTop: 8 }}>
+                      {(ans.options || []).map((opt) => {
+                        const isSelected = opt.key === ans.selectedAnswer;
+                        const isCorrectOpt = opt.key === ans.correctAnswer;
+
+                        let rowClass = 'option-row';
+                        if (isCorrectOpt) rowClass += ' correct';
+                        else if (isSelected && !isCorrect) rowClass += ' wrong';
+
+                        return (
+                          <div
+                            key={opt.key}
+                            className={rowClass}
+                            style={{
+                              border: isSelected
+                                ? isCorrect
+                                  ? '2px solid var(--success)'
+                                  : '2px solid var(--danger)'
+                                : isCorrectOpt
+                                  ? '1.5px solid var(--success-border)'
+                                  : '1px solid var(--border-color)',
+                              background: isSelected
+                                ? isCorrect
+                                  ? 'var(--success-bg)'
+                                  : 'var(--danger-bg)'
+                                : isCorrectOpt
+                                  ? 'var(--success-bg)'
+                                  : '#ffffff',
+                              margin: 0,
+                            }}
+                          >
+                            <strong style={{ minWidth: 20 }}>{opt.key}.</strong>
+                            <span style={{ flex: 1 }} dangerouslySetInnerHTML={{ __html: renderMath(opt.text) }} />
+
+                            {isSelected && (
+                              <span
+                                style={{
+                                  marginLeft: 'auto',
+                                  fontSize: 12,
+                                  fontWeight: 700,
+                                  color: isCorrect ? 'var(--success-text)' : 'var(--danger-text)',
+                                  background: '#ffffff',
+                                  padding: '2px 8px',
+                                  borderRadius: 4,
+                                  border: '1px solid',
+                                }}
+                              >
+                                Học sinh chọn: {opt.key} {isCorrect ? '✓' : '✕'}
+                              </span>
+                            )}
+
+                            {!isSelected && isCorrectOpt && (
+                              <span
+                                style={{
+                                  marginLeft: 'auto',
+                                  fontSize: 12,
+                                  fontWeight: 700,
+                                  color: 'var(--success-text)',
+                                }}
+                              >
+                                Đáp án đúng: {opt.key} ✓
+                              </span>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+
+                    {/* Phân tích AI riêng cho câu này - chỉ hiện với câu làm
+                        sai và khi giáo viên đã "Sinh AI" cho bài nộp này */}
+                    {!isCorrect && proposal?.questionAnalyses && (() => {
+                      const wqIdx = (proposal.wrongQuestions || []).findIndex((wq) => wq.id === ans.questionId);
+                      if (wqIdx === -1) return null;
+                      const qIndex = wqIdx + 1;
+                      const qa = proposal.questionAnalyses.find((x) => (x.questionIndex || 0) === qIndex);
+                      if (!qa) return null;
+
+                      return (
+                        <div style={{ marginTop: 12, display: 'flex', flexDirection: 'column', gap: 10 }}>
+                          {qa.mistakeAnalysis && (
+                            <div style={{ background: '#fffbeb', padding: '10px 14px', borderRadius: 8, borderLeft: '4px solid #f59e0b' }}>
+                              <div style={{ fontSize: 12.5, fontWeight: 700, color: '#b45309', marginBottom: 5 }}>
+                                ⚠️ Lỗ hổng kiến thức:
+                              </div>
+                              <div style={{ fontSize: 13, lineHeight: 1.65, color: '#78350f' }} dangerouslySetInnerHTML={{ __html: renderMath(qa.mistakeAnalysis) }} />
+                            </div>
+                          )}
+
+                          {qa.correctSolution && (
+                            <div style={{ background: '#f0fdf4', padding: '10px 14px', borderRadius: 8, borderLeft: '4px solid #10b981' }}>
+                              <div style={{ fontSize: 12.5, fontWeight: 700, color: '#047857', marginBottom: 5 }}>
+                                ✅ Cách khắc phục:
+                              </div>
+                              <div style={{ fontSize: 13, lineHeight: 1.65, color: '#064e3b' }} dangerouslySetInnerHTML={{ __html: renderMath(qa.correctSolution) }} />
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })()}
+                  </div>
+                </React.Fragment>
+              );
+            });
+          })()}
+        </div>
+      </div>
+
+      {/* Bài tập bổ sung & Xác nhận giáo viên - chỉ hiện khi đã có đề xuất AI, đặt sau Chi tiết từng câu */}
+      {proposal && (
+        <div className="card" style={{ border: '2px solid #ddd6fe', background: '#faf5ff' }}>
+          <div className="card-header" style={{ borderBottom: '1px solid #ede9fe' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <span style={{ fontSize: 20 }}>🎁</span>
+              <h2 style={{ color: '#5b21b6', margin: 0 }}>Bài tập bổ sung & Xác nhận giáo viên</h2>
+            </div>
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 14, marginTop: 14 }}>
             {/* Các câu hỏi bài tập tương tự do AI sinh theo từng Chuyên đề */}
             {groupedExercises && groupedExercises.length > 0 && (
               <details
@@ -1111,158 +1345,8 @@ export default function TeacherSubmissionDetailPage() {
               </div>
             )}
           </div>
-        )}
-      </div>
-
-      {/* Chi tiết từng câu hỏi trong bài làm của học sinh */}
-      <div className="card">
-        <div className="card-header">
-          <h2>Chi tiết từng câu trong bài làm ({submission.answers?.length || 0} câu)</h2>
         </div>
-
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-          {(() => {
-            let currentTopicName = null;
-            let qNumInTopic = 0;
-
-            return (submission.answers || []).map((ans, idx) => {
-              const isCorrect = ans.isCorrect;
-              const topicName = (ans.tags && ans.tags.length > 0) ? ans.tags[0] : 'Toán 12';
-              const isNewTopic = topicName !== currentTopicName;
-              if (isNewTopic) {
-                currentTopicName = topicName;
-                qNumInTopic = 1;
-              } else {
-                qNumInTopic += 1;
-              }
-              const displayQNum = qNumInTopic;
-
-              return (
-                <React.Fragment key={ans.questionId || idx}>
-                  {isNewTopic && (
-                    <div
-                      style={{
-                        marginTop: idx > 0 ? 10 : 0,
-                        marginBottom: 2,
-                        padding: '10px 16px',
-                        background: 'linear-gradient(135deg, #2563eb 0%, #3b82f6 100%)',
-                        color: '#fff',
-                        borderRadius: 'var(--radius-md)',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'space-between',
-                        boxShadow: '0 2px 4px rgba(0,0,0,0.06)',
-                      }}
-                    >
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                        <span style={{ fontSize: 16 }}>📚</span>
-                        <strong style={{ fontSize: 14.5, letterSpacing: '0.02em', color: '#f8fafc' }}>
-                          CHỦ ĐỀ: {topicName.toUpperCase()}
-                        </strong>
-                      </div>
-                    </div>
-                  )}
-
-                  <div
-                    className="question-card"
-                    style={{
-                      borderLeft: `5px solid ${isCorrect ? 'var(--success)' : 'var(--danger)'}`,
-                      background: '#ffffff',
-                    }}
-                  >
-                    <div className="question-header">
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-                        <span style={{ fontWeight: 800, color: 'var(--primary)', fontSize: 14 }}>
-                          Câu {displayQNum}:
-                        </span>
-                        <span className={`status-pill ${isCorrect ? 'approved' : 'rejected'}`}>
-                          {isCorrect ? '✓ Làm đúng' : '✕ Làm sai'}
-                        </span>
-                      </div>
-                    </div>
-
-                    <div
-                      className="question-content"
-                      dangerouslySetInnerHTML={{ __html: renderMath(ans.content) }}
-                    />
-
-                    <QuestionDiagram diagram={ans.diagram} />
-
-                    {/* 4 Phương án */}
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginTop: 8 }}>
-                      {(ans.options || []).map((opt) => {
-                        const isSelected = opt.key === ans.selectedAnswer;
-                        const isCorrectOpt = opt.key === ans.correctAnswer;
-
-                        let rowClass = 'option-row';
-                        if (isCorrectOpt) rowClass += ' correct';
-                        else if (isSelected && !isCorrect) rowClass += ' wrong';
-
-                        return (
-                          <div
-                            key={opt.key}
-                            className={rowClass}
-                            style={{
-                              border: isSelected
-                                ? isCorrect
-                                  ? '2px solid var(--success)'
-                                  : '2px solid var(--danger)'
-                                : isCorrectOpt
-                                  ? '1.5px solid var(--success-border)'
-                                  : '1px solid var(--border-color)',
-                              background: isSelected
-                                ? isCorrect
-                                  ? 'var(--success-bg)'
-                                  : 'var(--danger-bg)'
-                                : isCorrectOpt
-                                  ? 'var(--success-bg)'
-                                  : '#ffffff',
-                              margin: 0,
-                            }}
-                          >
-                            <strong style={{ minWidth: 20 }}>{opt.key}.</strong>
-                            <span style={{ flex: 1 }} dangerouslySetInnerHTML={{ __html: renderMath(opt.text) }} />
-
-                            {isSelected && (
-                              <span
-                                style={{
-                                  marginLeft: 'auto',
-                                  fontSize: 12,
-                                  fontWeight: 700,
-                                  color: isCorrect ? 'var(--success-text)' : 'var(--danger-text)',
-                                  background: '#ffffff',
-                                  padding: '2px 8px',
-                                  borderRadius: 4,
-                                  border: '1px solid',
-                                }}
-                              >
-                                Học sinh chọn: {opt.key} {isCorrect ? '✓' : '✕'}
-                              </span>
-                            )}
-
-                            {!isSelected && isCorrectOpt && (
-                              <span
-                                style={{
-                                  marginLeft: 'auto',
-                                  fontSize: 12,
-                                  fontWeight: 700,
-                                  color: 'var(--success-text)',
-                                }}
-                              >
-                                Đáp án đúng: {opt.key} ✓
-                              </span>
-                            )}
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-                </React.Fragment>
-              );
-            });
-          })()}
-        </div>
-      </div>
+      )}
 
       {/* MODAL TÙY CHỌN TỪ CHỐI ĐỀ XUẤT AI */}
       {showRejectModal && (

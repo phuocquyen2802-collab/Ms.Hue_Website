@@ -22,6 +22,16 @@ function timeAgo(iso) {
   return `${days} ngày trước`;
 }
 
+function formatPostedDate(iso) {
+  return new Date(iso).toLocaleString('vi-VN', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+}
+
 export default function AnnouncementsPage() {
   const { user } = useAuth();
   const isTeacher = user?.role === 'teacher';
@@ -52,6 +62,11 @@ export default function AnnouncementsPage() {
   // Ô nhập bình luận theo từng bài (key = announcementId)
   const [commentDrafts, setCommentDrafts] = useState({});
   const [postingCommentId, setPostingCommentId] = useState(null);
+
+  // Sửa bình luận (key = commentId)
+  const [editingCommentId, setEditingCommentId] = useState(null);
+  const [editCommentText, setEditCommentText] = useState('');
+  const [savingCommentId, setSavingCommentId] = useState(null);
 
   async function loadData() {
     setLoading(true);
@@ -183,6 +198,26 @@ export default function AnnouncementsPage() {
       await loadData();
     } catch (err) {
       alert(err.response?.data?.message || 'Lỗi khi xoá bình luận');
+    }
+  }
+
+  function startEditComment(comment) {
+    setEditingCommentId(comment.id);
+    setEditCommentText(comment.content);
+  }
+
+  async function handleSaveEditComment(commentId) {
+    const content = editCommentText.trim();
+    if (!content) return;
+    setSavingCommentId(commentId);
+    try {
+      await api.put(`/announcements/comments/${commentId}`, { content });
+      setEditingCommentId(null);
+      await loadData();
+    } catch (err) {
+      alert(err.response?.data?.message || 'Lỗi khi sửa bình luận');
+    } finally {
+      setSavingCommentId(null);
     }
   }
 
@@ -329,6 +364,9 @@ export default function AnnouncementsPage() {
                     </div>
                     <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>
                       {timeAgo(a.createdAt)}{a.updatedAt ? ' (đã chỉnh sửa)' : ''}
+                    </div>
+                    <div style={{ fontSize: 10.5, color: 'var(--text-muted)', opacity: 0.75 }}>
+                      🕒 {formatPostedDate(a.createdAt)}
                     </div>
                   </div>
                 </div>
@@ -495,18 +533,66 @@ export default function AnnouncementsPage() {
                             {c.authorName}
                             {c.authorRole === 'teacher' && <span className="tag-badge" style={{ marginLeft: 6, fontSize: 10 }}>GV</span>}
                           </span>
-                          {(c.authorId === user?.id || isTeacher) && (
-                            <button
-                              type="button"
-                              onClick={() => handleDeleteComment(c.id)}
-                              style={{ background: 'none', border: 'none', color: 'var(--text-muted)', fontSize: 11, cursor: 'pointer' }}
-                            >
-                              Xoá
-                            </button>
-                          )}
+                          <div style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
+                            {c.authorId === user?.id && editingCommentId !== c.id && (
+                              <button
+                                type="button"
+                                onClick={() => startEditComment(c)}
+                                style={{ background: 'none', border: 'none', color: 'var(--text-muted)', fontSize: 11, cursor: 'pointer' }}
+                              >
+                                Sửa
+                              </button>
+                            )}
+                            {(c.authorId === user?.id || isTeacher) && editingCommentId !== c.id && (
+                              <button
+                                type="button"
+                                onClick={() => handleDeleteComment(c.id)}
+                                style={{ background: 'none', border: 'none', color: 'var(--text-muted)', fontSize: 11, cursor: 'pointer' }}
+                              >
+                                Xoá
+                              </button>
+                            )}
+                          </div>
                         </div>
-                        <div style={{ fontSize: 13.5, color: 'var(--text-main)', marginTop: 2, whiteSpace: 'pre-wrap' }}>{c.content}</div>
-                        <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 2 }}>{timeAgo(c.createdAt)}</div>
+
+                        {editingCommentId === c.id ? (
+                          <div style={{ marginTop: 4 }}>
+                            <input
+                              type="text"
+                              value={editCommentText}
+                              onChange={(e) => setEditCommentText(e.target.value)}
+                              onKeyDown={(e) => { if (e.key === 'Enter') handleSaveEditComment(c.id); }}
+                              autoFocus
+                              style={{ width: '100%', fontSize: 13, padding: '5px 10px' }}
+                            />
+                            <div style={{ display: 'flex', gap: 8, marginTop: 4 }}>
+                              <button
+                                type="button"
+                                className="btn sm"
+                                onClick={() => handleSaveEditComment(c.id)}
+                                disabled={savingCommentId === c.id || !editCommentText.trim()}
+                                style={{ padding: '3px 10px', fontSize: 11.5 }}
+                              >
+                                Lưu
+                              </button>
+                              <button
+                                type="button"
+                                className="btn sm secondary"
+                                onClick={() => setEditingCommentId(null)}
+                                style={{ padding: '3px 10px', fontSize: 11.5 }}
+                              >
+                                Huỷ
+                              </button>
+                            </div>
+                          </div>
+                        ) : (
+                          <>
+                            <div style={{ fontSize: 13.5, color: 'var(--text-main)', marginTop: 2, whiteSpace: 'pre-wrap' }}>{c.content}</div>
+                            <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 2 }}>
+                              {timeAgo(c.createdAt)}{c.updatedAt ? ' (đã chỉnh sửa)' : ''}
+                            </div>
+                          </>
+                        )}
                       </div>
                     </div>
                   ))}

@@ -92,6 +92,9 @@ function listAllSubmissions(req, res) {
   const students = dataAccess.findMany('users', { role: 'student' });
   const exams = dataAccess.findAll('exams');
   const questions = dataAccess.findAll('questions');
+  // Dùng để đánh dấu bài nộp nào CHƯA có đề xuất AI (chưa từng bấm "Sinh AI")
+  // - hiển thị cảnh báo nhỏ cho giáo viên ở bảng "Lịch sử bài làm".
+  const proposals = dataAccess.findAll('generated_exercises');
 
   const enriched = submissions
     .map((s) => {
@@ -100,6 +103,7 @@ function listAllSubmissions(req, res) {
       const totalQuestions = s.totalQuestions || (examQuestions.length > 0 ? examQuestions.length : 0);
       const topicStats = weaknessAnalysisService.getTopicStatsForSubmission(s.id);
       const weakTopics = topicStats.filter((t) => t.totalWrong > 0);
+      const hasAiProposal = proposals.some((p) => p.sourceSubmissionId === s.id);
       return {
         ...s,
         totalQuestions,
@@ -107,6 +111,7 @@ function listAllSubmissions(req, res) {
         examTitle: exam?.title || s.examId,
         topicStats,
         weakTopics,
+        hasAiProposal,
       };
     })
     .sort((a, b) => new Date(b.submittedAt) - new Date(a.submittedAt));

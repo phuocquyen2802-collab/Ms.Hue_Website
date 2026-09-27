@@ -16,7 +16,15 @@ const DATA_DIR = path.join(__dirname, '../../../data');
 // không cần dùng tới transaction/locking phức tạp (phù hợp quy mô đồ án nhỏ).
 function getDb(collectionName) {
   const filePath = path.join(DATA_DIR, `${collectionName}.json`);
-  const adapter = new FileSync(filePath);
+  // QUAN TRỌNG: FileSync mặc định dùng `{}` làm defaultValue nếu không chỉ
+  // định rõ - với 1 collection HOÀN TOÀN MỚI (file .json chưa từng tồn tại),
+  // nó sẽ tự ghi ra `{}` ngay từ lần đọc đầu tiên, TRƯỚC KHI `.defaults([])`
+  // bên dưới kịp chạy - và vì `{}` không phải giá trị rỗng/undefined nên
+  // `.defaults([])` không ghi đè lại được nữa, khiến cả file bị kẹt vĩnh
+  // viễn ở dạng object thay vì mảng (mọi thao tác findMany/insert sau đó im
+  // lặng trả về rỗng, không báo lỗi gì). Truyền thẳng `[]` làm defaultValue
+  // ở đây để việc tạo collection mới luôn đúng ngay từ đầu.
+  const adapter = new FileSync(filePath, { defaultValue: [] });
   const db = low(adapter);
   db.defaults([]).write();
   return db;

@@ -9,6 +9,7 @@ const {
 } = require('../controllers/studentExamController');
 const { getMyWeakTopics } = require('../controllers/statsController');
 const { getMyApprovedRoadmaps } = require('../controllers/generatedExerciseController');
+const { listMyGroups } = require('../controllers/studentGroupController');
 
 const router = express.Router();
 
@@ -24,5 +25,6 @@ router.get('/submissions/:submissionId', getSubmissionDetail);
 
 router.get('/me/weak-topics', getMyWeakTopics);
 router.get('/me/roadmaps', getMyApprovedRoadmaps);
+router.get('/me/groups', listMyGroups);
 
 module.exports = router;

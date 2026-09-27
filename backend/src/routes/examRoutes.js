@@ -18,6 +18,7 @@ const {
   uploadAnswerKey,
   deleteAnswerKey,
   downloadAnswerKey,
+  checkAnswerKeyCoverage,
 } = require('../controllers/examController');
 const { previewImportStandalone, previewImport, addQuestionsBulk } = require('../controllers/importController');
 
@@ -66,5 +67,9 @@ router.put('/:examId/assign', assignExam);
 
 router.post('/:examId/answer-key', answerKeyUpload.single('file'), uploadAnswerKey);
 router.delete('/:examId/answer-key', deleteAnswerKey);
+
+// So khớp thử đáp án chi tiết với số câu hỏi - đứng độc lập, không cần
+// examId (dùng được cả lúc đang tạo đề mới, trước khi đề tồn tại).
+router.post('/check-answer-key-coverage', upload.single('file'), checkAnswerKeyCoverage);
 
 module.exports = router;

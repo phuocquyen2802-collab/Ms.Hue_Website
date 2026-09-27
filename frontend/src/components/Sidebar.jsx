@@ -6,6 +6,7 @@ const TEACHER_MENU = [
   { to: '/teacher', icon: '👥', label: 'Quản lý học sinh', end: true },
   { to: '/teacher/exams', icon: '📝', label: 'Quản lý bài tập' },
   { to: '/teacher/analytics', icon: '📊', label: 'Giám sát chất lượng' },
+  { to: '/teacher/score-stats', icon: '🏆', label: 'Thống kê điểm số' },
   { to: '/teacher/ai-assistant', icon: '🤖', label: 'Trợ lý AI Gemini' },
 ];
 
