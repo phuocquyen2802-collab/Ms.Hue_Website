@@ -79,6 +79,11 @@ Backend không cần build, chạy production bằng `npm start` (thay cho `npm 
 
 `Ctrl + C` trong từng terminal.
 
+## Triển khai lên server (Docker)
+
+Chạy toàn bộ website trên server Ubuntu bằng 1 lệnh `docker compose up -d --build`.
+Hướng dẫn đầy đủ: [docs/DEPLOY_DOCKER.md](docs/DEPLOY_DOCKER.md).
+
 ## Tài khoản giáo viên mặc định
 
 | Tên đăng nhập | Mật khẩu |
@@ -108,3 +113,4 @@ học sinh" trên dashboard giáo viên.
 - [docs/STEP_BY_STEP.md](docs/STEP_BY_STEP.md) - tiến trình xây dựng
 - [docs/DATA_SCHEMA.md](docs/DATA_SCHEMA.md) - cấu trúc dữ liệu
 - [docs/GEMINI_SETUP.md](docs/GEMINI_SETUP.md) - lấy Google Gemini API key
+- [docs/DEPLOY_DOCKER.md](docs/DEPLOY_DOCKER.md) - triển khai lên server Ubuntu bằng Docker

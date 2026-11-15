@@ -73,3 +73,10 @@ Thumbs.db
 *.njsproj
 *.sln
 *.sw?
+
+# ==========================================
+# DOCKER
+# ==========================================
+# Font có bản quyền chép riêng lên server, không đưa lên GitHub
+docker/fonts/*
+!docker/fonts/README.md

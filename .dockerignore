@@ -1,0 +1,20 @@
+# Thư viện cài trên máy Windows không dùng được trong Linux - Docker tự cài lại
+**/node_modules
+frontend/dist
+
+# Bí mật: truyền vào lúc chạy qua env_file, không đóng gói vào image
+**/.env
+**/.env.*
+!**/.env.example
+
+# Không cần cho việc chạy web
+.git
+.github
+.vscode
+.claude
+docs
+*.docx
+Đề mẫu
+backend/scratch_*.js
+backend/*.log
+**/*.log
