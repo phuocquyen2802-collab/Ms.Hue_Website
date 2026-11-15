@@ -39,13 +39,14 @@ GEMINI_API_KEY=<key Gemini thật, để trống nếu chưa có>
 
 **Font công thức (nên làm):** để ảnh công thức Toán nhập từ Word hiển thị giống
 trên Windows, chép các font MathType/Times từ máy Windows vào
-`docker/fonts/` trên server trước khi build. Danh sách file xem
-[docker/fonts/README.md](../docker/fonts/README.md). Ví dụ chép từ máy Windows
+`docker/fonts/` trên server trước khi build. Thiếu font thì π hiện thành
+`p`, ℤ hiện thành `¢`. Danh sách file xem
+[docker/fonts/README.md](../docker/fonts/README.md). Gom các file đó vào thư
+mục `docker\fonts` của dự án trên máy Windows, rồi gửi cả thư mục lên server
 (chạy trên PowerShell của máy Windows):
 
 ```powershell
-cd C:\Windows\Fonts
-scp times.ttf timesbd.ttf timesi.ttf timesbi.ttf symbol.ttf MTEXTRA.TTF euclid*.ttf <user>@<IP-server>:~/mathinsight/docker/fonts/
+scp -r D:\duong-dan-du-an\docker\fonts <user>@<IP-server>:~/mathinsight/docker/
 ```
 
 ## 3. Build và chạy
@@ -129,5 +130,5 @@ Nếu server đã có sẵn **nginx**, thêm `client_max_body_size 50m;` vào kh
 | Container dừng ngay, log báo `chưa đặt JWT_SECRET` | Sửa `backend/.env` (mục 2) rồi `docker compose up -d` |
 | `env file .../backend/.env not found` | Chưa tạo file: `cp backend/.env.example backend/.env` |
 | Tính năng AI báo lỗi | Kiểm tra `GEMINI_API_KEY` trong `backend/.env`, rồi `docker compose up -d` để nạp lại |
-| Ký hiệu trong ảnh công thức bị sai/ô vuông | Chép font vào `docker/fonts/` (mục 2) rồi `docker compose up -d --build` |
+| π hiện thành `p`, ℤ thành `¢`, ký hiệu thành ô vuông | Chép font vào `docker/fonts/` (mục 2), `docker compose up -d --build`, rồi nhập lại file Word của đề đó |
 | Không vào được web từ máy khác | Kiểm tra `ufw`/tường lửa của nhà cung cấp server đã mở cổng chưa |
