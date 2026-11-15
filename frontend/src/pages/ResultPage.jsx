@@ -3,11 +3,13 @@ import { useParams, Link } from 'react-router-dom';
 import api from '../services/api';
 import { renderMath } from '../utils/mathRender';
 import QuestionDiagram from '../components/QuestionDiagram';
+import UiIcon, { scoreLevel, formatScore } from '../components/UiIcon';
 
 export default function ResultPage() {
   const { submissionId } = useParams();
   const [submission, setSubmission] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [filter, setFilter] = useState('all'); // 'all' | 'wrong'
 
   useEffect(() => {
     setLoading(true);
@@ -21,140 +23,113 @@ export default function ResultPage() {
     return (
       <div className="container">
         <div className="empty-state">
-          <div className="empty-state-icon">⏳</div>
-          <div className="empty-state-title">Đang tải kết quả bài làm...</div>
+          <div className="spinner" style={{ margin: '0 auto 12px', width: 24, height: 24 }} />
+          <div className="empty-state-title">Đang tải kết quả bài làm…</div>
         </div>
       </div>
     );
   }
 
   const currentAttempt = submission.attempt || 1;
-
+  const answers = submission.answers || [];
+  const wrongCount = answers.filter((a) => !a.isCorrect).length;
   const accuracy = submission.totalQuestions > 0 ? Math.round((submission.correctCount / submission.totalQuestions) * 100) : 0;
-  let scoreColor = 'var(--danger)';
-  let scoreBg = 'rgba(239,68,68,0.1)';
-  let statusText = 'Cần ôn tập gấp';
-  if (submission.score >= 8) {
-    scoreColor = 'var(--success)';
-    scoreBg = 'rgba(16,185,129,0.1)';
-    statusText = 'Kết quả xuất sắc';
-  } else if (submission.score >= 5) {
-    scoreColor = '#d97706';
-    scoreBg = 'rgba(245,158,11,0.1)';
-    statusText = 'Đạt yêu cầu';
-  }
+  const level = scoreLevel(submission.score);
+  const levelText = level === 'good' ? 'Kết quả tốt' : level === 'ok' ? 'Đạt yêu cầu' : 'Cần ôn tập thêm';
 
   return (
-    <div className="container" style={{ maxWidth: 960, paddingBottom: 60 }}>
-      {/* Standard Page Header */}
-      <div className="page-header" style={{ marginBottom: 20 }}>
-        <div>
-          <h1 className="page-title">{submission.examTitle || 'Chi Tiết Đợt Làm Bài'}</h1>
-          <p className="page-subtitle">
-            Chi tiết từng câu hỏi và đối chiếu kết quả của tôi với đáp án chính xác
-          </p>
-        </div>
-        <div className="header-actions">
-          <Link to="/student" className="btn-back">
-            <span className="btn-back-arrow">←</span> Quay lại Góc Luyện Tập
-          </Link>
-        </div>
+    <div className="container">
+      <div className="page-back">
+        <Link to="/student" className="btn-back">
+          <span className="btn-back-arrow">←</span> Quay lại Luyện đề
+        </Link>
       </div>
 
-      {/* Score Overview Card */}
-      <div
-        className="card"
-        style={{
-          padding: '20px 24px',
-          background: 'linear-gradient(135deg, #ffffff 0%, #f8fafc 100%)',
-          border: '1px solid var(--border-color)',
-          borderRadius: 14,
-          boxShadow: '0 2px 10px rgba(0,0,0,0.02)',
-          marginBottom: 20,
-        }}
-      >
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 16 }}>
-          <div style={{ flex: 1, minWidth: 260 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8, flexWrap: 'wrap' }}>
-              <span
-                style={{
-                  background: '#e2e8f0',
-                  color: '#1e293b',
-                  padding: '3px 10px',
-                  borderRadius: 12,
-                  fontSize: 12,
-                  fontWeight: 700,
-                }}
-              >
-                Đợt làm: Lần {currentAttempt}
+      {/* Tổng quan điểm */}
+      <div className="card profile-card">
+        <div className="profile-head">
+          <div>
+            <h1 className="profile-name">{submission.examTitle || 'Kết quả bài làm'}</h1>
+            <div className="meta-row">
+              <span className="class-badge">Lần {currentAttempt}</span>
+              <span>
+                <UiIcon name="clock" size={14} />
+                {submission.submittedAt ? new Date(submission.submittedAt).toLocaleString('vi-VN') : '—'}
               </span>
-            </div>
-
-            <div style={{ fontSize: 14, color: 'var(--text-main)', fontWeight: 600, marginBottom: 4 }}>
-              Số câu đúng: <strong style={{ color: 'var(--primary)' }}>{submission.correctCount}/{submission.totalQuestions} câu ({accuracy}%)</strong>
-            </div>
-
-            <div style={{ fontSize: 13, color: 'var(--text-muted)' }}>
-              Thời gian nộp bài: {submission.submittedAt ? new Date(submission.submittedAt).toLocaleString('vi-VN') : '---'}
             </div>
           </div>
 
-          {/* Right Score Badge */}
-          <div
-            style={{
-              display: 'flex',
-              flexDirection: 'column',
-              alignItems: 'center',
-              justifyContent: 'center',
-              padding: '14px 24px',
-              borderRadius: 12,
-              background: '#ffffff',
-              border: '1.5px solid var(--border-color)',
-              boxShadow: '0 2px 8px rgba(0,0,0,0.03)',
-              minWidth: 150,
-            }}
-          >
-            <div style={{ display: 'flex', alignItems: 'baseline', gap: 4 }}>
-              <span style={{ fontSize: 40, fontWeight: 900, color: scoreColor, lineHeight: 1 }}>
-                {submission.score}
-              </span>
-              <span style={{ fontSize: 15, fontWeight: 600, color: 'var(--text-muted)' }}>/ 10đ</span>
+          <dl className="profile-stats">
+            <div className="profile-stat">
+              <dt>Điểm</dt>
+              <dd className={`score-text is-${level}`}>
+                {formatScore(submission.score)}<small>/10</small>
+              </dd>
             </div>
-            <span
-              style={{
-                marginTop: 6,
-                fontSize: 12,
-                fontWeight: 700,
-                color: scoreColor,
-                background: scoreBg,
-                padding: '2px 10px',
-                borderRadius: 10,
-              }}
-            >
-              {statusText}
-            </span>
+            <div className="profile-stat">
+              <dt>Số câu đúng</dt>
+              <dd>
+                {submission.correctCount}<small>/{submission.totalQuestions}</small>
+              </dd>
+            </div>
+            <div className="profile-stat">
+              <dt>Tỉ lệ đúng</dt>
+              <dd>{accuracy}<small>%</small></dd>
+            </div>
+          </dl>
+        </div>
+
+        <div className="result-verdict">
+          <span className={`score-pill is-${level}`}>{levelText}</span>
+          <div className="result-verdict-actions">
+            <Link to={`/student/history/${submission.id}`} className="btn sm secondary">
+              <UiIcon name="route" size={15} /> Phân tích và lộ trình
+            </Link>
+            <Link to={`/student/exams/${submission.examId}`} className="btn sm secondary">
+              <UiIcon name="refresh" size={15} /> Làm lại đề này
+            </Link>
           </div>
         </div>
       </div>
 
-      {/* Detailed Answers Review */}
-      <div className="card" style={{ borderRadius: 12 }}>
+      {/* Đối chiếu từng câu */}
+      <div className="card">
         <div className="card-header">
           <div className="card-title-group">
-            <h2>Chi tiết từng câu hỏi & Đối chiếu đáp án</h2>
-            <p className="card-hint">Xem lại các câu bạn đã làm đúng hoặc sai để rút kinh nghiệm</p>
+            <div className="card-title-row">
+              <h2>Đối chiếu đáp án</h2>
+              <span className="count-badge">{answers.length} câu</span>
+            </div>
+            <p className="card-hint">Xem lại từng câu để biết mình sai ở đâu.</p>
           </div>
-          <span style={{ fontSize: 13, color: 'var(--text-muted)' }}>
-            Tổng số: <strong>{submission.answers.length}</strong> câu
-          </span>
+          {wrongCount > 0 && (
+            <div className="segmented" role="group" aria-label="Lọc câu hỏi">
+              <button
+                type="button"
+                className={`segmented-btn${filter === 'all' ? ' is-active' : ''}`}
+                onClick={() => setFilter('all')}
+                aria-pressed={filter === 'all'}
+              >
+                Tất cả <span className="segmented-count">{answers.length}</span>
+              </button>
+              <button
+                type="button"
+                className={`segmented-btn${filter === 'wrong' ? ' is-active' : ''}`}
+                onClick={() => setFilter('wrong')}
+                aria-pressed={filter === 'wrong'}
+              >
+                Câu sai <span className="segmented-count">{wrongCount}</span>
+              </button>
+            </div>
+          )}
         </div>
 
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+        <div className="question-list">
           {(() => {
             let currentTopicName = null;
             let qNumInTopic = 0;
 
-            return submission.answers.map((a, idx) => {
+            return answers.map((a, idx) => {
               const topicName = (a.tags && a.tags.length > 0) ? a.tags[0] : 'Chưa phân loại';
               const isNewTopic = topicName !== currentTopicName;
               if (isNewTopic) {
@@ -164,68 +139,67 @@ export default function ResultPage() {
                 qNumInTopic += 1;
               }
               const displayQNum = qNumInTopic;
+              if (filter === 'wrong' && a.isCorrect) return null;
 
               return (
                 <React.Fragment key={a.questionId || a.id || idx}>
                   {isNewTopic && (
-                    <div
-                      style={{
-                        marginTop: idx > 0 ? 10 : 0,
-                        marginBottom: 2,
-                        padding: '10px 16px',
-                        background: 'linear-gradient(135deg, var(--primary) 0%, var(--primary) 100%)',
-                        color: '#fff',
-                        borderRadius: 'var(--radius-md)',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'space-between',
-                        boxShadow: '0 2px 4px rgba(0,0,0,0.06)',
-                      }}
-                    >
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                        <span style={{ fontSize: 16 }}>📚</span>
-                        <strong style={{ fontSize: 14.5, letterSpacing: '0.02em', color: '#f8fafc' }}>
-                          CHỦ ĐỀ: {topicName.toUpperCase()}
-                        </strong>
-                      </div>
+                    <div className="q-topic">
+                      <span className="q-topic-label">Chuyên đề</span>
+                      <span className="q-topic-name">{topicName}</span>
                     </div>
                   )}
 
-                  <div
-                    style={{
-                      border: '1px solid var(--border-color)',
-                      borderRadius: 'var(--radius-md)',
-                      padding: 18,
-                      background: a.isCorrect ? 'var(--success-bg)' : 'var(--danger-bg)',
-                      borderColor: a.isCorrect ? 'var(--success-border)' : 'var(--danger-border)',
-                    }}
-                  >
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-                      <span style={{ fontWeight: 800, fontSize: 14 }}>Câu {displayQNum}:</span>
+                  <div className={`question-card ${a.isCorrect ? 'is-correct' : 'is-wrong'}`}>
+                    <div className="question-header">
+                      <span className="question-num">Câu {displayQNum}</span>
                       <span className={`status-pill ${a.isCorrect ? 'approved' : 'rejected'}`}>
-                        {a.isCorrect ? '✓ Chính xác' : '✕ Chưa đúng'}
+                        <UiIcon name={a.isCorrect ? 'check' : 'close'} size={13} />
+                        {a.isCorrect ? 'Đúng' : a.selectedAnswer ? 'Sai' : 'Bỏ trống'}
                       </span>
                     </div>
 
-                    <div
-                      style={{ fontWeight: 600, fontSize: 14, color: 'var(--text-main)', marginBottom: 12, lineHeight: 1.6 }}
-                      dangerouslySetInnerHTML={{ __html: renderMath(a.content) }}
-                    />
+                    <div className="question-content" dangerouslySetInnerHTML={{ __html: renderMath(a.content) }} />
 
                     <QuestionDiagram diagram={a.diagram} />
 
-                    <div style={{ fontSize: 13, display: 'flex', gap: 16, flexWrap: 'wrap' }}>
-                      <div>
-                        <span style={{ color: 'var(--text-muted)' }}>Kết quả của tôi:</span>{' '}
-                        <strong style={{ color: a.isCorrect ? 'var(--success-text)' : 'var(--danger-text)' }}>
-                          {a.selectedAnswer ? `Phương án ${a.selectedAnswer}` : '(Bỏ trống)'}
-                        </strong>
+                    {Array.isArray(a.options) && a.options.length > 0 ? (
+                      <div className="option-list">
+                        {a.options.map((opt) => {
+                          const isSelected = opt.key === a.selectedAnswer;
+                          const isCorrectOpt = opt.key === a.correctAnswer;
+                          let rowClass = 'option-row';
+                          if (isCorrectOpt) rowClass += ' correct';
+                          if (isSelected) rowClass += a.isCorrect ? ' is-picked-right' : ' wrong';
+                          return (
+                            <div key={opt.key} className={rowClass}>
+                              <span className="option-key">{opt.key}.</span>
+                              <span className="option-text" dangerouslySetInnerHTML={{ __html: renderMath(opt.text) }} />
+                              {isSelected && (
+                                <span className={`option-tag ${a.isCorrect ? 'is-right' : 'is-wrong'}`}>
+                                  <UiIcon name={a.isCorrect ? 'check' : 'close'} size={12} /> Bạn chọn
+                                </span>
+                              )}
+                              {!isSelected && isCorrectOpt && (
+                                <span className="option-tag is-right">
+                                  <UiIcon name="check" size={12} /> Đáp án đúng
+                                </span>
+                              )}
+                            </div>
+                          );
+                        })}
                       </div>
-                      <div>
-                        <span style={{ color: 'var(--text-muted)' }}>Đáp án:</span>{' '}
-                        <strong style={{ color: 'var(--success-text)' }}>Phương án {a.correctAnswer}</strong>
+                    ) : (
+                      <div className="meta-row">
+                        <span>
+                          Bạn chọn{' '}
+                          <b className={`score-text is-${a.isCorrect ? 'good' : 'low'}`}>{a.selectedAnswer || 'Bỏ trống'}</b>
+                        </span>
+                        <span>
+                          Đáp án đúng <b className="score-text is-good">{a.correctAnswer}</b>
+                        </span>
                       </div>
-                    </div>
+                    )}
                   </div>
                 </React.Fragment>
               );

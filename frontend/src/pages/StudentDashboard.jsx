@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import api from '../services/api';
 import AnswerKeyPanel from '../components/AnswerKeyPanel';
+import UiIcon, { scoreLevel, formatScore } from '../components/UiIcon';
 
 export default function StudentDashboard() {
   const [exams, setExams] = useState([]);
@@ -31,10 +32,6 @@ export default function StudentDashboard() {
     return submissions.some((s) => s.examId === examId);
   }
 
-  function submissionFor(examId) {
-    return submissions.find((s) => s.examId === examId);
-  }
-
   const completedCount = exams.filter((e) => isSubmitted(e.id)).length;
   const pendingCount = exams.length - completedCount;
 
@@ -52,84 +49,68 @@ export default function StudentDashboard() {
 
   return (
     <div className="container">
-      {/* Page Header */}
       <div className="page-header">
         <div>
-          <h1 className="page-title">Góc luyện đề</h1>
-          <p className="page-subtitle">
-            Hoàn thành các đề kiểm tra được giáo viên giao và theo dõi lộ trình cải thiện điểm số
-          </p>
+          <h1 className="page-title">Luyện đề</h1>
+          <p className="page-subtitle">Làm các đề giáo viên giao, xem kết quả và lộ trình ôn tập của bạn.</p>
         </div>
       </div>
 
-      {/* Metrics Row */}
       <div className="metrics-grid">
         <div className="metric-card">
           <div className="metric-info">
-            <span className="metric-title">Tổng số bài được giao</span>
+            <span className="metric-title">Đề được giao</span>
             <span className="metric-value">{exams.length}</span>
-            <span className="metric-sub">Đề kiểm tra từ giáo viên</span>
+            <span className="metric-sub">Từ giáo viên của bạn</span>
           </div>
-          <div className="metric-icon-box blue">📝</div>
+          <div className="metric-icon-box blue"><UiIcon name="file" size={20} /></div>
         </div>
-
         <div className="metric-card">
           <div className="metric-info">
-            <span className="metric-title">Đã hoàn thành</span>
-            <span className="metric-value" style={{ color: 'var(--success)' }}>
-              {completedCount}
-            </span>
+            <span className="metric-title">Đã làm</span>
+            <span className="metric-value">{completedCount}</span>
             <span className="metric-sub">Đã nộp và có kết quả</span>
           </div>
-          <div className="metric-icon-box green">✓</div>
+          <div className="metric-icon-box green"><UiIcon name="check" size={20} /></div>
         </div>
-
         <div className="metric-card">
           <div className="metric-info">
             <span className="metric-title">Chưa làm</span>
-            <span
-              className="metric-value"
-              style={{ color: pendingCount > 0 ? 'var(--warning)' : 'var(--text-muted)' }}
-            >
-              {pendingCount}
-            </span>
-            <span className="metric-sub">Đang chờ bạn thực hiện</span>
+            <span className={`metric-value${pendingCount > 0 ? ' score-text is-ok' : ''}`}>{pendingCount}</span>
+            <span className="metric-sub">Đang chờ bạn làm</span>
           </div>
-          <div className="metric-icon-box amber">⏳</div>
+          <div className="metric-icon-box amber"><UiIcon name="clock" size={20} /></div>
         </div>
-
         <div className="metric-card">
           <div className="metric-info">
-            <span className="metric-title">Lộ trình AI</span>
-            <span className="metric-value" style={{ color: 'var(--purple)' }}>
-              {roadmaps.length}
-            </span>
-            <span className="metric-sub">Kế hoạch cải thiện cá nhân</span>
+            <span className="metric-title">Lộ trình ôn tập</span>
+            <span className="metric-value">{roadmaps.length}</span>
+            <span className="metric-sub">Do AI soạn, giáo viên duyệt</span>
           </div>
-          <div className="metric-icon-box purple">✨</div>
+          <div className="metric-icon-box purple"><UiIcon name="route" size={20} /></div>
         </div>
       </div>
 
-      {/* Nhóm học sinh mà mình là thành viên - xem có bao nhiêu bạn cùng nhóm */}
+      {/* Nhóm học sinh mà mình là thành viên */}
       {groups.length > 0 && (
-        <div className="card" style={{ padding: '18px 22px', borderRadius: 14 }}>
-          <h2 style={{ fontSize: 16, margin: '0 0 12px' }}>🗂️ Nhóm của tôi</h2>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+        <div className="card">
+          <div className="card-header">
+            <div className="card-title-row">
+              <h2>Nhóm của tôi</h2>
+              <span className="count-badge">{groups.length}</span>
+            </div>
+          </div>
+          <div className="my-groups">
             {groups.map((g) => (
-              <div
-                key={g.id}
-                style={{
-                  padding: '10px 14px',
-                  border: '1px solid #e2e8f0',
-                  borderRadius: 10,
-                  background: '#fafafa',
-                }}
-              >
-                <div style={{ fontWeight: 700, fontSize: 14, color: '#1e293b' }}>
-                  {g.name} <span style={{ fontWeight: 500, color: '#64748b', fontSize: 12.5 }}>({g.memberCount} thành viên)</span>
-                </div>
-                <div style={{ fontSize: 12.5, color: '#64748b', marginTop: 4 }}>
-                  {g.members.map((m) => (m.isMe ? `${m.name} (Bạn)` : m.name)).join(', ')}
+              <div key={g.id} className="my-group">
+                <div className="my-group-icon"><UiIcon name="users" size={17} /></div>
+                <div className="my-group-info">
+                  <div className="my-group-name">
+                    {g.name} <span>{g.memberCount} thành viên</span>
+                  </div>
+                  <div className="my-group-members">
+                    {g.members.map((m) => (m.isMe ? `${m.name} (bạn)` : m.name)).join(', ')}
+                  </div>
                 </div>
               </div>
             ))}
@@ -137,47 +118,40 @@ export default function StudentDashboard() {
         </div>
       )}
 
-      {/* Modern Exam Card List */}
-      <div className="card" style={{ padding: '20px 24px', borderRadius: 14 }}>
-        <div className="card-header" style={{ marginBottom: 16, paddingBottom: 12, borderBottom: '1px solid var(--border-light)' }}>
+      <div className="card">
+        <div className="card-header">
           <div className="card-title-group">
-            <h2 style={{ fontSize: 18 }}>Danh sách đề thi</h2>
-            <p className="card-hint">
-              Làm bài kiểm tra, xem kết quả của tôi và nhận lộ trình ôn tập từ AI
-            </p>
+            <div className="card-title-row">
+              <h2>Danh sách đề</h2>
+              {exams.length > 0 && <span className="count-badge">{topLevelExams.length}</span>}
+            </div>
+            <p className="card-hint">Bấm "Bắt đầu" để làm bài. Sau khi nộp, bạn xem lại được từng lần làm.</p>
           </div>
-          {exams.length > 0 && (
-            <span style={{ fontSize: 13, color: 'var(--text-muted)' }}>
-              Tổng cộng: <strong>{exams.length}</strong> đề thi
-            </span>
-          )}
         </div>
 
         {loading ? (
           <div className="empty-state">
-            <div className="empty-state-icon">⏳</div>
-            <div className="empty-state-title">Đang tải danh sách bài tập...</div>
+            <div className="spinner" style={{ margin: '0 auto 12px', width: 24, height: 24 }} />
+            <div className="empty-state-title">Đang tải danh sách đề…</div>
           </div>
         ) : exams.length === 0 ? (
           <div className="empty-state">
-            <div className="empty-state-icon">🎉</div>
-            <div className="empty-state-title">Chưa có đề thi nào được giao</div>
-            <p className="empty-state-desc">Khi giáo viên giao bài, các đề thi sẽ xuất hiện tại đây.</p>
+            <div className="empty-state-icon is-svg"><UiIcon name="inbox" size={24} /></div>
+            <div className="empty-state-title">Chưa có đề nào được giao</div>
+            <p className="empty-state-desc">Khi giáo viên giao bài, đề sẽ xuất hiện ở đây.</p>
           </div>
         ) : (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+          <div className="exam-items">
             {topLevelExams.map((exam) => {
               const examSubs = submissions
                 .filter((s) => s.examId === exam.id)
                 .sort((a, b) => (b.attempt || 1) - (a.attempt || 1));
-              const submitted = examSubs.length > 0;
-
               return (
                 <ExamCardItem
                   key={exam.id}
                   exam={exam}
                   examSubs={examSubs}
-                  submitted={submitted}
+                  submitted={examSubs.length > 0}
                   aiChildren={aiChildrenByParent[exam.id] || []}
                   submissions={submissions}
                 />
@@ -190,304 +164,128 @@ export default function StudentDashboard() {
   );
 }
 
+function ScorePill({ score }) {
+  const s = score !== undefined ? score : 0;
+  return (
+    <span className={`score-pill is-${scoreLevel(s)}`}>
+      {formatScore(s)}<small>/10</small>
+    </span>
+  );
+}
+
 function ExamCardItem({ exam, examSubs, submitted, aiChildren = [], submissions = [] }) {
   const [expanded, setExpanded] = useState(false);
   const [aiFolderExpanded, setAiFolderExpanded] = useState(false);
+  const latest = examSubs[0];
 
   return (
-    <div
-      style={{
-        border: '1px solid #e2e8f0',
-        borderRadius: 14,
-        background: '#ffffff',
-        boxShadow: '0 2px 8px rgba(0,0,0,0.02)',
-        overflow: 'hidden',
-        transition: 'all 0.2s ease',
-      }}
-    >
-      <div
-        style={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          padding: '12px 18px',
-          flexWrap: 'wrap',
-          gap: 12,
-          background: expanded ? 'rgba(41, 82, 217,0.02)' : '#ffffff',
-        }}
-      >
-        {/* Left: Icon + Title & Description */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12, minWidth: 220, flex: 1 }}>
-          <div
-            style={{
-              width: 38,
-              height: 38,
-              borderRadius: 10,
-              background: submitted ? 'rgba(41, 82, 217,0.08)' : '#f1f5f9',
-              color: submitted ? 'var(--primary)' : '#64748b',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              fontSize: 18,
-              flexShrink: 0,
-            }}
-          >
-            {submitted ? '📝' : '📖'}
+    <div className={`exam-item${expanded || aiFolderExpanded ? ' is-open' : ''}`}>
+      <div className="exam-item-row">
+        <div className="exam-item-main">
+          <div className={`exam-item-icon${submitted ? ' is-done' : ''}`} aria-hidden="true">
+            <UiIcon name={submitted ? 'check' : 'file'} size={18} />
           </div>
-
-          <div>
-            <div style={{ fontWeight: 700, fontSize: 14.5, color: '#1e293b', marginBottom: 2 }}>
+          <div className="exam-item-info">
+            <div className="exam-item-title">
               {exam.title}
+              {!submitted && <span className="status-pill pending_review">Chưa làm</span>}
             </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, color: '#64748b', flexWrap: 'wrap' }}>
-              <span style={{ fontWeight: 600, color: '#475569' }}>⏱️ {exam.durationMinutes} phút</span>
-              {exam.description && <span>• {exam.description}</span>}
+            <div className="meta-row">
+              <span><UiIcon name="clock" size={14} /> {exam.durationMinutes} phút</span>
+              {exam.description && <span>{exam.description}</span>}
+              {latest && (
+                <span>
+                  Lần gần nhất <ScorePill score={latest.score} />
+                </span>
+              )}
             </div>
             {aiChildren.length > 0 && (
               <button
                 type="button"
+                className="ai-chip"
                 onClick={() => setAiFolderExpanded((v) => !v)}
-                style={{
-                  marginTop: 8,
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: 5,
-                  fontSize: 12,
-                  fontWeight: 700,
-                  color: 'var(--purple, #7c3aed)',
-                  background: '#f3ecff',
-                  border: '1px solid #ddcbfb',
-                  borderRadius: 20,
-                  padding: '3px 10px',
-                  cursor: 'pointer',
-                }}
+                aria-expanded={aiFolderExpanded}
               >
-                📂 {aiChildren.length} bài tập AI sinh thêm {aiFolderExpanded ? '▲' : '▼'}
+                <UiIcon name="sparkles" size={14} />
+                {aiChildren.length} đề luyện tập AI tạo thêm
+                <UiIcon name={aiFolderExpanded ? 'chevron-up' : 'chevron-down'} size={14} />
               </button>
             )}
           </div>
         </div>
 
-        {/* Right: Action Buttons */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0, justifyContent: 'flex-end', flexWrap: 'wrap' }}>
+        <div className="exam-item-actions">
           {submitted ? (
             <>
-              <Link
-                to={`/student/exams/${exam.id}`}
-                className="btn sm secondary"
-                style={{
-                  height: 35,
-                  padding: '0 12px',
-                  fontSize: 12.5,
-                  fontWeight: 600,
-                  borderRadius: 7,
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: 4,
-                  whiteSpace: 'nowrap',
-                }}
-              >
-                🔄 Làm lại
+              <Link to={`/student/exams/${exam.id}`} className="btn sm secondary">
+                <UiIcon name="refresh" size={15} /> Làm lại
               </Link>
-
               <button
                 type="button"
-                onClick={() => setExpanded(!expanded)}
-                style={{
-                  height: 35,
-                  border: expanded ? '1.5px solid var(--primary)' : '1.5px solid #cbd5e1',
-                  background: expanded ? 'var(--primary-light)' : '#ffffff',
-                  color: expanded ? 'var(--primary-hover)' : '#334155',
-                  borderRadius: 7,
-                  padding: '0 12px',
-                  fontSize: 12.5,
-                  fontWeight: 700,
-                  cursor: 'pointer',
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: 6,
-                  whiteSpace: 'nowrap',
-                  boxShadow: '0 1px 3px rgba(0,0,0,0.04)',
-                  transition: 'all 0.15s ease',
-                }}
-                title="Bấm để xem chi tiết lịch sử các lần làm bài"
+                className={`btn sm secondary${expanded ? ' is-active' : ''}`}
+                onClick={() => setExpanded((v) => !v)}
+                aria-expanded={expanded}
+                title="Xem các lần làm bài"
               >
-                <span>📋 Lịch sử ({examSubs.length} lần làm)</span>
-                <span
-                  style={{
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    width: 18,
-                    height: 18,
-                    borderRadius: '50%',
-                    background: expanded ? 'var(--primary-tint)' : '#f1f5f9',
-                    color: expanded ? 'var(--primary-hover)' : '#64748b',
-                    fontSize: 9,
-                    fontWeight: 800,
-                    transition: 'transform 0.2s ease',
-                    transform: expanded ? 'rotate(180deg)' : 'rotate(0deg)',
-                  }}
-                >
-                  ▼
-                </span>
+                <UiIcon name="history" size={15} /> Lịch sử
+                <span className="count-badge">{examSubs.length}</span>
+                <UiIcon name={expanded ? 'chevron-up' : 'chevron-down'} size={14} />
               </button>
-
-              {/* Đáp án chi tiết (nếu giáo viên có đính kèm) - gọn trong
-                  cùng 1 hàng với "Làm lại"/"Lịch sử" thay vì để riêng 1 khối
-                  bên dưới cho đỡ chiếm diện tích */}
               {exam.answerKeyFile && (
                 <AnswerKeyPanel examId={exam.id} answerKeyFile={exam.answerKeyFile} compact />
               )}
             </>
           ) : (
-            <Link
-              to={`/student/exams/${exam.id}`}
-              className="btn sm btn-primary"
-              style={{
-                height: 35,
-                padding: '0 18px',
-                fontSize: 13,
-                fontWeight: 700,
-                borderRadius: 7,
-                display: 'inline-flex',
-                alignItems: 'center',
-                whiteSpace: 'nowrap',
-              }}
-            >
-              Bắt đầu làm bài ➔
+            <Link to={`/student/exams/${exam.id}`} className="btn sm">
+              <UiIcon name="play" size={14} /> Bắt đầu
             </Link>
           )}
         </div>
       </div>
 
-      {/* Expanded History Sub-list for All Attempts */}
       {expanded && examSubs.length > 0 && (
-        <div
-          style={{
-            padding: '14px 20px',
-            background: '#f8fafc',
-            borderTop: '1px solid #e2e8f0',
-          }}
-        >
-          <div style={{ fontSize: 12.5, fontWeight: 700, color: '#475569', marginBottom: 10, display: 'flex', alignItems: 'center', gap: 6 }}>
-            <span>🕒 Chi tiết các đợt làm bài:</span>
-            <span style={{ fontSize: 11.5, color: '#94a3b8', fontWeight: 500 }}>(Xem lại bài làm chi tiết)</span>
-          </div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-            {examSubs.map((sub) => {
-              const sScore = sub.score !== undefined ? sub.score : 0;
-              let sColor = 'var(--danger)';
-              if (sScore >= 8) sColor = 'var(--success)';
-              else if (sScore >= 5) sColor = '#d97706';
-
-              return (
-                <div
-                  key={sub.id}
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                    padding: '10px 14px',
-                    background: '#ffffff',
-                    borderRadius: 8,
-                    border: '1px solid #e2e8f0',
-                    flexWrap: 'wrap',
-                    gap: 10,
-                  }}
-                >
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                    <span
-                      style={{
-                        background: '#f1f5f9',
-                        color: '#334155',
-                        fontWeight: 700,
-                        padding: '2px 8px',
-                        borderRadius: 6,
-                        fontSize: 12,
-                      }}
-                    >
-                      Lần {sub.attempt || 1}
-                    </span>
-                    <span style={{ fontWeight: 800, fontSize: 13.5, color: sColor }}>
-                      {sScore} / 10đ
-                    </span>
-                    <span style={{ fontSize: 12, color: '#64748b' }}>
-                      Đúng {sub.correctCount || 0}/{sub.totalQuestions || 0} câu
-                    </span>
-                    <span style={{ fontSize: 12, color: '#94a3b8' }}>
-                      • {sub.submittedAt ? new Date(sub.submittedAt).toLocaleString('vi-VN') : ''}
-                    </span>
-                  </div>
-
-                  <div style={{ display: 'flex', gap: 6 }}>
-                    <Link
-                      to={`/student/submissions/${sub.id}`}
-                      className="btn sm"
-                      style={{
-                        padding: '5px 14px',
-                        fontSize: 12.5,
-                        background: 'var(--primary)',
-                        color: '#fff',
-                        textDecoration: 'none',
-                        borderRadius: 6,
-                        display: 'inline-flex',
-                        alignItems: 'center',
-                        gap: 5,
-                        fontWeight: 600,
-                      }}
-                    >
-                      📊 Kết quả của tôi
-                    </Link>
-                  </div>
-                </div>
-              );
-            })}
+        <div className="exam-item-panel">
+          <div className="exam-item-panel-title">Các lần làm bài</div>
+          <div className="attempt-rows">
+            {examSubs.map((sub) => (
+              <div key={sub.id} className="attempt-row">
+                <span className="class-badge">Lần {sub.attempt || 1}</span>
+                <ScorePill score={sub.score} />
+                <span className="attempt-row-meta">
+                  Đúng {sub.correctCount || 0}/{sub.totalQuestions || 0} câu
+                </span>
+                <span className="attempt-row-meta">
+                  {sub.submittedAt ? new Date(sub.submittedAt).toLocaleString('vi-VN') : ''}
+                </span>
+                <Link to={`/student/submissions/${sub.id}`} className="btn sm secondary attempt-row-action">
+                  Xem kết quả
+                </Link>
+              </div>
+            ))}
           </div>
         </div>
       )}
 
-      {/* Thư mục con: bài tập AI sinh thêm dựa trên đề này */}
       {aiFolderExpanded && aiChildren.length > 0 && (
-        <div style={{ padding: '14px 20px', background: '#f9f5ff', borderTop: '1px solid #ddcbfb' }}>
-          <div style={{ fontSize: 12.5, fontWeight: 700, color: '#7c3aed', marginBottom: 10 }}>
-            📂 Bài tập AI sinh thêm từ đề này:
-          </div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+        <div className="exam-item-panel is-ai">
+          <div className="exam-item-panel-title">Đề luyện tập AI tạo thêm từ đề này</div>
+          <div className="attempt-rows">
             {aiChildren.map((child) => {
               const childSubs = submissions.filter((s) => s.examId === child.id);
-              const childSubmitted = childSubs.length > 0;
+              const lastChildSub = childSubs[childSubs.length - 1];
               return (
-                <div
-                  key={child.id}
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                    gap: 10,
-                    flexWrap: 'wrap',
-                    padding: '10px 14px',
-                    background: '#ffffff',
-                    borderRadius: 8,
-                    border: '1px solid #ddcbfb',
-                  }}
-                >
-                  <div style={{ fontWeight: 600, fontSize: 13.5, color: '#1e293b' }}>{child.title}</div>
-                  {childSubmitted ? (
-                    <Link
-                      to={`/student/submissions/${childSubs[childSubs.length - 1].id}`}
-                      className="btn sm"
-                      style={{ padding: '5px 14px', fontSize: 12.5, background: 'var(--primary)', color: '#fff', borderRadius: 6, fontWeight: 600 }}
-                    >
-                      📊 Kết quả của tôi
-                    </Link>
+                <div key={child.id} className="attempt-row">
+                  <span className="attempt-row-title">{child.title}</span>
+                  {lastChildSub ? (
+                    <>
+                      <ScorePill score={lastChildSub.score} />
+                      <Link to={`/student/submissions/${lastChildSub.id}`} className="btn sm secondary attempt-row-action">
+                        Xem kết quả
+                      </Link>
+                    </>
                   ) : (
-                    <Link
-                      to={`/student/exams/${child.id}`}
-                      className="btn sm"
-                      style={{ padding: '5px 14px', fontSize: 12.5, borderRadius: 6, fontWeight: 700 }}
-                    >
-                      Bắt đầu làm bài ➔
+                    <Link to={`/student/exams/${child.id}`} className="btn sm attempt-row-action">
+                      <UiIcon name="play" size={14} /> Bắt đầu
                     </Link>
                   )}
                 </div>

@@ -3,6 +3,7 @@ import { useParams, useNavigate, Link } from 'react-router-dom';
 import api from '../services/api';
 import { renderMath } from '../utils/mathRender';
 import QuestionDiagram from '../components/QuestionDiagram';
+import UiIcon, { formatScore } from '../components/UiIcon';
 
 export default function ExamPage() {
   const { examId } = useParams();
@@ -59,8 +60,8 @@ export default function ExamPage() {
     return (
       <div className="container">
         <div className="empty-state">
-          <div className="empty-state-icon">⏳</div>
-          <div className="empty-state-title">Đang tải đề thi...</div>
+          <div className="spinner" style={{ margin: '0 auto 12px', width: 24, height: 24 }} />
+          <div className="empty-state-title">Đang tải đề…</div>
         </div>
       </div>
     );
@@ -90,180 +91,128 @@ export default function ExamPage() {
     });
   })();
 
+  const bestPrev = exam.previousSubmissions && exam.previousSubmissions.length > 0
+    ? Math.max(...exam.previousSubmissions.map((s) => s.score || 0))
+    : null;
+
   return (
-    <div className="container" style={{ maxWidth: 860 }}>
-      {/* Top Banner & Timer Header */}
-      <div className="card" style={{ border: '2px solid var(--primary-border)', padding: '22px 24px' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 16, marginBottom: 14 }}>
+    <div className="container exam-page">
+      <div className="page-back">
+        <Link to="/student" className="btn-back">
+          <span className="btn-back-arrow">←</span> Thoát
+        </Link>
+      </div>
+
+      {/* Thông tin đề và tiến độ */}
+      <div className="card exam-head">
+        <div className="exam-head-top">
           <div>
-            <Link to="/student" className="btn-back" style={{ marginBottom: 12 }}>
-              <span className="btn-back-arrow">←</span> Thoát ra ngoài
-            </Link>
-            <h1 style={{ fontSize: 22, fontWeight: 800, color: 'var(--text-main)', marginTop: 4 }}>
-              {exam.title}
-            </h1>
-            {exam.description && (
-              <p style={{ fontSize: 13.5, color: 'var(--text-muted)', marginTop: 2 }}>{exam.description}</p>
-            )}
+            <h1 className="profile-name">{exam.title}</h1>
+            {exam.description && <p className="exam-head-desc">{exam.description}</p>}
           </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-            <span
-              style={{
-                fontSize: 13.5,
-                fontWeight: 700,
-                color: 'var(--primary)',
-                background: 'rgba(41, 82, 217,0.08)',
-                border: '1px solid rgba(41, 82, 217,0.2)',
-                padding: '6px 16px',
-                borderRadius: 20,
-              }}
-            >
-              ⏱️ Thời gian: {exam.durationMinutes} phút
-            </span>
-          </div>
+          <span className="exam-time">
+            <UiIcon name="clock" size={16} /> {exam.durationMinutes} phút
+          </span>
         </div>
 
-        {/* Attempt info if retaking */}
-        {exam.previousSubmissions && exam.previousSubmissions.length > 0 && (
-          <div
-            style={{
-              marginTop: 12,
-              padding: '8px 14px',
-              background: 'rgba(41, 82, 217,0.06)',
-              border: '1px solid rgba(41, 82, 217,0.2)',
-              borderRadius: 8,
-              fontSize: 13,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              flexWrap: 'wrap',
-              gap: 8,
-            }}
-          >
-            <span style={{ color: 'var(--primary)', fontWeight: 600 }}>
-              🔄 Bạn đang làm lại đề thi này (Lần thứ {exam.previousSubmissions.length + 1})
-            </span>
-            <span style={{ color: 'var(--text-muted)', fontSize: 12 }}>
-              Điểm cao nhất các lần trước:{' '}
-              <strong style={{ color: 'var(--success)', fontSize: 13 }}>
-                {Math.max(...exam.previousSubmissions.map((s) => s.score || 0))}/10đ
-              </strong>
-            </span>
+        {bestPrev !== null && (
+          <div className="notice is-info">
+            <UiIcon name="refresh" size={17} />
+            <div className="notice-body">
+              Bạn đang làm lại đề này, lần {exam.previousSubmissions.length + 1}. Điểm cao nhất trước đó:{' '}
+              <b>{formatScore(bestPrev)}/10</b>.
+            </div>
           </div>
         )}
 
-        {/* Progress bar */}
-        <div style={{ marginTop: 16 }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, marginBottom: 6, fontWeight: 600 }}>
-            <span>Tiến độ làm bài:</span>
-            <span>{answeredCount} / {totalCount} câu ({progressPercent}%)</span>
+        <div className="exam-progress">
+          <div className="exam-progress-row">
+            <span>Tiến độ</span>
+            <span className="exam-progress-count">
+              {answeredCount}/{totalCount} câu
+            </span>
           </div>
-          <div className="progress-bar-wrapper" style={{ maxWidth: '100%', height: 10 }}>
-            <div className="progress-bar-fill success" style={{ width: `${progressPercent}%` }} />
+          <div className="score-bar is-thin" aria-hidden="true">
+            <span className="is-primary" style={{ width: `${progressPercent}%` }} />
           </div>
         </div>
       </div>
 
-      {/* Questions list */}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
-        {(() => {
-          return questionsWithMeta.map(({ question: q, topicName, isNewTopic, displayQNum }, idx) => {
-            const selected = answers[q.id];
-
-            return (
-              <React.Fragment key={q.id}>
-                {isNewTopic && (
-                  <div
-                    style={{
-                      marginTop: idx > 0 ? 10 : 0,
-                      marginBottom: -6,
-                      padding: '10px 16px',
-                      background: 'var(--ink)',
-                      color: '#fff',
-                      borderRadius: 'var(--radius-md)',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'space-between',
-                      boxShadow: '0 2px 4px rgba(0,0,0,0.06)',
-                    }}
-                  >
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                      <span style={{ fontSize: 16 }}>📚</span>
-                      <strong style={{ fontSize: 14.5, letterSpacing: '0.02em', color: '#f8fafc' }}>
-                        CHỦ ĐỀ: {topicName.toUpperCase()}
-                      </strong>
-                    </div>
-                  </div>
-                )}
-
-                <div
-                  id={`exam-question-${idx}`}
-                  className="card"
-                  style={{ borderColor: selected ? 'var(--primary-border)' : 'var(--border-color)', margin: 0, scrollMarginTop: 20 }}
-                >
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
-                    <span style={{ fontWeight: 800, color: 'var(--primary)', fontSize: 15 }}>
-                      Câu {displayQNum}:
-                    </span>
-                    {q.tags && q.tags.length > 0 && (
-                      <span className="tag-badge" style={{ fontSize: 11 }}>
-                        {q.tags.join(', ')}
-                      </span>
-                    )}
-                  </div>
-
-                  <div
-                    style={{ fontSize: 15, fontWeight: 600, color: 'var(--text-main)', marginBottom: 14, lineHeight: 1.6 }}
-                    dangerouslySetInnerHTML={{ __html: renderMath(q.content) }}
-                  />
-
-                  <QuestionDiagram diagram={q.diagram} />
-
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                    {q.options.map((opt) => {
-                      const isChecked = selected === opt.key;
-                      return (
-                        <label
-                          key={opt.key}
-                          className={`option-row ${isChecked ? 'correct' : ''}`}
-                          style={{
-                            cursor: 'pointer',
-                            borderColor: isChecked ? 'var(--primary)' : 'var(--border-color)',
-                            background: isChecked ? 'var(--primary-light)' : '#ffffff',
-                          }}
-                          onClick={() => selectAnswer(q.id, opt.key)}
-                        >
-                          <input
-                            type="radio"
-                            name={q.id}
-                            checked={isChecked}
-                            onChange={() => selectAnswer(q.id, opt.key)}
-                            style={{ width: 16, height: 16, cursor: 'pointer' }}
-                          />
-                          <span style={{ fontWeight: 700, width: 20 }}>{opt.key}.</span>
-                          <span
-                            style={{ flex: 1, color: isChecked ? 'var(--primary)' : 'var(--text-main)' }}
-                            dangerouslySetInnerHTML={{ __html: renderMath(opt.text) }}
-                          />
-                        </label>
-                      );
-                    })}
-                  </div>
+      {/* Danh sách câu hỏi */}
+      <div className="question-list exam-questions">
+        {questionsWithMeta.map(({ question: q, topicName, isNewTopic, displayQNum }, idx) => {
+          const selected = answers[q.id];
+          return (
+            <React.Fragment key={q.id}>
+              {isNewTopic && (
+                <div className="q-topic">
+                  <span className="q-topic-label">Chuyên đề</span>
+                  <span className="q-topic-name">{topicName}</span>
                 </div>
-              </React.Fragment>
-            );
-          });
-        })()}
+              )}
+
+              <div
+                id={`exam-question-${idx}`}
+                className={`question-card exam-question${selected ? ' is-answered' : ''}`}
+              >
+                <div className="question-header">
+                  <span className="question-num">Câu {displayQNum}</span>
+                  {selected ? (
+                    <span className="class-badge is-answered">Đã chọn {selected}</span>
+                  ) : (
+                    <span className="class-badge">Chưa chọn</span>
+                  )}
+                </div>
+
+                <div className="question-content" dangerouslySetInnerHTML={{ __html: renderMath(q.content) }} />
+
+                <QuestionDiagram diagram={q.diagram} />
+
+                <div className="option-list" role="radiogroup" aria-label={`Câu ${displayQNum}`}>
+                  {q.options.map((opt) => {
+                    const isChecked = selected === opt.key;
+                    return (
+                      <label key={opt.key} className={`option-row is-choice${isChecked ? ' is-checked' : ''}`}>
+                        <input
+                          type="radio"
+                          name={q.id}
+                          checked={isChecked}
+                          onChange={() => selectAnswer(q.id, opt.key)}
+                        />
+                        <span className="option-key">{opt.key}.</span>
+                        <span className="option-text" dangerouslySetInnerHTML={{ __html: renderMath(opt.text) }} />
+                      </label>
+                    );
+                  })}
+                </div>
+              </div>
+            </React.Fragment>
+          );
+        })}
       </div>
 
-      {/* Submit Action Card */}
-      <div className="card" style={{ marginTop: 20, textAlign: 'center' }}>
-        {error && <p className="error-text" style={{ justifyContent: 'center' }}>⚠️ {error}</p>}
-        <p style={{ color: 'var(--text-muted)', marginBottom: 14 }}>
-          Bạn đã chọn đáp án cho <strong>{answeredCount}</strong> trên tổng số <strong>{totalCount}</strong> câu hỏi.
+      {/* Nộp bài */}
+      <div className="card exam-submit">
+        {error && (
+          <div className="notice is-danger">
+            <UiIcon name="alert" size={18} />
+            <div className="notice-body">{error}</div>
+          </div>
+        )}
+        <p>
+          Bạn đã chọn đáp án cho <strong>{answeredCount}</strong>/{totalCount} câu.
+          {answeredCount < totalCount && ' Câu bỏ trống sẽ tính là sai.'}
         </p>
-        <button className="btn" onClick={handleSubmit} disabled={submitting} style={{ padding: '12px 32px', fontSize: 15 }}>
-          {submitting ? 'Đang chấm điểm & nộp bài...' : '✓ Nộp bài thi ngay'}
+        <button className="btn btn-lg" onClick={handleSubmit} disabled={submitting}>
+          {submitting ? (
+            <>
+              <span className="spinner is-on-primary" /> Đang chấm điểm…
+            </>
+          ) : (
+            <>
+              <UiIcon name="check" size={17} /> Nộp bài
+            </>
+          )}
         </button>
       </div>
 

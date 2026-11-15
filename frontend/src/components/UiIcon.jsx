@@ -151,6 +151,35 @@ const PATHS = {
       <path d="M4 9h11a5 5 0 0 1 0 10h-3" />
     </>
   ),
+  refresh: (
+    <>
+      <path d="M20 11.5a8 8 0 1 0-2.4 5.7" />
+      <path d="M20 4.5v7h-7" />
+    </>
+  ),
+  play: <path d="M8 5.5v13l10.5-6.5Z" />,
+  download: (
+    <>
+      <path d="M12 4v11" />
+      <path d="m7.5 10.5 4.5 4.5 4.5-4.5" />
+      <path d="M4 15v3a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3" />
+    </>
+  ),
+  'arrow-left': <path d="M19 12H5M11 6l-6 6 6 6" />,
+  history: (
+    <>
+      <path d="M3.5 12a8.5 8.5 0 1 0 2.5-6" />
+      <path d="M3.5 4.5v4h4" />
+      <path d="M12 8v4.5l3 2" />
+    </>
+  ),
+  route: (
+    <>
+      <circle cx="6" cy="18.5" r="2.3" />
+      <circle cx="18" cy="5.5" r="2.3" />
+      <path d="M8.3 18.5H16a3.3 3.3 0 0 0 0-6.6H8a3.3 3.3 0 0 1 0-6.6h7.7" />
+    </>
+  ),
 };
 
 export default function UiIcon({ name, size = 18, className = '', strokeWidth = 1.9 }) {

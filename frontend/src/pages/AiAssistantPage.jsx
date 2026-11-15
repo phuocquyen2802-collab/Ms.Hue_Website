@@ -3,12 +3,13 @@ import { useAuth } from '../context/AuthContext';
 import api from '../services/api';
 import { renderMath } from '../utils/mathRender';
 import BrandMark from '../components/BrandMark';
+import UiIcon from '../components/UiIcon';
 import { APP_NAME, APP_TITLE } from '../config/brand';
 
 function greetingMessage(user) {
   return {
     role: 'assistant',
-    content: `Xin chào ${user?.name ? `**${user.name}**` : ''}! 👋 Tôi là **trợ lý AI của ${APP_TITLE}**, có thể:\n- 💡 Giải chi tiết từng bước\n- 📚 Tóm tắt lý thuyết\n- ⚙️ Mẹo bấm máy tính Casio\n- 📝 Tạo đề thi/câu hỏi\n\nNhập câu hỏi bên dưới để bắt đầu nhé! ✨`,
+    content: `Xin chào ${user?.name ? `**${user.name}**` : 'bạn'}! Tôi là **trợ lý AI của ${APP_TITLE}**. Tôi có thể giúp bạn:\n- Giải chi tiết từng bước\n- Tóm tắt lý thuyết\n- Mẹo bấm máy tính Casio\n- Soạn đề và câu hỏi luyện tập\n\nNhập câu hỏi bên dưới để bắt đầu.`,
     timestamp: new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }),
   };
 }
@@ -227,7 +228,7 @@ export default function AiAssistantPage() {
             }}
             title="Xem lịch sử các đoạn chat trước đó"
           >
-            📜 Lịch sử {history.length > 0 && `(${history.length})`}
+            <UiIcon name="history" size={15} /> Lịch sử {history.length > 0 && `(${history.length})`}
           </button>
           <button
             onClick={handleNewChat}
@@ -242,7 +243,7 @@ export default function AiAssistantPage() {
             }}
             title="Bắt đầu phiên hỏi đáp mới"
           >
-            🔄 Đoạn chat mới
+            <UiIcon name="plus" size={15} /> Đoạn chat mới
           </button>
         </div>
       </div>
@@ -276,7 +277,7 @@ export default function AiAssistantPage() {
             }}
           >
             <div style={{ padding: '12px 14px', borderBottom: '1px solid #e2e8f0', fontSize: 12.5, fontWeight: 700, color: '#64748b' }}>
-              💬 Lịch sử đoạn chat
+              Lịch sử đoạn chat
             </div>
             <div style={{ flex: 1, overflowY: 'auto', padding: 8 }}>
               {history.length === 0 ? (
@@ -318,7 +319,7 @@ export default function AiAssistantPage() {
                         title="Xoá đoạn chat này"
                         style={{ background: 'none', border: 'none', color: '#f87171', cursor: 'pointer', fontSize: 12, flexShrink: 0 }}
                       >
-                        🗑️
+                        <UiIcon name="trash" size={14} />
                       </button>
                     </div>
                   ))
@@ -369,20 +370,17 @@ export default function AiAssistantPage() {
                     width: 36,
                     height: 36,
                     borderRadius: '50%',
-                    background: isUser
-                      ? 'linear-gradient(135deg, var(--primary), var(--primary-hover))'
-                      : 'linear-gradient(135deg, #6366f1, #a855f7)',
+                    background: isUser ? 'var(--primary)' : 'var(--ai-bg)',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    color: '#fff',
+                    color: isUser ? '#fff' : 'var(--ai)',
                     fontWeight: 700,
                     fontSize: 14,
                     flexShrink: 0,
-                    boxShadow: '0 2px 8px rgba(0,0,0,0.12)',
                   }}
                 >
-                  {isUser ? (user?.name ? user.name[0].toUpperCase() : 'U') : '✨'}
+                  {isUser ? (user?.name ? user.name[0].toUpperCase() : 'U') : <UiIcon name="sparkles" size={17} />}
                 </div>
 
                 {/* Message Bubble Container */}
@@ -403,7 +401,7 @@ export default function AiAssistantPage() {
                     style={{
                       padding: '12px 18px',
                       borderRadius: isUser ? '16px 4px 16px 16px' : '4px 16px 16px 16px',
-                      background: isUser ? 'linear-gradient(135deg, var(--primary) 0%, var(--primary-hover) 100%)' : '#ffffff',
+                      background: isUser ? 'var(--primary)' : '#ffffff',
                       color: isUser ? '#ffffff' : '#1e293b',
                       fontSize: 14.5,
                       lineHeight: 1.6,
@@ -448,7 +446,7 @@ export default function AiAssistantPage() {
                         onMouseLeave={(e) => (e.currentTarget.style.color = copiedIndex === idx ? '#16a34a' : '#94a3b8')}
                         title="Sao chép câu hỏi"
                       >
-                        {copiedIndex === idx ? '✓ Đã sao chép' : '📋 Sao chép'}
+                        <UiIcon name={copiedIndex === idx ? 'check' : 'file'} size={13} /> {copiedIndex === idx ? 'Đã sao chép' : 'Sao chép'}
                       </button>
                       <button
                         onClick={() => handleDeleteMessage(idx)}
@@ -469,7 +467,7 @@ export default function AiAssistantPage() {
                         onMouseLeave={(e) => (e.currentTarget.style.color = '#f87171')}
                         title="Xóa tin nhắn này"
                       >
-                        🗑️ Xóa
+                        <UiIcon name="trash" size={13} /> Xóa
                       </button>
                     </div>
                   )}
@@ -496,7 +494,7 @@ export default function AiAssistantPage() {
                         onMouseLeave={(e) => (e.currentTarget.style.color = copiedIndex === idx ? '#16a34a' : '#64748b')}
                         title="Sao chép nội dung câu trả lời"
                       >
-                        {copiedIndex === idx ? '✓ Đã sao chép' : '📋 Sao chép'}
+                        <UiIcon name={copiedIndex === idx ? 'check' : 'file'} size={13} /> {copiedIndex === idx ? 'Đã sao chép' : 'Sao chép'}
                       </button>
                       <button
                         onClick={() => handleDeleteMessage(idx)}
@@ -517,7 +515,7 @@ export default function AiAssistantPage() {
                         onMouseLeave={(e) => (e.currentTarget.style.color = '#f87171')}
                         title="Xóa tin nhắn này"
                       >
-                        🗑️ Xóa
+                        <UiIcon name="trash" size={13} /> Xóa
                       </button>
                     </div>
                   )}
@@ -542,16 +540,14 @@ export default function AiAssistantPage() {
                   width: 36,
                   height: 36,
                   borderRadius: '50%',
-                  background: 'linear-gradient(135deg, #6366f1, #a855f7)',
+                  background: 'var(--ai-bg)',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  color: '#fff',
-                  fontSize: 14,
-                  animation: 'pulse 1.5s infinite',
+                  color: 'var(--ai)',
                 }}
               >
-                ✨
+                <UiIcon name="sparkles" size={17} />
               </div>
               <div
                 style={{
@@ -632,9 +628,7 @@ export default function AiAssistantPage() {
               padding: '0 20px',
               borderRadius: 10,
               background:
-                !inputText.trim() || loading
-                  ? '#94a3b8'
-                  : 'linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%)',
+                !inputText.trim() || loading ? '#c5cddb' : 'var(--primary)',
               color: '#ffffff',
               border: 'none',
               fontWeight: 600,
@@ -643,14 +637,12 @@ export default function AiAssistantPage() {
               display: 'flex',
               alignItems: 'center',
               gap: 8,
-              boxShadow:
-                !inputText.trim() || loading ? 'none' : '0 4px 12px rgba(79, 70, 229, 0.3)',
               transition: 'all 0.2s ease',
               flexShrink: 0,
             }}
           >
+            <UiIcon name="send" size={16} />
             <span>Gửi</span>
-            <span>➤</span>
           </button>
         </div>
         </div>

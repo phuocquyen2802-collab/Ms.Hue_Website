@@ -2,6 +2,8 @@ import React, { useEffect, useState, useMemo, useRef } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import api from '../services/api';
 import { renderMath } from '../utils/mathRender';
+import RoadmapSteps, { RoadmapSummary } from '../components/RoadmapSteps';
+import UiIcon, { scoreLevel, formatScore, ScoreTrend } from '../components/UiIcon';
 import QuestionDiagram from '../components/QuestionDiagram';
 
 export default function TeacherSubmissionDetailPage() {
@@ -237,8 +239,8 @@ export default function TeacherSubmissionDetailPage() {
     return (
       <div className="container">
         <div className="empty-state">
-          <div className="empty-state-icon">⏳</div>
-          <div className="empty-state-title">Đang tải bài làm của học sinh...</div>
+          <div className="spinner" style={{ margin: '0 auto 12px', width: 26, height: 26 }} />
+          <div className="empty-state-title">Đang tải bài làm của học sinh…</div>
         </div>
       </div>
     );
@@ -248,8 +250,11 @@ export default function TeacherSubmissionDetailPage() {
     return (
       <div className="container">
         <div className="card">
-          <p className="error-text">⚠️ {error || 'Không tìm thấy bài nộp'}</p>
-          <Link to="/teacher/analytics" className="btn-back" style={{ marginTop: 12 }}>
+          <div className="notice is-danger">
+            <UiIcon name="alert" size={18} />
+            <div className="notice-body">{error || 'Không tìm thấy bài nộp này.'}</div>
+          </div>
+          <Link to="/teacher/analytics" className="btn-back" style={{ marginTop: 14 }}>
             <span className="btn-back-arrow">←</span> Quay lại Giám sát chất lượng học sinh
           </Link>
         </div>
@@ -258,501 +263,318 @@ export default function TeacherSubmissionDetailPage() {
   }
 
   const initial = submission.studentName ? submission.studentName.trim().charAt(0).toUpperCase() : 'H';
-  const percentage = Math.round((submission.correctCount / submission.totalQuestions) * 100);
+  const percentage = submission.totalQuestions
+    ? Math.round((submission.correctCount / submission.totalQuestions) * 100)
+    : 0;
   const proposal = submission.proposal;
+  const history = submission.historySubmissions || [];
+  const statusLabel = (status) => {
+    if (status === 'approved') return 'Đã duyệt và gửi';
+    if (status === 'rejected') return 'Đã từ chối';
+    return 'Chờ giáo viên duyệt';
+  };
 
   return (
-    <div className="container" style={{ maxWidth: 1120, paddingBottom: 60 }}>
-      {/* Quay lại */}
-      <div style={{ marginBottom: 16 }}>
+    <div className="container submission-page">
+      <div className="page-back">
         <Link to="/teacher/analytics" className="btn-back">
           <span className="btn-back-arrow">←</span> Quay lại Giám sát chất lượng học sinh
         </Link>
       </div>
 
-      {/* Thông tin học sinh & Điểm số */}
-      <div className="card">
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 16 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-            <div
-              style={{
-                width: 52,
-                height: 52,
-                borderRadius: '50%',
-                background: 'linear-gradient(135deg, var(--primary), var(--primary))',
-                color: '#ffffff',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                fontSize: 22,
-                fontWeight: 800,
-              }}
-            >
-              {initial}
-            </div>
+      {/* Hồ sơ bài nộp */}
+      <div className="card profile-card">
+        <div className="profile-head">
+          <div className="profile-id">
+            <div className="avatar is-lg" aria-hidden="true">{initial}</div>
             <div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
-                <h1 style={{ fontSize: 20, fontWeight: 800, color: 'var(--text-main)', margin: 0 }}>
-                  {submission.studentName}
-                </h1>
-                <span className="tag-badge" style={{ margin: 0 }}>
+              <h1 className="profile-name">{submission.studentName}</h1>
+              <div className="meta-row">
+                <span className="class-badge">
                   {submission.studentClassName ? `Lớp ${submission.studentClassName}` : 'Chưa phân lớp'}
                 </span>
-              </div>
-              <div style={{ fontSize: 13, color: 'var(--text-muted)', marginTop: 4 }}>
-                Đề thi: <strong>{submission.examTitle}</strong> • Nộp lúc: {new Date(submission.submittedAt).toLocaleString('vi-VN')}
+                <span>
+                  <UiIcon name="file" size={14} /> {submission.examTitle}
+                </span>
+                <span>
+                  <UiIcon name="clock" size={14} /> {new Date(submission.submittedAt).toLocaleString('vi-VN')}
+                </span>
               </div>
             </div>
           </div>
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-            <div style={{ textAlign: 'right' }}>
-              <div style={{ fontSize: 24, fontWeight: 800, color: submission.score >= 5 ? 'var(--success)' : 'var(--danger)' }}>
-                {submission.score} / 10 điểm
-              </div>
-              <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>
-                Đúng {submission.correctCount}/{submission.totalQuestions} câu ({percentage}%)
-              </div>
+          <dl className="profile-stats">
+            <div className="profile-stat">
+              <dt>Điểm</dt>
+              <dd className={`score-text is-${scoreLevel(submission.score)}`}>
+                {formatScore(submission.score)}<small>/10</small>
+              </dd>
             </div>
-          </div>
+            <div className="profile-stat">
+              <dt>Số câu đúng</dt>
+              <dd>
+                {submission.correctCount}<small>/{submission.totalQuestions}</small>
+              </dd>
+            </div>
+            <div className="profile-stat">
+              <dt>Tỉ lệ đúng</dt>
+              <dd>{percentage}<small>%</small></dd>
+            </div>
+          </dl>
         </div>
 
-        {/* Tiến trình làm bài qua các đợt */}
-        {submission.historySubmissions && submission.historySubmissions.length > 1 && (
-          <div style={{ marginTop: 14, paddingTop: 14, borderTop: '1px solid var(--border-light)' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8, flexWrap: 'wrap', gap: 6 }}>
-              <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--primary)' }}>
-                📈 Tiến trình làm lại của học sinh ({submission.historySubmissions.length} đợt làm):
-              </span>
-              <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>
-                Lần 1 ({submission.historySubmissions[0].score}đ) ➔ Mới nhất ({submission.historySubmissions[submission.historySubmissions.length - 1].score}đ)
-                {submission.historySubmissions[submission.historySubmissions.length - 1].score > submission.historySubmissions[0].score && (
-                  <strong style={{ color: 'var(--success)', marginLeft: 6 }}>
-                    (+{(submission.historySubmissions[submission.historySubmissions.length - 1].score - submission.historySubmissions[0].score).toFixed(1)}đ 🚀)
-                  </strong>
-                )}
-              </span>
+        {history.length > 1 && (
+          <div className="attempt-strip">
+            <span className="attempt-strip-label">Các lần làm</span>
+            {history.map((h, idx) => {
+              const isCurrent = h.id === submission.id;
+              return (
+                <React.Fragment key={h.id || idx}>
+                  {idx > 0 && <UiIcon name="arrow-right" size={14} className="attempt-sep" />}
+                  <Link
+                    to={`/teacher/exams/${examId}/submissions/${h.id}`}
+                    className={`attempt-link${isCurrent ? ' is-current' : ''}`}
+                    aria-current={isCurrent ? 'page' : undefined}
+                  >
+                    Lần {h.attempt || idx + 1}
+                    <b className={`score-text is-${scoreLevel(h.score)}`}>{formatScore(h.score)}</b>
+                  </Link>
+                </React.Fragment>
+              );
+            })}
+            <ScoreTrend diff={history[history.length - 1].score - history[0].score} />
+          </div>
+        )}
+
+        {submission.weakTags && submission.weakTags.length > 0 && (
+          <div className="weak-panel">
+            <div className="weak-panel-head">
+              <UiIcon name="target" size={17} />
+              <strong>Chuyên đề làm sai nhiều trong bài này</strong>
             </div>
-            <div style={{ display: 'flex', gap: 10, alignItems: 'center', overflowX: 'auto', padding: '4px 0' }}>
-              {submission.historySubmissions.map((h, idx) => {
-                const isCurrent = h.id === submission.id;
+            <div className="weak-grid">
+              {submission.weakTags.map((wt) => {
+                const percent = Math.round(wt.wrongRate * 100);
                 return (
-                  <div key={h.id || idx} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                    <Link
-                      to={`/teacher/exams/${examId}/submissions/${h.id}`}
-                      style={{
-                        padding: '6px 12px',
-                        borderRadius: 8,
-                        background: isCurrent ? 'rgba(41, 82, 217,0.1)' : '#f8fafc',
-                        border: isCurrent ? '2px solid var(--primary)' : '1px solid #e2e8f0',
-                        textDecoration: 'none',
-                        fontSize: 12,
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: 6,
-                      }}
-                    >
-                      <span style={{ fontWeight: 600, color: isCurrent ? 'var(--primary)' : 'var(--text-main)' }}>
-                        Lần {h.attempt || idx + 1} {isCurrent && '(Đang xem)'}:
-                      </span>
-                      <strong style={{ color: h.score >= 5 ? 'var(--success)' : 'var(--danger)', fontSize: 13 }}>
-                        {h.score}đ
-                      </strong>
-                    </Link>
-                    {idx < submission.historySubmissions.length - 1 && (
-                      <span style={{ color: 'var(--text-muted)', fontSize: 13 }}>➔</span>
-                    )}
+                  <div key={wt.tag} className="weak-item">
+                    <div className="weak-item-row">
+                      <span className="weak-name" title={wt.tag}>{wt.tag}</span>
+                      <span className="weak-rate">Sai {percent}%</span>
+                    </div>
+                    <div className="score-bar" aria-hidden="true">
+                      <span className="is-low" style={{ width: `${percent}%` }} />
+                    </div>
                   </div>
                 );
               })}
             </div>
           </div>
         )}
-
-        {/* Chuyên đề bị yếu */}
-        {submission.weakTags && submission.weakTags.length > 0 && (
-          <div style={{ marginTop: 14, paddingTop: 14, borderTop: '1px solid var(--border-light)' }}>
-            <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-muted)', marginBottom: 8 }}>
-              🎯 Các chuyên đề học sinh làm sai nhiều trong bài này:
-            </div>
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-              {submission.weakTags.map((wt) => (
-                <span key={wt.tag} className="tag-badge weak" style={{ fontSize: 13, padding: '5px 12px' }}>
-                  ⚠️ {wt.tag} ({Math.round(wt.wrongRate * 100)}% sai)
-                </span>
-              ))}
-            </div>
-          </div>
-        )}
       </div>
 
-      {/* Khối Gemini AI: Nhận xét & Sinh bài tập */}
-      <div className="card" style={{ border: '2px solid #ddd6fe', background: '#faf5ff' }}>
-        <div className="card-header" style={{ borderBottom: '1px solid #ede9fe' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <span style={{ fontSize: 20 }}>🤖</span>
-            <h2 style={{ color: '#5b21b6', margin: 0 }}>Nhận xét tự động & Giao thêm bài tập bằng AI</h2>
+      {/* Nhận xét và lộ trình ôn tập AI */}
+      <div className="card ai-card">
+        <div className="card-header">
+          <div className="card-title-group">
+            <div className="card-title-row">
+              <UiIcon name="sparkles" size={19} className="ai-mark" />
+              <h2>Nhận xét và lộ trình ôn tập AI</h2>
+            </div>
+            <p className="card-hint">
+              AI phân tích các câu làm sai, chỉ ra lý thuyết cần củng cố và đề xuất bài tập tương tự. Giáo viên duyệt trước khi gửi cho học sinh.
+            </p>
           </div>
+          {proposal && (
+            <span className={`status-pill ${proposal.status}`}>
+              <span className="status-dot" />
+              {statusLabel(proposal.status)}
+            </span>
+          )}
         </div>
 
-        {generateError && <p className="error-text" style={{ marginTop: 12 }}>⚠️ {generateError}</p>}
+        {generateError && (
+          <div className="notice is-danger" style={{ marginBottom: 14 }}>
+            <UiIcon name="alert" size={18} />
+            <div className="notice-body">{generateError}</div>
+          </div>
+        )}
         {actionMessage && (
-          <div
-            style={{
-              padding: '10px 14px',
-              borderRadius: 'var(--radius-md)',
-              background: 'var(--success-bg)',
-              color: 'var(--success-text)',
-              fontWeight: 600,
-              fontSize: 13,
-              marginTop: 12,
-            }}
-          >
-            {actionMessage}
+          <div className="notice is-success" style={{ marginBottom: 14 }}>
+            <UiIcon name="check" size={18} />
+            <div className="notice-body">{actionMessage}</div>
           </div>
         )}
 
         {!proposal ? (
-          <div
-            style={{
-              padding: '24px 20px',
-              background: '#ffffff',
-              borderRadius: 'var(--radius-md)',
-              border: '1.5px dashed #c4b5fd',
-              marginTop: 14,
-              display: 'flex',
-              flexDirection: 'column',
-              alignItems: 'center',
-              textAlign: 'center',
-              gap: 14,
-            }}
-          >
-            <div style={{ fontSize: 32 }}>✨</div>
+          <div className="ai-empty">
+            <div className="ai-empty-icon">
+              <UiIcon name="sparkles" size={24} />
+            </div>
             <div>
-              <h3 style={{ margin: 0, color: '#5b21b6', fontSize: 16, fontWeight: 800 }}>
-                Chưa có nhận xét & lộ trình ôn tập AI cho bài nộp này
-              </h3>
-              <p style={{ fontSize: 13, color: 'var(--text-muted)', marginTop: 4, maxWidth: 600 }}>
-                Bấm nút bên dưới để Gemini AI tự động phân tích các câu làm sai của <strong>{submission.studentName}</strong>,
-                chỉ ra lý thuyết cần củng cố và sinh bộ câu hỏi bài tập tương tự.
+              <h3>Chưa có nhận xét AI cho bài nộp này</h3>
+              <p>
+                AI sẽ đọc các câu <strong>{submission.studentName}</strong> làm sai, chỉ ra lỗ hổng kiến thức
+                và soạn bộ câu hỏi luyện tập tương tự.
               </p>
             </div>
 
-            <div
-              style={{
-                background: '#f5f3ff',
-                padding: '10px 18px',
-                borderRadius: 8,
-                border: '1px solid #ddd6fe',
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: 10,
-              }}
-            >
+            <label className={`check-row${includeExercises ? ' is-checked' : ''}`} htmlFor="includeExPre">
               <input
                 type="checkbox"
                 id="includeExPre"
                 checked={includeExercises}
                 onChange={(e) => setIncludeExercises(e.target.checked)}
-                style={{ width: 18, height: 18, cursor: 'pointer' }}
               />
-              <label htmlFor="includeExPre" style={{ fontSize: 14, fontWeight: 700, color: '#5b21b6', cursor: 'pointer' }}>
-                Gửi kèm bài tập ôn luyện do AI tạo cho học sinh
-              </label>
-            </div>
+              <span>
+                <strong>Tạo kèm bài tập luyện tập</strong>
+                <span>Gửi cho học sinh bộ câu hỏi tương tự theo từng chuyên đề.</span>
+              </span>
+            </label>
 
-            <button
-              className="btn"
-              onClick={() => handleGenerateAI(false)}
-              disabled={generating}
-              style={{
-                background: 'linear-gradient(135deg, #7c3aed, #6366f1)',
-                color: '#fff',
-                padding: '12px 28px',
-                fontSize: 15,
-                fontWeight: 800,
-                boxShadow: '0 4px 14px rgba(124, 58, 237, 0.3)',
-              }}
-            >
-              {generating ? `⏳ Gemini AI đang phân tích lỗi sai & sinh đề... ${generateProgress}%` : '✨ Bắt đầu Phân tích lỗi sai bằng Gemini AI'}
+            <button className="btn btn-lg" onClick={() => handleGenerateAI(false)} disabled={generating}>
+              {generating ? (
+                <>
+                  <span className="spinner is-on-primary" /> Đang phân tích… {generateProgress}%
+                </>
+              ) : (
+                <>
+                  <UiIcon name="sparkles" size={17} /> Phân tích bài làm bằng AI
+                </>
+              )}
             </button>
 
             {generating && (
-              <div style={{ width: '100%', maxWidth: 360, height: 8, background: '#ede9fe', borderRadius: 20, overflow: 'hidden' }}>
-                <div
-                  style={{
-                    width: `${generateProgress}%`,
-                    height: '100%',
-                    background: 'linear-gradient(90deg, #7c3aed, #6366f1)',
-                    borderRadius: 20,
-                    transition: 'width 0.4s ease',
-                  }}
-                />
+              <div className="score-bar is-thin ai-progress" aria-hidden="true">
+                <span className="is-primary" style={{ width: `${generateProgress}%` }} />
               </div>
             )}
           </div>
         ) : (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 14, marginTop: 14 }}>
-            {/* Nhận xét học lực */}
-            <div style={{ background: '#ffffff', padding: 18, borderRadius: 'var(--radius-md)', border: '1px solid #ddd6fe', boxShadow: 'var(--shadow-sm)' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12, flexWrap: 'wrap', gap: 10 }}>
-                <strong style={{ fontSize: 15, color: '#5b21b6' }}>📝 Nhận xét & Lộ trình ôn tập:</strong>
-
-                <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
-                  {proposal.status === 'pending_review' && (
-                    <label
-                      style={{
-                        display: 'inline-flex',
-                        alignItems: 'center',
-                        gap: 6,
-                        fontSize: 13,
-                        fontWeight: 700,
-                        color: isEditing ? '#6d28d9' : '#475569',
-                        background: isEditing ? '#ede9fe' : '#f8fafc',
-                        border: isEditing ? '1.5px solid #8b5cf6' : '1px solid #cbd5e1',
-                        padding: '5px 12px',
-                        borderRadius: 8,
-                        cursor: 'pointer',
-                        transition: 'all 0.15s ease',
-                        boxShadow: isEditing ? '0 2px 8px rgba(139, 92, 246, 0.2)' : 'none',
-                      }}
-                    >
-                      <input
-                        type="checkbox"
-                        checked={isEditing}
-                        onChange={(e) => setIsEditing(e.target.checked)}
-                        style={{ width: 16, height: 16, cursor: 'pointer' }}
-                      />
-                      <span>✏️ Chỉnh sửa nội dung trước khi gửi</span>
-                    </label>
-                  )}
-
-                  <span className={`status-pill ${proposal.status}`}>
-                    {proposal.status === 'approved' ? '✓ Đã duyệt & Giao bài' : proposal.status === 'rejected' ? '✕ Đã từ chối' : '⏳ Chờ giáo viên duyệt'}
-                  </span>
-                </div>
-              </div>
-
-              {isEditing ? (
-                <div style={{ marginBottom: 16, background: '#faf5ff', padding: 14, borderRadius: 8, border: '1px dashed #c4b5fd' }}>
-                  <label style={{ display: 'block', fontSize: 13, fontWeight: 700, color: '#5b21b6', marginBottom: 6 }}>
-                    💬 Lời nhắn / Nhận xét tổng quan của giáo viên:
-                  </label>
-                  <textarea
-                    rows={4}
-                    value={editSummary}
-                    onChange={(e) => setEditSummary(e.target.value)}
-                    placeholder="Nhập lời nhận xét và động viên cho học sinh..."
-                    style={{
-                      width: '100%',
-                      padding: '10px 12px',
-                      fontSize: 13.5,
-                      lineHeight: 1.6,
-                      borderRadius: 6,
-                      border: '1.5px solid #a78bfa',
-                      background: '#ffffff',
-                    }}
-                  />
-                </div>
-              ) : (
-                <div
-                  style={{
-                    fontSize: 14,
-                    color: 'var(--text-main)',
-                    lineHeight: 1.7,
-                    background: '#f8fafc',
-                    padding: '12px 16px',
-                    borderRadius: 8,
-                    border: '1px solid #e2e8f0',
-                  }}
-                  dangerouslySetInnerHTML={{ __html: renderMath(proposal.roadmap.summary) }}
-                />
-              )}
-
-              {/* Các bước lộ trình */}
-              {isEditing ? (
-                <div style={{ marginTop: 14, display: 'flex', flexDirection: 'column', gap: 14 }}>
-                  <div style={{ fontWeight: 800, fontSize: 13.5, color: '#5b21b6' }}>
-                    Chỉnh sửa các bước ôn tập chi tiết:
-                  </div>
-                  {editSteps.map((step, idx) => (
-                    <div
-                      key={idx}
-                      style={{
-                        background: '#ffffff',
-                        border: '1px solid #ddd6fe',
-                        borderRadius: 8,
-                        padding: '12px 14px',
-                        display: 'flex',
-                        flexDirection: 'column',
-                        gap: 10,
-                      }}
-                    >
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <strong style={{ fontSize: 13.5, color: '#5b21b6' }}>Bước {idx + 1}</strong>
-                        <button
-                          type="button"
-                          onClick={() => handleRemoveStep(idx)}
-                          className="btn sm outline-danger"
-                          style={{ padding: '2px 8px', fontSize: 11 }}
-                        >
-                          ✕ Xóa bước này
-                        </button>
-                      </div>
-
-                      <div className="form-row">
-                        <div className="form-group" style={{ margin: 0 }}>
-                          <label style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-main)', marginBottom: 4 }}>
-                            Tên chuyên đề / Chủ đề:
-                          </label>
-                          <input
-                            type="text"
-                            value={step.tag || step.title || ''}
-                            onChange={(e) => handleStepChange(idx, 'tag', e.target.value)}
-                            placeholder="Ví dụ: Đạo hàm, Cực trị..."
-                            style={{ padding: '6px 10px', fontSize: 13 }}
-                          />
-                        </div>
-                      </div>
-
-                      <div>
-                        <label style={{ display: 'block', fontSize: 12, fontWeight: 700, color: 'var(--primary-strong)', marginBottom: 4 }}>
-                          📘 Lý thuyết & Công thức trọng tâm:
-                        </label>
-                        <div className="formula-edit-box" style={{ minHeight: 60 }}>
-                          <div className="formula-edit-box-preview" dangerouslySetInnerHTML={{ __html: renderMath(step.theory) }} />
-                          <textarea
-                            rows={2}
-                            value={step.theory || ''}
-                            onChange={(e) => handleStepChange(idx, 'theory', e.target.value)}
-                            placeholder="Tóm tắt công thức trọng tâm..."
-                            className="formula-edit-box-input"
-                          />
-                        </div>
-                      </div>
-
-                      <div>
-                        <label style={{ display: 'block', fontSize: 12, fontWeight: 700, color: '#c2410c', marginBottom: 4 }}>
-                          ⚠️ Bẫy trắc nghiệm / Lỗi sai hay gặp:
-                        </label>
-                        <div className="formula-edit-box" style={{ minHeight: 60 }}>
-                          <div className="formula-edit-box-preview" dangerouslySetInnerHTML={{ __html: renderMath(step.commonMistake) }} />
-                          <textarea
-                            rows={2}
-                            value={step.commonMistake || ''}
-                            onChange={(e) => handleStepChange(idx, 'commonMistake', e.target.value)}
-                            placeholder="Chỉ ra các bẫy hoặc lỗi học sinh hay mắc..."
-                            className="formula-edit-box-input"
-                          />
-                        </div>
-                      </div>
-
-                      <div>
-                        <label style={{ display: 'block', fontSize: 12, fontWeight: 700, color: '#047857', marginBottom: 4 }}>
-                          ✅ Hướng dẫn ôn tập / Hành động:
-                        </label>
-                        <div className="formula-edit-box" style={{ minHeight: 60 }}>
-                          <div className="formula-edit-box-preview" dangerouslySetInnerHTML={{ __html: renderMath(step.action) }} />
-                          <textarea
-                            rows={2}
-                            value={step.action || ''}
-                            onChange={(e) => handleStepChange(idx, 'action', e.target.value)}
-                            placeholder="Hành động cụ thể để khắc phục..."
-                            className="formula-edit-box-input"
-                          />
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-
-                  <button
-                    type="button"
-                    onClick={handleAddStep}
-                    className="btn sm secondary"
-                    style={{ alignSelf: 'flex-start', borderStyle: 'dashed' }}
-                  >
-                    + Thêm bước ôn tập mới
-                  </button>
-                </div>
-              ) : (
-                proposal.roadmap?.steps && proposal.roadmap.steps.length > 0 && (
-                  <div style={{ marginTop: 14, display: 'flex', flexDirection: 'column', gap: 10 }}>
-                    {proposal.roadmap.steps.map((step, idx) => {
-                      if (typeof step === 'string') {
-                        return (
-                          <div
-                            key={idx}
-                            style={{ fontSize: 13, color: 'var(--text-main)', padding: '8px 12px', background: 'var(--bg-subtle)', borderRadius: 6 }}
-                            dangerouslySetInnerHTML={{ __html: renderMath(`<strong>Bước ${idx + 1}:</strong> ${step}`) }}
-                          />
-                        );
-                      }
-                      return (
-                        <div
-                          key={step.order || idx}
-                          style={{
-                            background: '#ffffff',
-                            border: '1.5px solid #e2e8f0',
-                            borderRadius: 10,
-                            padding: '16px 18px',
-                            boxShadow: '0 2px 8px rgba(0,0,0,0.03)',
-                            display: 'flex',
-                            flexDirection: 'column',
-                            gap: 12,
-                          }}
-                        >
-                          <div style={{ fontWeight: 800, fontSize: 15, color: '#6d28d9', display: 'flex', alignItems: 'center', gap: 8 }}>
-                            <span style={{ background: '#ede9fe', color: '#6d28d9', padding: '3px 10px', borderRadius: 6, fontSize: 13, fontWeight: 800 }}>
-                              Bước {step.order || idx + 1}
-                            </span>
-                            <span>{step.tag || step.title || 'Chủ đề ôn tập'}</span>
-                          </div>
-
-                          {step.theory && (
-                            <div style={{ background: '#f8fafc', padding: '12px 16px', borderRadius: 8, borderLeft: '4px solid var(--primary)' }}>
-                              <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--primary-strong)', marginBottom: 6 }}>
-                                📘 Lý thuyết & Công thức trọng tâm:
-                              </div>
-                              <div style={{ fontSize: 13.5, lineHeight: 1.7, color: '#1e293b' }} dangerouslySetInnerHTML={{ __html: renderMath(step.theory) }} />
-                            </div>
-                          )}
-
-                          {step.commonMistake && (
-                            <div style={{ background: '#fffbeb', padding: '12px 16px', borderRadius: 8, borderLeft: '4px solid #f59e0b' }}>
-                              <div style={{ fontSize: 13, fontWeight: 700, color: '#b45309', marginBottom: 6 }}>
-                                ⚠️ Lỗi học sinh hay mắc phải:
-                              </div>
-                              <div style={{ fontSize: 13.5, lineHeight: 1.7, color: '#78350f' }} dangerouslySetInnerHTML={{ __html: renderMath(step.commonMistake) }} />
-                            </div>
-                          )}
-
-                          {step.action && (
-                            <div style={{ background: '#f0fdf4', padding: '12px 16px', borderRadius: 8, borderLeft: '4px solid #10b981' }}>
-                              <div style={{ fontSize: 13, fontWeight: 700, color: '#047857', marginBottom: 6 }}>
-                                ✅ Hướng dẫn ôn tập & Hành động:
-                              </div>
-                              <div style={{ fontSize: 13.5, lineHeight: 1.7, color: '#064e3b' }} dangerouslySetInnerHTML={{ __html: renderMath(step.action) }} />
-                            </div>
-                          )}
-                        </div>
-                      );
-                    })}
-                  </div>
-                )
+          <div className="ai-result">
+            <div className="ai-toolbar">
+              <h3>Nhận xét chung</h3>
+              {proposal.status === 'pending_review' && (
+                <label className={`toggle-chip${isEditing ? ' is-on' : ''}`}>
+                  <input type="checkbox" checked={isEditing} onChange={(e) => setIsEditing(e.target.checked)} />
+                  <UiIcon name="edit" size={15} />
+                  {isEditing ? 'Đang chỉnh sửa' : 'Chỉnh sửa trước khi gửi'}
+                </label>
               )}
             </div>
+
+            {isEditing ? (
+              <div className="edit-panel">
+                <label className="edit-field-label" htmlFor="editSummary">
+                  Lời nhận xét gửi học sinh
+                </label>
+                <textarea
+                  id="editSummary"
+                  rows={4}
+                  value={editSummary}
+                  onChange={(e) => setEditSummary(e.target.value)}
+                  placeholder="Nhập lời nhận xét và động viên cho học sinh…"
+                />
+              </div>
+            ) : (
+              <RoadmapSummary text={proposal.roadmap?.summary} />
+            )}
+
+            {(isEditing || (proposal.roadmap?.steps?.length > 0)) && (
+              <h3 className="ai-section-title">Các bước ôn tập</h3>
+            )}
+
+            {isEditing ? (
+              <div className="edit-steps">
+                {editSteps.map((step, idx) => (
+                  <div key={idx} className="edit-step">
+                    <div className="edit-step-head">
+                      <span className="ex-num">Bước {idx + 1}</span>
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveStep(idx)}
+                        className="icon-btn is-danger"
+                        title="Xoá bước này"
+                        aria-label={`Xoá bước ${idx + 1}`}
+                      >
+                        <UiIcon name="trash" size={16} />
+                      </button>
+                    </div>
+
+                    <div>
+                      <label className="edit-field-label">Tên chuyên đề</label>
+                      <input
+                        type="text"
+                        value={step.tag || step.title || ''}
+                        onChange={(e) => handleStepChange(idx, 'tag', e.target.value)}
+                        placeholder="Ví dụ: Đạo hàm, Cực trị…"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="edit-field-label">Lý thuyết cần nắm</label>
+                      <div className="formula-edit-box" style={{ minHeight: 60 }}>
+                        <div className="formula-edit-box-preview" dangerouslySetInnerHTML={{ __html: renderMath(step.theory) }} />
+                        <textarea
+                          rows={2}
+                          value={step.theory || ''}
+                          onChange={(e) => handleStepChange(idx, 'theory', e.target.value)}
+                          placeholder="Tóm tắt công thức trọng tâm…"
+                          className="formula-edit-box-input"
+                        />
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="edit-field-label">Lỗi hay mắc phải</label>
+                      <div className="formula-edit-box" style={{ minHeight: 60 }}>
+                        <div className="formula-edit-box-preview" dangerouslySetInnerHTML={{ __html: renderMath(step.commonMistake) }} />
+                        <textarea
+                          rows={2}
+                          value={step.commonMistake || ''}
+                          onChange={(e) => handleStepChange(idx, 'commonMistake', e.target.value)}
+                          placeholder="Các bẫy hoặc lỗi học sinh hay mắc…"
+                          className="formula-edit-box-input"
+                        />
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="edit-field-label">Hành động khắc phục</label>
+                      <div className="formula-edit-box" style={{ minHeight: 60 }}>
+                        <div className="formula-edit-box-preview" dangerouslySetInnerHTML={{ __html: renderMath(step.action) }} />
+                        <textarea
+                          rows={2}
+                          value={step.action || ''}
+                          onChange={(e) => handleStepChange(idx, 'action', e.target.value)}
+                          placeholder="Việc cụ thể học sinh cần làm…"
+                          className="formula-edit-box-input"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                ))}
+
+                <button type="button" onClick={handleAddStep} className="btn sm secondary btn-dashed">
+                  <UiIcon name="plus" size={15} /> Thêm bước ôn tập
+                </button>
+              </div>
+            ) : (
+              <RoadmapSteps steps={proposal.roadmap?.steps} />
+            )}
           </div>
         )}
       </div>
 
-      {/* Chi tiết từng câu hỏi trong bài làm của học sinh - đặt ngay sau
-          phần Nhận xét tổng thể, trước Bài tập bổ sung & Xác nhận giáo viên */}
+      {/* Chi tiết từng câu trong bài làm */}
       <div className="card">
         <div className="card-header">
-          <h2>Chi tiết từng câu trong bài làm ({submission.answers?.length || 0} câu)</h2>
+          <div className="card-title-row">
+            <h2>Chi tiết bài làm</h2>
+            <span className="count-badge">{submission.answers?.length || 0} câu</span>
+          </div>
         </div>
 
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+        <div className="question-list">
           {(() => {
             let currentTopicName = null;
             let qNumInTopic = 0;
@@ -772,116 +594,46 @@ export default function TeacherSubmissionDetailPage() {
               return (
                 <React.Fragment key={ans.questionId || idx}>
                   {isNewTopic && (
-                    <div
-                      style={{
-                        marginTop: idx > 0 ? 10 : 0,
-                        marginBottom: 2,
-                        padding: '10px 16px',
-                        background: 'linear-gradient(135deg, var(--primary) 0%, var(--primary) 100%)',
-                        color: '#fff',
-                        borderRadius: 'var(--radius-md)',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'space-between',
-                        boxShadow: '0 2px 4px rgba(0,0,0,0.06)',
-                      }}
-                    >
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                        <span style={{ fontSize: 16 }}>📚</span>
-                        <strong style={{ fontSize: 14.5, letterSpacing: '0.02em', color: '#f8fafc' }}>
-                          CHỦ ĐỀ: {topicName.toUpperCase()}
-                        </strong>
-                      </div>
+                    <div className="q-topic">
+                      <span className="q-topic-label">Chuyên đề</span>
+                      <span className="q-topic-name">{topicName}</span>
                     </div>
                   )}
 
-                  <div
-                    className="question-card"
-                    style={{
-                      borderLeft: `5px solid ${isCorrect ? 'var(--success)' : 'var(--danger)'}`,
-                      background: '#ffffff',
-                    }}
-                  >
+                  <div className={`question-card ${isCorrect ? 'is-correct' : 'is-wrong'}`}>
                     <div className="question-header">
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-                        <span style={{ fontWeight: 800, color: 'var(--primary)', fontSize: 14 }}>
-                          Câu {displayQNum}:
-                        </span>
-                        <span className={`status-pill ${isCorrect ? 'approved' : 'rejected'}`}>
-                          {isCorrect ? '✓ Làm đúng' : '✕ Làm sai'}
-                        </span>
-                      </div>
+                      <span className="question-num">Câu {displayQNum}</span>
+                      <span className={`status-pill ${isCorrect ? 'approved' : 'rejected'}`}>
+                        <UiIcon name={isCorrect ? 'check' : 'close'} size={13} />
+                        {isCorrect ? 'Làm đúng' : 'Làm sai'}
+                      </span>
                     </div>
 
-                    <div
-                      className="question-content"
-                      dangerouslySetInnerHTML={{ __html: renderMath(ans.content) }}
-                    />
+                    <div className="question-content" dangerouslySetInnerHTML={{ __html: renderMath(ans.content) }} />
 
                     <QuestionDiagram diagram={ans.diagram} />
 
-                    {/* 4 Phương án */}
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginTop: 8 }}>
+                    <div className="option-list">
                       {(ans.options || []).map((opt) => {
                         const isSelected = opt.key === ans.selectedAnswer;
                         const isCorrectOpt = opt.key === ans.correctAnswer;
-
                         let rowClass = 'option-row';
                         if (isCorrectOpt) rowClass += ' correct';
-                        else if (isSelected && !isCorrect) rowClass += ' wrong';
+                        if (isSelected) rowClass += isCorrect ? ' is-picked-right' : ' wrong';
 
                         return (
-                          <div
-                            key={opt.key}
-                            className={rowClass}
-                            style={{
-                              border: isSelected
-                                ? isCorrect
-                                  ? '2px solid var(--success)'
-                                  : '2px solid var(--danger)'
-                                : isCorrectOpt
-                                  ? '1.5px solid var(--success-border)'
-                                  : '1px solid var(--border-color)',
-                              background: isSelected
-                                ? isCorrect
-                                  ? 'var(--success-bg)'
-                                  : 'var(--danger-bg)'
-                                : isCorrectOpt
-                                  ? 'var(--success-bg)'
-                                  : '#ffffff',
-                              margin: 0,
-                            }}
-                          >
-                            <strong style={{ minWidth: 20 }}>{opt.key}.</strong>
-                            <span style={{ flex: 1 }} dangerouslySetInnerHTML={{ __html: renderMath(opt.text) }} />
-
+                          <div key={opt.key} className={rowClass}>
+                            <span className="option-key">{opt.key}.</span>
+                            <span className="option-text" dangerouslySetInnerHTML={{ __html: renderMath(opt.text) }} />
                             {isSelected && (
-                              <span
-                                style={{
-                                  marginLeft: 'auto',
-                                  fontSize: 12,
-                                  fontWeight: 700,
-                                  color: isCorrect ? 'var(--success-text)' : 'var(--danger-text)',
-                                  background: '#ffffff',
-                                  padding: '2px 8px',
-                                  borderRadius: 4,
-                                  border: '1px solid',
-                                }}
-                              >
-                                Học sinh chọn: {opt.key} {isCorrect ? '✓' : '✕'}
+                              <span className={`option-tag ${isCorrect ? 'is-right' : 'is-wrong'}`}>
+                                <UiIcon name={isCorrect ? 'check' : 'close'} size={12} />
+                                Học sinh chọn
                               </span>
                             )}
-
                             {!isSelected && isCorrectOpt && (
-                              <span
-                                style={{
-                                  marginLeft: 'auto',
-                                  fontSize: 12,
-                                  fontWeight: 700,
-                                  color: 'var(--success-text)',
-                                }}
-                              >
-                                Đáp án đúng: {opt.key} ✓
+                              <span className="option-tag is-right">
+                                <UiIcon name="check" size={12} /> Đáp án đúng
                               </span>
                             )}
                           </div>
@@ -889,8 +641,7 @@ export default function TeacherSubmissionDetailPage() {
                       })}
                     </div>
 
-                    {/* Phân tích AI riêng cho câu này - chỉ hiện với câu làm
-                        sai và khi giáo viên đã "Sinh AI" cho bài nộp này */}
+                    {/* Phân tích AI riêng cho câu làm sai (sau khi đã chạy AI) */}
                     {!isCorrect && proposal?.questionAnalyses && (() => {
                       const wqIdx = (proposal.wrongQuestions || []).findIndex((wq) => wq.id === ans.questionId);
                       if (wqIdx === -1) return null;
@@ -899,23 +650,22 @@ export default function TeacherSubmissionDetailPage() {
                       if (!qa) return null;
 
                       return (
-                        <div style={{ marginTop: 12, display: 'flex', flexDirection: 'column', gap: 10 }}>
+                        <div className="q-analysis">
                           {qa.mistakeAnalysis && (
-                            <div style={{ background: '#fffbeb', padding: '10px 14px', borderRadius: 8, borderLeft: '4px solid #f59e0b' }}>
-                              <div style={{ fontSize: 12.5, fontWeight: 700, color: '#b45309', marginBottom: 5 }}>
-                                ⚠️ Lỗ hổng kiến thức:
+                            <section className="rm-block rm-mistake">
+                              <div className="rm-label">
+                                <UiIcon name="alert" size={15} /> Lỗ hổng kiến thức
                               </div>
-                              <div style={{ fontSize: 13, lineHeight: 1.65, color: '#78350f' }} dangerouslySetInnerHTML={{ __html: renderMath(qa.mistakeAnalysis) }} />
-                            </div>
+                              <div className="rm-body" dangerouslySetInnerHTML={{ __html: renderMath(qa.mistakeAnalysis) }} />
+                            </section>
                           )}
-
                           {qa.correctSolution && (
-                            <div style={{ background: '#f0fdf4', padding: '10px 14px', borderRadius: 8, borderLeft: '4px solid #10b981' }}>
-                              <div style={{ fontSize: 12.5, fontWeight: 700, color: '#047857', marginBottom: 5 }}>
-                                ✅ Cách khắc phục:
+                            <section className="rm-block rm-action">
+                              <div className="rm-label">
+                                <UiIcon name="check" size={15} /> Cách khắc phục
                               </div>
-                              <div style={{ fontSize: 13, lineHeight: 1.65, color: '#064e3b' }} dangerouslySetInnerHTML={{ __html: renderMath(qa.correctSolution) }} />
-                            </div>
+                              <div className="rm-body" dangerouslySetInnerHTML={{ __html: renderMath(qa.correctSolution) }} />
+                            </section>
                           )}
                         </div>
                       );
@@ -928,151 +678,65 @@ export default function TeacherSubmissionDetailPage() {
         </div>
       </div>
 
-      {/* Bài tập bổ sung & Xác nhận giáo viên - chỉ hiện khi đã có đề xuất AI, đặt sau Chi tiết từng câu */}
+      {/* Bài tập bổ sung và duyệt gửi - chỉ hiện khi đã có đề xuất AI */}
       {proposal && (
-        <div className="card" style={{ border: '2px solid #ddd6fe', background: '#faf5ff' }}>
-          <div className="card-header" style={{ borderBottom: '1px solid #ede9fe' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <span style={{ fontSize: 20 }}>🎁</span>
-              <h2 style={{ color: '#5b21b6', margin: 0 }}>Bài tập bổ sung & Xác nhận giáo viên</h2>
+        <div className="card">
+          <div className="card-header">
+            <div className="card-title-group">
+              <div className="card-title-row">
+                <h2>Bài tập bổ sung và duyệt gửi</h2>
+              </div>
+              <p className="card-hint">Kiểm tra bộ câu hỏi AI soạn, chỉnh sửa nếu cần rồi gửi cho học sinh.</p>
             </div>
           </div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 14, marginTop: 14 }}>
-            {/* Các câu hỏi bài tập tương tự do AI sinh theo từng Chuyên đề */}
+
+          <div className="approve-layout">
             {groupedExercises && groupedExercises.length > 0 && (
-              <details
-                open
-                style={{
-                  background: '#ffffff',
-                  border: '1.5px solid #c4b5fd',
-                  borderRadius: 'var(--radius-md)',
-                  padding: '16px 20px',
-                  boxShadow: '0 4px 14px rgba(139, 92, 246, 0.08)',
-                }}
-              >
-                <summary style={{ cursor: 'pointer', fontWeight: 800, color: '#5b21b6', fontSize: 15, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                  <span>🎯 Bộ bài tập ôn luyện do AI tạo ({editExercises.length} câu - Phân theo {groupedExercises.length} chuyên đề)</span>
-                  <span style={{ fontSize: 12, color: '#7c3aed', fontWeight: 600 }}>Bấm để ẩn/hiện</span>
+              <details className="ex-details" open>
+                <summary>
+                  <UiIcon name="chevron-down" size={17} className="ex-chevron" />
+                  <span>Bộ bài tập luyện tập</span>
+                  <span className="count-badge">{editExercises.length} câu</span>
+                  <span className="count-badge">{groupedExercises.length} chuyên đề</span>
                 </summary>
 
-                <div style={{ marginTop: 16, display: 'flex', flexDirection: 'column', gap: 20 }}>
+                <div className="ex-groups">
                   {groupedExercises.map((grp, gIdx) => (
-                    <div
-                      key={gIdx}
-                      style={{
-                        background: '#f8fafc',
-                        border: '1.5px solid #e2e8f0',
-                        borderRadius: 12,
-                        padding: '16px',
-                        display: 'flex',
-                        flexDirection: 'column',
-                        gap: 12,
-                      }}
-                    >
-                      {/* Topic Banner Header */}
-                      <div
-                        style={{
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'space-between',
-                          flexWrap: 'wrap',
-                          gap: 8,
-                          paddingBottom: 10,
-                          borderBottom: '1.5px solid #cbd5e1',
-                        }}
-                      >
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                          <span
-                            style={{
-                              background: 'linear-gradient(135deg, #6366f1, #4f46e5)',
-                              color: '#ffffff',
-                              padding: '4px 12px',
-                              borderRadius: 8,
-                              fontSize: 13,
-                              fontWeight: 800,
-                              letterSpacing: '0.3px',
-                            }}
-                          >
-                            CHUYÊN ĐỀ {gIdx + 1}
-                          </span>
-                          <span style={{ fontSize: 15, fontWeight: 800, color: '#1e1b4b' }}>
-                            {grp.topic}
-                          </span>
-                        </div>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                          <span
-                            style={{
-                              background: '#ede9fe',
-                              color: '#6d28d9',
-                              fontSize: 12,
-                              fontWeight: 700,
-                              padding: '3px 10px',
-                              borderRadius: 20,
-                            }}
-                          >
-                            {grp.items.length} câu hỏi
-                          </span>
-                          {isEditing && (
-                            <button
-                              type="button"
-                              onClick={() => handleAddExercise(grp.topic)}
-                              className="btn sm secondary"
-                              style={{ fontSize: 11.5, padding: '3px 10px', borderRadius: 6 }}
-                            >
-                              + Thêm câu vào chuyên đề này
-                            </button>
-                          )}
-                        </div>
+                    <div key={gIdx} className="ex-group">
+                      <div className="ex-group-head">
+                        <span className="ex-group-label">Chuyên đề {gIdx + 1}</span>
+                        <span className="ex-group-name">{grp.topic}</span>
+                        <span className="count-badge">{grp.items.length} câu</span>
+                        {isEditing && (
+                          <button type="button" onClick={() => handleAddExercise(grp.topic)} className="btn sm secondary">
+                            <UiIcon name="plus" size={14} /> Thêm câu
+                          </button>
+                        )}
                       </div>
 
-                      {/* Question items in this topic */}
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                      <div className="ex-list">
                         {grp.items.map((ex, qIdx) => {
                           const origIdx = ex.originalIdx;
                           return (
-                            <div
-                              key={origIdx}
-                              style={{
-                                padding: 14,
-                                background: '#ffffff',
-                                borderRadius: 10,
-                                border: '1px solid #e2e8f0',
-                                boxShadow: '0 2px 6px rgba(0,0,0,0.02)',
-                              }}
-                            >
+                            <div key={origIdx} className="ex-item">
                               {isEditing ? (
-                                <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 12 }}>
-                                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                                      <span
-                                        style={{
-                                          background: '#6366f1',
-                                          color: '#ffffff',
-                                          fontSize: 12,
-                                          fontWeight: 800,
-                                          padding: '2px 8px',
-                                          borderRadius: 6,
-                                        }}
-                                      >
-                                        Câu {qIdx + 1}
-                                      </span>
-                                      <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>
-                                        (Thứ tự tổng: #{origIdx + 1})
-                                      </span>
-                                    </div>
+                                <div className="ex-edit">
+                                  <div className="ex-item-head">
+                                    <span className="ex-num">Câu {qIdx + 1}</span>
                                     <button
                                       type="button"
                                       onClick={() => handleRemoveExercise(origIdx)}
-                                      className="btn sm outline-danger"
-                                      style={{ padding: '2px 8px', fontSize: 11 }}
+                                      className="icon-btn is-danger"
+                                      title="Xoá câu này"
+                                      aria-label={`Xoá câu ${qIdx + 1}`}
                                     >
-                                      ✕ Xóa câu này
+                                      <UiIcon name="trash" size={16} />
                                     </button>
                                   </div>
 
                                   <div>
-                                    <label style={{ display: 'block', fontWeight: 700, fontSize: 12, color: '#475569', marginBottom: 4 }}>
-                                      Đề bài câu hỏi: <span style={{ fontWeight: 500, color: '#94a3b8' }}>(gõ mã LaTeX, ví dụ $x^2$)</span>
+                                    <label className="edit-field-label">
+                                      Đề bài <span className="edit-field-hint">(công thức gõ dạng LaTeX, ví dụ $x^2$)</span>
                                     </label>
                                     <div className="formula-edit-box" style={{ minHeight: 60 }}>
                                       <div className="formula-edit-box-preview" style={{ fontSize: 14 }} dangerouslySetInnerHTML={{ __html: renderMath(ex.content) }} />
@@ -1085,81 +749,39 @@ export default function TeacherSubmissionDetailPage() {
                                     </div>
                                   </div>
 
-                                  <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
-                                    <label style={{ fontWeight: 700, fontSize: 12, color: '#475569' }}>
-                                      Đáp án đúng:
-                                    </label>
-                                    <div style={{ display: 'flex', gap: 6 }}>
-                                      {['A', 'B', 'C', 'D'].map((key) => (
-                                        <button
-                                          key={key}
-                                          type="button"
-                                          onClick={() => handleExerciseChange(origIdx, 'correctAnswer', key)}
-                                          style={{
-                                            padding: '3px 10px',
-                                            borderRadius: 6,
-                                            border: '1.5px solid',
-                                            borderColor: ex.correctAnswer === key ? '#10b981' : '#cbd5e1',
-                                            background: ex.correctAnswer === key ? '#d1fae5' : '#ffffff',
-                                            color: ex.correctAnswer === key ? '#065f46' : '#475569',
-                                            fontWeight: 800,
-                                            fontSize: 12,
-                                            cursor: 'pointer',
-                                          }}
-                                        >
-                                          {key}
-                                        </button>
-                                      ))}
-                                    </div>
+                                  <div className="answer-picker">
+                                    <span className="edit-field-label" style={{ margin: 0 }}>Đáp án đúng</span>
+                                    {['A', 'B', 'C', 'D'].map((key) => (
+                                      <button
+                                        key={key}
+                                        type="button"
+                                        onClick={() => handleExerciseChange(origIdx, 'correctAnswer', key)}
+                                        className={ex.correctAnswer === key ? 'is-active' : ''}
+                                        aria-pressed={ex.correctAnswer === key}
+                                      >
+                                        {key}
+                                      </button>
+                                    ))}
                                   </div>
                                 </div>
                               ) : (
-                                <div style={{ marginBottom: 10, fontSize: 14, color: '#1e293b', lineHeight: 1.65 }}>
-                                  <span
-                                    style={{
-                                      background: '#ede9fe',
-                                      color: '#6d28d9',
-                                      fontWeight: 800,
-                                      padding: '2px 8px',
-                                      borderRadius: 6,
-                                      fontSize: 13,
-                                      marginRight: 8,
-                                      display: 'inline-block',
-                                    }}
-                                  >
-                                    Câu {qIdx + 1}:
-                                  </span>
+                                <div className="ex-content">
+                                  <span className="ex-num">Câu {qIdx + 1}</span>{' '}
                                   <span dangerouslySetInnerHTML={{ __html: renderMath(ex.content) }} />
                                 </div>
                               )}
 
                               <QuestionDiagram diagram={ex.diagram} />
 
-                              {/* Danh sách 4 đáp án dạng DỌC (1 cột full-width) */}
-                              <div style={{ display: 'flex', flexDirection: 'column', gap: 7, marginTop: 10 }}>
+                              <div className="option-list">
                                 {(ex.options || []).map((opt) => (
-                                  <div
-                                    key={opt.key}
-                                    className={`option-row ${opt.key === ex.correctAnswer ? 'correct' : ''}`}
-                                    style={{
-                                      margin: 0,
-                                      padding: '9px 16px',
-                                      fontSize: 13.5,
-                                      width: '100%',
-                                      minHeight: 46,
-                                      display: 'flex',
-                                      alignItems: 'center',
-                                      borderRadius: 8,
-                                    }}
-                                  >
-                                    <strong style={{ minWidth: 26, fontSize: 14, color: opt.key === ex.correctAnswer ? '#047857' : '#475569' }}>
-                                      {opt.key}.
-                                    </strong>{' '}
+                                  <div key={opt.key} className={`option-row${opt.key === ex.correctAnswer ? ' correct' : ''}`}>
+                                    <span className="option-key">{opt.key}.</span>
                                     {isEditing ? (
-                                      <div className="formula-edit-box" style={{ flex: 1, marginLeft: 6 }}>
+                                      <div className="formula-edit-box" style={{ flex: 1 }}>
                                         <div
                                           className="formula-edit-box-preview"
-                                          style={{ fontSize: 13 }}
+                                          style={{ fontSize: 13.5 }}
                                           dangerouslySetInnerHTML={{ __html: renderMath(opt.text) }}
                                         />
                                         <input
@@ -1170,11 +792,11 @@ export default function TeacherSubmissionDetailPage() {
                                         />
                                       </div>
                                     ) : (
-                                      <span style={{ flex: 1, fontSize: 14, lineHeight: 1.6 }} dangerouslySetInnerHTML={{ __html: renderMath(opt.text) }} />
+                                      <span className="option-text" dangerouslySetInnerHTML={{ __html: renderMath(opt.text) }} />
                                     )}
                                     {opt.key === ex.correctAnswer && (
-                                      <span style={{ marginLeft: 'auto', fontWeight: 800, fontSize: 12.5, color: '#047857', paddingLeft: 12, display: 'inline-flex', alignItems: 'center', gap: 4 }}>
-                                        ✓ Đáp án đúng
+                                      <span className="option-tag is-right">
+                                        <UiIcon name="check" size={12} /> Đáp án đúng
                                       </span>
                                     )}
                                   </div>
@@ -1191,156 +813,73 @@ export default function TeacherSubmissionDetailPage() {
                     <button
                       type="button"
                       onClick={() => handleAddExercise('Chuyên đề ôn tập mới')}
-                      className="btn sm secondary"
-                      style={{ alignSelf: 'flex-start', borderStyle: 'dashed' }}
+                      className="btn sm secondary btn-dashed"
                     >
-                      + Thêm chuyên đề bài tập mới
+                      <UiIcon name="plus" size={15} /> Thêm chuyên đề bài tập
                     </button>
                   )}
                 </div>
               </details>
             )}
 
-            {/* HỘP DUYỆT & GỬI BÀI TẬP */}
             {proposal.status === 'pending_review' ? (
-              <div
-                style={{
-                  background: '#ffffff',
-                  padding: '18px 20px',
-                  borderRadius: 'var(--radius-md)',
-                  border: '2px solid #8b5cf6',
-                  boxShadow: '0 4px 16px rgba(139, 92, 246, 0.15)',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  gap: 14,
-                }}
-              >
-                <div style={{ fontSize: 15, fontWeight: 800, color: '#5b21b6' }}>
-                  ⚙️ Xác nhận duyệt & Phân phối bài tập cho học sinh:
-                </div>
+              <div className="approve-box">
+                <h3>Duyệt và gửi cho học sinh</h3>
 
-                {/* Checkbox gửi kèm bài tập */}
-                <div
-                  style={{
-                    background: includeExercises ? '#f0fdf4' : '#f8fafc',
-                    padding: '12px 16px',
-                    borderRadius: 8,
-                    border: includeExercises ? '1.5px solid #86efac' : '1.5px solid var(--border-color)',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 12,
-                    cursor: 'pointer',
-                  }}
-                  onClick={() => setIncludeExercises(!includeExercises)}
-                >
+                <label className={`check-row${includeExercises ? ' is-checked' : ''}`} htmlFor="includeExPost">
                   <input
                     type="checkbox"
                     id="includeExPost"
                     checked={includeExercises}
-                    onChange={(e) => {
-                      e.stopPropagation();
-                      setIncludeExercises(e.target.checked);
-                    }}
-                    style={{ width: 20, height: 20, cursor: 'pointer' }}
+                    onChange={(e) => setIncludeExercises(e.target.checked)}
                   />
-                  <div>
-                    <label
-                      htmlFor="includeExPost"
-                      style={{
-                        display: 'block',
-                        fontSize: 14,
-                        fontWeight: 700,
-                        color: includeExercises ? '#15803d' : 'var(--text-main)',
-                        cursor: 'pointer',
-                      }}
-                    >
-                      Gửi kèm {proposal.exercises?.length || 0} câu hỏi bài tập ôn luyện này cho học sinh
-                    </label>
-                    <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>
+                  <span>
+                    <strong>Gửi kèm {proposal.exercises?.length || 0} câu bài tập luyện tập</strong>
+                    <span>
                       {includeExercises
-                        ? '✓ Hệ thống sẽ tự động tạo một đề thi bài tập mới và giao ngay vào tài khoản của học sinh.'
-                        : '○ Chỉ gửi nhận xét & lý thuyết bằng văn bản, không tạo đề thi câu hỏi mới.'}
+                        ? 'Hệ thống tạo một đề luyện tập mới và giao ngay cho học sinh.'
+                        : 'Chỉ gửi nhận xét và lộ trình ôn tập, không tạo đề luyện tập.'}
                     </span>
-                  </div>
-                </div>
+                  </span>
+                </label>
 
-                {/* Các nút hành động */}
-                <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'center' }}>
-                  <button
-                    className="btn"
-                    onClick={() => handleApprove(proposal.id)}
-                    disabled={reviewing}
-                    style={{
-                      background: 'linear-gradient(135deg, #10b981, #059669)',
-                      color: '#ffffff',
-                      fontWeight: 800,
-                      padding: '11px 22px',
-                      fontSize: 14,
-                    }}
-                  >
-                    {reviewing ? 'Đang gửi...' : '🚀 ✓ Duyệt & Gửi nhận xét / bài tập cho học sinh'}
+                <div className="action-row">
+                  <button className="btn success" onClick={() => handleApprove(proposal.id)} disabled={reviewing}>
+                    <UiIcon name="send" size={16} /> {reviewing ? 'Đang gửi…' : 'Duyệt và gửi cho học sinh'}
                   </button>
-                  <button
-                    className="btn secondary"
-                    onClick={() => handleGenerateAI(true)}
-                    disabled={generating}
-                  >
-                    🔄 Sinh lại nhận xét AI
+                  <button className="btn secondary" onClick={() => handleGenerateAI(true)} disabled={generating}>
+                    <UiIcon name="refresh" size={16} /> Tạo lại bằng AI
                   </button>
                   <button
                     className="btn outline-danger"
                     onClick={() => setShowRejectModal(true)}
                     disabled={reviewing || generating}
                   >
-                    ✕ Từ chối đề xuất
+                    <UiIcon name="close" size={16} /> Từ chối đề xuất
                   </button>
                 </div>
               </div>
             ) : proposal.status === 'approved' ? (
-              <div
-                style={{
-                  background: '#f0fdf4',
-                  padding: '14px 18px',
-                  borderRadius: 'var(--radius-md)',
-                  border: '1px solid #86efac',
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  alignItems: 'center',
-                  flexWrap: 'wrap',
-                  gap: 10,
-                }}
-              >
-                <div>
-                  <div style={{ fontWeight: 800, color: '#15803d', fontSize: 14 }}>
-                    ✓ Đã phê duyệt và gửi lộ trình ôn tập đến học sinh thành công!
-                  </div>
-                  <div style={{ fontSize: 13, color: '#166534', marginTop: 2 }}>
-                    {proposal.examId ? 'Đã tạo và giao đề thi ôn tập cho học sinh.' : 'Đã gửi bản nhận xét lý thuyết cho học sinh.'}
+              <div className="notice is-success">
+                <UiIcon name="check" size={18} />
+                <div className="notice-body">
+                  <div className="notice-title">Đã duyệt và gửi lộ trình ôn tập cho học sinh</div>
+                  <div className="notice-text">
+                    {proposal.examId ? 'Đề luyện tập đã được tạo và giao cho học sinh.' : 'Học sinh đã nhận được nhận xét và lộ trình ôn tập.'}
                   </div>
                 </div>
                 <button className="btn sm secondary" onClick={() => handleGenerateAI(true)} disabled={generating}>
-                  🔄 Sinh lại lộ trình mới
+                  <UiIcon name="refresh" size={15} /> Tạo lộ trình mới
                 </button>
               </div>
             ) : (
-              <div
-                style={{
-                  background: '#fef2f2',
-                  padding: '14px 18px',
-                  borderRadius: 'var(--radius-md)',
-                  border: '1px solid #fca5a5',
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  alignItems: 'center',
-                  flexWrap: 'wrap',
-                  gap: 10,
-                }}
-              >
-                <div style={{ fontWeight: 700, color: '#991b1b', fontSize: 14 }}>
-                  ✕ Đề xuất AI này đã bị từ chối.
+              <div className="notice is-danger">
+                <UiIcon name="close" size={18} />
+                <div className="notice-body">
+                  <div className="notice-title">Đề xuất AI này đã bị từ chối</div>
                 </div>
                 <button className="btn sm" onClick={() => handleGenerateAI(true)} disabled={generating}>
-                  🔄 Sinh đề xuất AI mới
+                  <UiIcon name="sparkles" size={15} /> Tạo đề xuất mới
                 </button>
               </div>
             )}
@@ -1348,234 +887,54 @@ export default function TeacherSubmissionDetailPage() {
         </div>
       )}
 
-      {/* MODAL TÙY CHỌN TỪ CHỐI ĐỀ XUẤT AI */}
+      {/* Hộp thoại từ chối đề xuất AI */}
       {showRejectModal && (
-        <div
-          className="modal-overlay"
-          style={{
-            position: 'fixed',
-            inset: 0,
-            background: 'rgba(15, 23, 42, 0.7)',
-            backdropFilter: 'blur(6px)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            zIndex: 9999,
-            padding: 16,
-          }}
-          onClick={() => !rejectActionLoading && setShowRejectModal(false)}
-        >
+        <div className="modal-overlay" onClick={() => !rejectActionLoading && setShowRejectModal(false)}>
           <div
-            style={{
-              background: '#ffffff',
-              borderRadius: 16,
-              maxWidth: 540,
-              width: '100%',
-              padding: '24px 28px',
-              boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
-              position: 'relative',
-            }}
+            className="modal-panel"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="reject-title"
             onClick={(e) => e.stopPropagation()}
           >
-            {/* Header */}
-            <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 16 }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-                <div
-                  style={{
-                    width: 44,
-                    height: 44,
-                    borderRadius: 12,
-                    background: '#fee2e2',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    fontSize: 22,
-                    flexShrink: 0,
-                  }}
-                >
-                  🗑️
-                </div>
-                <div>
-                  <h3 style={{ margin: 0, fontSize: 18, color: '#1e293b', fontWeight: 800 }}>
-                    Xử lý Từ chối đề xuất AI
-                  </h3>
-                  <p style={{ margin: '3px 0 0', fontSize: 13, color: '#64748b' }}>
-                    Lựa chọn hành động để xử lý bản lộ trình & bài tập hiện tại
-                  </p>
-                </div>
+            <div className="modal-head">
+              <div className="modal-icon">
+                <UiIcon name="trash" size={20} />
+              </div>
+              <div>
+                <h3 id="reject-title">Từ chối đề xuất AI</h3>
+                <p>Chọn cách xử lý bản lộ trình và bài tập hiện tại.</p>
               </div>
               <button
                 type="button"
+                className="icon-btn"
                 onClick={() => !rejectActionLoading && setShowRejectModal(false)}
-                style={{
-                  background: '#f1f5f9',
-                  border: 'none',
-                  borderRadius: '50%',
-                  width: 32,
-                  height: 32,
-                  cursor: 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  fontSize: 16,
-                  color: '#64748b',
-                  transition: 'all 0.15s ease',
-                }}
-                onMouseEnter={(e) => { e.currentTarget.style.background = '#e2e8f0'; e.currentTarget.style.color = '#0f172a'; }}
-                onMouseLeave={(e) => { e.currentTarget.style.background = '#f1f5f9'; e.currentTarget.style.color = '#64748b'; }}
+                aria-label="Đóng"
               >
-                ✕
+                <UiIcon name="close" size={16} />
               </button>
             </div>
 
-            <p style={{ fontSize: 13.5, color: '#475569', lineHeight: 1.6, marginBottom: 18 }}>
-              Bản phân tích hoặc câu hỏi AI sinh ra chưa đạt chất lượng mong muốn? Bạn có thể chọn một trong hai hành động dưới đây:
-            </p>
-
-            {/* 2 Lựa chọn Card */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginBottom: 22 }}>
-              {/* Lựa chọn 1: Xóa bỏ & Thoát */}
-              <div
-                role="button"
-                tabIndex={0}
-                onClick={!rejectActionLoading ? handleDeleteAndExit : undefined}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 16,
-                  padding: '16px 18px',
-                  background: '#fff1f2',
-                  border: '1.5px solid #fecdd3',
-                  borderRadius: 12,
-                  cursor: rejectActionLoading ? 'not-allowed' : 'pointer',
-                  transition: 'all 0.2s ease',
-                  opacity: rejectActionLoading ? 0.6 : 1,
-                }}
-                onMouseEnter={(e) => {
-                  if (!rejectActionLoading) {
-                    e.currentTarget.style.borderColor = '#f43f5e';
-                    e.currentTarget.style.background = '#ffe4e6';
-                    e.currentTarget.style.transform = 'translateY(-1px)';
-                    e.currentTarget.style.boxShadow = '0 4px 12px rgba(244, 63, 94, 0.15)';
-                  }
-                }}
-                onMouseLeave={(e) => {
-                  if (!rejectActionLoading) {
-                    e.currentTarget.style.borderColor = '#fecdd3';
-                    e.currentTarget.style.background = '#fff1f2';
-                    e.currentTarget.style.transform = 'none';
-                    e.currentTarget.style.boxShadow = 'none';
-                  }
-                }}
-              >
-                <div
-                  style={{
-                    width: 42,
-                    height: 42,
-                    borderRadius: 10,
-                    background: '#ffe4e6',
-                    border: '1px solid #fecdd3',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    fontSize: 20,
-                    flexShrink: 0,
-                  }}
-                >
-                  🗑️
-                </div>
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontWeight: 800, fontSize: 14.5, color: '#be123c', marginBottom: 2 }}>
-                    1. Xóa bỏ hoàn toàn & Huỷ bản sinh này
-                  </div>
-                  <div style={{ fontSize: 12.5, color: '#881337', lineHeight: 1.45 }}>
-                    Xóa sạch dữ liệu text cũ khỏi hệ thống, không lưu rác để giao diện quay về ban đầu.
-                  </div>
-                </div>
-              </div>
-
-              {/* Lựa chọn 2: Xóa cũ & Gọi Gemini AI sinh lại ngay */}
-              <div
-                role="button"
-                tabIndex={0}
-                onClick={!rejectActionLoading ? handleDeleteAndRegenerate : undefined}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 16,
-                  padding: '16px 18px',
-                  background: '#f5f3ff',
-                  border: '1.5px solid #ddd6fe',
-                  borderRadius: 12,
-                  cursor: rejectActionLoading ? 'not-allowed' : 'pointer',
-                  transition: 'all 0.2s ease',
-                  opacity: rejectActionLoading ? 0.6 : 1,
-                }}
-                onMouseEnter={(e) => {
-                  if (!rejectActionLoading) {
-                    e.currentTarget.style.borderColor = '#8b5cf6';
-                    e.currentTarget.style.background = '#ede9fe';
-                    e.currentTarget.style.transform = 'translateY(-1px)';
-                    e.currentTarget.style.boxShadow = '0 4px 12px rgba(139, 92, 246, 0.18)';
-                  }
-                }}
-                onMouseLeave={(e) => {
-                  if (!rejectActionLoading) {
-                    e.currentTarget.style.borderColor = '#ddd6fe';
-                    e.currentTarget.style.background = '#f5f3ff';
-                    e.currentTarget.style.transform = 'none';
-                    e.currentTarget.style.boxShadow = 'none';
-                  }
-                }}
-              >
-                <div
-                  style={{
-                    width: 42,
-                    height: 42,
-                    borderRadius: 10,
-                    background: '#ede9fe',
-                    border: '1px solid #ddd6fe',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    fontSize: 20,
-                    flexShrink: 0,
-                  }}
-                >
-                  🔄
-                </div>
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontWeight: 800, fontSize: 14.5, color: '#6d28d9', marginBottom: 2 }}>
-                    2. Xóa bản cũ & Gọi AI sinh lại bản mới ngay
-                  </div>
-                  <div style={{ fontSize: 12.5, color: '#5b21b6', lineHeight: 1.45 }}>
-                    Huỷ bản cũ và yêu cầu Gemini AI phân tích lại bài làm để tạo bộ lộ trình + câu hỏi mới chuẩn hơn.
-                  </div>
-                </div>
-              </div>
+            <div className="choice-list">
+              <button type="button" className="choice-card is-danger" onClick={handleDeleteAndExit} disabled={rejectActionLoading}>
+                <span className="choice-icon"><UiIcon name="trash" size={18} /></span>
+                <span>
+                  <span className="choice-title">Xoá bản này</span>
+                  <span className="choice-desc">Xoá nhận xét và bài tập AI vừa tạo, trang quay về trạng thái chưa phân tích.</span>
+                </span>
+              </button>
+              <button type="button" className="choice-card" onClick={handleDeleteAndRegenerate} disabled={rejectActionLoading}>
+                <span className="choice-icon"><UiIcon name="refresh" size={18} /></span>
+                <span>
+                  <span className="choice-title">Xoá và để AI tạo lại</span>
+                  <span className="choice-desc">Xoá bản cũ và yêu cầu AI phân tích lại bài làm để tạo lộ trình và bài tập mới.</span>
+                </span>
+              </button>
             </div>
 
-            {/* Footer Buttons */}
-            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10 }}>
-              <button
-                type="button"
-                disabled={rejectActionLoading}
-                onClick={() => setShowRejectModal(false)}
-                style={{
-                  padding: '9px 18px',
-                  fontSize: 13.5,
-                  fontWeight: 700,
-                  color: '#475569',
-                  background: '#f1f5f9',
-                  border: '1px solid #cbd5e1',
-                  borderRadius: 8,
-                  cursor: 'pointer',
-                  transition: 'all 0.15s ease',
-                }}
-                onMouseEnter={(e) => { e.currentTarget.style.background = '#e2e8f0'; }}
-                onMouseLeave={(e) => { e.currentTarget.style.background = '#f1f5f9'; }}
-              >
-                Đóng (Giữ nguyên)
+            <div className="modal-foot">
+              <button type="button" className="btn secondary" disabled={rejectActionLoading} onClick={() => setShowRejectModal(false)}>
+                Giữ nguyên
               </button>
             </div>
           </div>

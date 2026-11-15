@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import BrandMark from '../components/BrandMark';
 import { APP_NAME, APP_TAGLINE } from '../config/brand';
@@ -114,13 +114,13 @@ export default function LoginPage() {
   return (
     <div className="auth-page">
       <section className="auth-hero">
-        <div className="auth-hero-brand">
+        <Link to="/" className="auth-hero-brand" title="Về trang giới thiệu">
           <BrandMark size={40} />
           <div>
             <div className="auth-hero-name">{APP_NAME}</div>
             <div className="auth-hero-tagline">{APP_TAGLINE}</div>
           </div>
-        </div>
+        </Link>
 
         <div className="auth-hero-body">
           <h1>Học toán cùng AI, biết rõ mình cần ôn phần nào.</h1>
@@ -138,6 +138,9 @@ export default function LoginPage() {
 
       <main className="auth-form-side">
         <div className="auth-card">
+          <Link to="/" className="auth-back">
+            <span aria-hidden="true">←</span> Trang giới thiệu
+          </Link>
           <div className="auth-brand">
             <h2>Đăng nhập</h2>
             <p className="auth-subtitle">Dùng tài khoản do giáo viên hoặc nhà trường cấp.</p>

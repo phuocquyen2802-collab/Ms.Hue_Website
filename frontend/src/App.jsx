@@ -3,6 +3,7 @@ import ProtectedRoute from './components/ProtectedRoute';
 import { useAuth } from './context/AuthContext';
 
 import LoginPage from './pages/LoginPage';
+import LandingPage from './pages/LandingPage';
 import TeacherDashboard from './pages/TeacherDashboard';
 import TeacherExamsPage from './pages/TeacherExamsPage';
 import TeacherAnalyticsPage from './pages/TeacherAnalyticsPage';
@@ -21,9 +22,11 @@ import SettingsPage from './pages/SettingsPage';
 import AnnouncementsPage from './pages/AnnouncementsPage';
 import AiAssistantPage from './pages/AiAssistantPage';
 
+// "/": chưa đăng nhập thì hiện trang giới thiệu (nút Đăng nhập dẫn sang
+// /login), đã đăng nhập thì vào thẳng trang làm việc theo vai trò.
 function HomeRedirect() {
   const { user } = useAuth();
-  if (!user) return <Navigate to="/login" replace />;
+  if (!user) return <LandingPage />;
   return <Navigate to={user.role === 'teacher' ? '/teacher' : '/student'} replace />;
 }
 
