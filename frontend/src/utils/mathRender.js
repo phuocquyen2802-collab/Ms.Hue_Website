@@ -13,266 +13,235 @@ const KATEX_OPTS_BLOCK = {
   strict: false,
 };
 
+// Công thức LaTeX thật chỉ gồm chữ Latin/số/lệnh LaTeX, KHÔNG BAO GIỜ có
+// tiếng Việt có dấu - dùng để nhận ra cặp $...$ bắt nhầm cả đoạn văn (AI
+// quên đóng $) và trả về nguyên văn thay vì đưa cả đoạn văn vào KaTeX.
+const VIETNAMESE_DIACRITICS = /[àáảãạăằắẳẵặâầấẩẫậèéẻẽẹêềếểễệìíỉĩịòóỏõọôồốổỗộơờớởỡợùúủũụưừứửữựỳýỷỹỵđÀÁẢÃẠĂẰẮẲẴẶÂẦẤẨẪẬÈÉẺẼẸÊỀẾỂỄỆÌÍỈĨỊÒÓỎÕỌÔỒỐỔỖỘƠỜỚỞỠỢÙÚỦŨỤƯỪỨỬỮỰỲÝỶỸỴĐ]/;
+
+// Chỉ coi là thẻ HTML thật khi đúng tên thẻ thường gặp VÀ đúng cú pháp thuộc
+// tính (tên="giá trị"). Trước đây mọi chuỗi dạng "<chữ ... >" đều bị coi là
+// thẻ, nên "0 <a \neq 1$) ... $x >" trong lộ trình AI bị hiểu nhầm thành thẻ
+// <a> (link), làm vỡ cả đoạn công thức phía sau.
+const HTML_TAG_NAMES = [
+  'a', 'abbr', 'b', 'blockquote', 'br', 'caption', 'center', 'code', 'col', 'colgroup', 'del',
+  'div', 'em', 'figcaption', 'figure', 'font', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'hr', 'i',
+  'img', 'ins', 'li', 'mark', 'ol', 'p', 'pre', 's', 'small', 'span', 'strike', 'strong', 'sub',
+  'sup', 'table', 'tbody', 'td', 'tfoot', 'th', 'thead', 'tr', 'u', 'ul',
+];
+// Giá trị không có ngoặc vẫn được phép chứa "=" (VD ảnh base64 src=data:...==).
+const HTML_ATTR = String.raw`\s+[a-zA-Z_:][-a-zA-Z0-9_:.]*(?:\s*=\s*(?:"[^"]*"|'[^']*'|[^\s"'<>` + '`' + String.raw`]+))?`;
+const HTML_TAG_RE = new RegExp(
+  String.raw`<svg[\s\S]*?<\/svg>|<table[\s\S]*?<\/table>|<!--[\s\S]*?-->|<\/?(?:${HTML_TAG_NAMES.join('|')})(?:${HTML_ATTR})*\s*\/?>`,
+  'gi'
+);
+
+// Ký hiệu toán đơn lẻ (không cần tham số) AI hay viết thiếu $ giữa câu văn.
+const STANDALONE_SYMBOLS = [
+  'neq', 'leq', 'geq', 'leftrightarrow', 'Leftrightarrow', 'rightarrow', 'Rightarrow',
+  'in', 'notin', 'forall', 'exists', 'cdot', 'times', 'div', 'pm', 'mp', 'infty',
+  'alpha', 'beta', 'gamma', 'delta', 'pi', 'theta', 'lambda', 'mu', 'sigma', 'phi', 'omega',
+  'subset', 'cup', 'cap', 'emptyset', 'partial', 'nabla', 'approx', 'equiv', 'sim',
+  'propto', 'cong', 'perp', 'parallel', 'angle', 'to',
+];
+const STANDALONE_SYMBOL_RE = new RegExp(String.raw`\\(?:${STANDALONE_SYMBOLS.join('|')})(?![a-zA-Z])`, 'g');
+
+const TOKEN_RE = /___HTML_TOKEN_(\d+)___/g;
+
 /**
- * Tự động chuyển đổi các biểu thức toán học LaTeX ($...$, $$...$$, \(...\), \[...\] và `...` có ký hiệu toán)
- * sang HTML KaTeX sắc nét, chuẩn mực.
- * Khắc phục hoàn toàn các lỗi ngắt dòng, lỗi box rỗng `a ∄ 1` và định dạng thẳng hàng tuyệt đối.
+ * Chuyển văn bản có công thức LaTeX ($...$, $$...$$, \(...\), \[...\]) và
+ * Markdown đơn giản (tiêu đề, gạch đầu dòng, **đậm**) sang HTML.
+ *
+ * Thứ tự xử lý (quan trọng):
+ *  1. Giữ nguyên thẻ HTML thật (ảnh công thức, bảng... từ file Word).
+ *  2. Sửa những lỗi AI hay gặp mà CHẮC CHẮN là lỗi (VD "$0 < $a \neq 1").
+ *  3. Tách TẤT CẢ công thức đã viết đúng ra trước.
+ *  4. Chỉ sau đó mới chạy các bước "sửa tự động" (thiếu \, thiếu $) trên
+ *     phần chữ thường còn lại - không bao giờ đụng vào bên trong công thức.
+ *  5. Thoát ký tự < > còn lại để trình duyệt không hiểu nhầm thành thẻ HTML.
+ *  6. Dựng tiêu đề / danh sách / đoạn văn.
  */
 export function renderMath(text) {
   if (!text || typeof text !== 'string') return '';
 
   const htmlTokens = [];
-
-  // 0. Dọn chữ "undefined" rác lọt vào nội dung (lỗi dữ liệu cũ khi ghép
-  // chuỗi với một trường bị thiếu/JS undefined, từ trước khi các bản vá
-  // backend hiện tại có hiệu lực) - dọn NGAY TỪ ĐẦU, không chỉ khi đứng
-  // riêng 1 dòng, để không làm rối các bước xử lý công thức phía sau.
-  let tokenized = text.replace(/\$?\bundefined\b\$?/g, '');
-
-  // 1. TÁCH VÀ BẢO VỆ 100% CÁC THẺ HTML/IMG/SVG CÓ SẴN NGAY ĐẦU TIÊN
-  tokenized = tokenized.replace(
-    /(<svg[\s\S]*?<\/svg>|<table[\s\S]*?<\/table>|<img[^>]*>|<\/?[a-zA-Z][a-zA-Z0-9\-_]*(?:\s+[^>]*)?\/?>|<!--[\s\S]*?-->)/gi,
-    (match) => {
-      const placeholder = `___HTML_TOKEN_${htmlTokens.length}___`;
-      htmlTokens.push(match);
-      return placeholder;
+  const stash = (html) => {
+    const placeholder = `___HTML_TOKEN_${htmlTokens.length}___`;
+    htmlTokens.push(html);
+    return placeholder;
+  };
+  const renderKatex = (formula, opts) => {
+    try {
+      return katex.renderToString(formula, opts).replace(/\r?\n/g, ' ');
+    } catch {
+      return null;
     }
-  );
+  };
+  const renderBlock = (formula) => {
+    const html = renderKatex(formula, KATEX_OPTS_BLOCK);
+    return html ? `<span class="katex-block-wrapper">${html}</span>` : null;
+  };
 
-  // 2. Chuyển đổi \left\{ \begin{aligned} ... \end{aligned} \right. sang \begin{cases} ... \end{cases}
-  tokenized = tokenized.replace(/\\left\\{\s*\\begin\{aligned\}([\s\S]*?)\\end\{aligned\}\s*\\right\.?/g, (match, inner) => {
-    const cleanedInner = inner.replace(/&/g, '').trim();
-    return `\\begin{cases} ${cleanedInner} \\end{cases}`;
-  });
+  // 0. Dọn chữ "undefined" rác (dữ liệu cũ ghép chuỗi với trường bị thiếu).
+  let s = text.replace(/\$?\bundefined\b\$?/g, '');
 
-  // 3. Khắc phục dứt điểm điều kiện phân tách như $0 < $a \neq 1 hoặc $0 < a \neq 1$
-  tokenized = tokenized
-    .replace(/và\s*[\r\n\s]*\$*\s*a\s*[\r\n\s]*[∄\\≠]*\s*(?:neq)?\s*1\s*\$*[\r\n\s]*,\s*/gi, () => 'và $a \\neq 1$, ')
-    .replace(/\$\s*0\s*<\s*\$?\s*a\s*\\neq\s*1\s*\$?/gi, '$0 < a \\neq 1$')
-    .replace(/\$\s*0\s*<\s*\$?\s*a\s*≠\s*1\s*\$?/gi, '$0 < a \\neq 1$')
-    .replace(/(?:\(\s*với|với)\s*\$?\s*0\s*<\s*a\s*\\neq\s*1\s*\$?\s*\)?/gi, '(với $0 < a \\neq 1$)')
-    .replace(/(?:\(\s*với|với)\s*\$?\s*a\s*>\s*0\s*[,;\s]+a\s*\\neq\s*1\s*\$?\s*\)?/gi, '(với $a > 0, a \\neq 1$)')
-    .replace(/a\s*[\r\n\s]*[∄\\]*neq\s*1/gi, () => '$a \\neq 1$')
-    .replace(/a\s*[\r\n\s]*∄\s*1/gi, () => '$a \\neq 1$')
-    .replace(/a\s*[\r\n\s]*≠\s*1/gi, () => '$a \\neq 1$');
+  // 1. Giữ nguyên thẻ HTML thật.
+  s = s.replace(HTML_TAG_RE, (m) => stash(m));
 
-  // 4. Khắc phục dấu ngoặc đơn rớt dòng \n).
-  tokenized = tokenized
+  // 2. Sửa lỗi AI chắc chắn là lỗi (chỉ khớp đúng dạng hỏng, không khớp công thức đúng).
+  s = s
+    // \left\{ \begin{aligned} ... \end{aligned} \right. -> \begin{cases} ... \end{cases}
+    .replace(/\\left\\{\s*\\begin\{aligned\}([\s\S]*?)\\end\{aligned\}\s*\\right\.?/g, (m, inner) => (
+      `\\begin{cases} ${inner.replace(/&/g, '').trim()} \\end{cases}`
+    ))
+    // "$0 < $a \neq 1" (dấu $ đóng nhầm ở giữa) -> "$0 < a \neq 1$"
+    .replace(/\$\s*0\s*<\s*\$\s*a\s*(?:\\neq|≠|∄)\s*1(?:\s*\$)?/g, '$0 < a \\neq 1$')
+    // `công thức` kiểu Markdown -> $công thức$
+    .replace(/`([^`\n\r]+?)`/g, (m, inner) => {
+      const t = inner.trim();
+      if (!t) return m;
+      return t.startsWith('$') && t.endsWith('$') ? t : `$${t}$`;
+    })
+    // Dấu ngoặc đóng bị rớt xuống dòng riêng
     .replace(/[\r\n]+\s*\)\s*\.?/g, '). ')
-    .replace(/[\r\n]+\s*\)\s*/g, ') ')
-    .replace(/(\.\s*)-\s*\$/g, '$1\n- $');
+    // 2 ý bị viết dính trên cùng 1 dòng: "...). - $công thức$" -> xuống dòng
+    .replace(/([.;:])\s+-\s+(?=\$|\\\(|[A-ZĐ])/g, '$1\n- ');
 
-  // 5. Khắc phục bất kỳ block math $$...$$ nào ngắn nằm giữa câu văn -> chuyển thành inline math $...$
-  tokenized = tokenized.replace(/\$\$\s*([a-zA-Z0-9_\{\}\^\+\-\*\/\\,;\s]{1,30})\s*\$\$/g, (match, formula) => {
-    return `$${formula.trim()}$`;
-  });
-
-  // 6. Chuyển đổi các dấu markdown backtick `...` có chứa công thức hoặc ký hiệu toán học sang $...$
-  tokenized = tokenized.replace(/`([^`\n\r]+?)`/g, (match, inner) => {
-    const trimmed = inner.trim();
-    if (!trimmed) return match;
-    if (trimmed.startsWith('$') && trimmed.endsWith('$')) {
-      return trimmed;
+  // 3. Tách công thức đã viết đúng.
+  // $$...$$ ngắn nằm giữa câu -> inline; dài -> khối riêng, căn giữa.
+  s = s.replace(/\$\$([\s\S]+?)\$\$/g, (m, formula) => {
+    const f = formula.trim();
+    if (/^[a-zA-Z0-9_{}^+\-*/\\,;\s]{1,30}$/.test(f)) {
+      const html = renderKatex(f, KATEX_OPTS_INLINE);
+      return html ? stash(html) : m;
     }
-    return `$${trimmed}$`;
+    const html = renderBlock(f);
+    return html ? stash(html) : m;
   });
-
-  // 7. Khắc phục các từ khóa LaTeX bị rơi rớt hoặc biến dạng
-  tokenized = tokenized
-    .replace(/([a-zA-Z0-9])\s*neq\s*([0-9a-zA-Z])/g, '$1 \\neq $2')
-    .replace(/(?:^|\s)neq\s*([0-9a-zA-Z])/g, ' $\\neq $1$ ')
-    .replace(/(?:^|\s)Leftrightarrow(?:\s|$)/g, ' $\\Leftrightarrow$ ')
-    .replace(/(?:^|\s)Rightarrow(?:\s|$)/g, ' $\\Rightarrow$ ');
-
-  // 8. Xử lý Block Math $$...$$ và \[...\] (Bảo vệ bằng token không bị chia dòng)
-  tokenized = tokenized.replace(/\$\$([\s\S]+?)\$\$/g, (match, formula) => {
-    try {
-      const rendered = `<span class="katex-block-wrapper" style="display:block;margin:10px auto;text-align:center;">${katex.renderToString(
-        formula.trim(),
-        KATEX_OPTS_BLOCK
-      ).replace(/\r?\n/g, ' ')}</span>`;
-      const placeholder = `___HTML_TOKEN_${htmlTokens.length}___`;
-      htmlTokens.push(rendered);
-      return placeholder;
-    } catch {
-      return match;
+  s = s.replace(/\\\[([\s\S]+?)\\\]/g, (m, formula) => {
+    const html = renderBlock(formula.trim());
+    return html ? stash(html) : m;
+  });
+  s = s.replace(/\\\(([\s\S]+?)\\\)/g, (m, formula) => {
+    const html = renderKatex(formula.trim(), KATEX_OPTS_INLINE);
+    return html ? stash(html) : m;
+  });
+  // $...$ : dò từng cặp dấu $. Cặp nào không giống công thức (có tiếng Việt,
+  // có dòng trống, bắt đầu bằng ")" "." "," ...) nghĩa là dấu $ mở đang bị
+  // ghép nhầm - thường do AI viết thừa 1 dấu $ ở phía trước (VD "b > 0$).").
+  // Khi đó bỏ qua dấu $ mở này và ghép lại từ dấu $ kế tiếp, để 1 dấu $ thừa
+  // không làm lệch toàn bộ các công thức phía sau.
+  // Chữ tiếng Việt nằm trong \text{...} vẫn là công thức hợp lệ
+  // (VD $u_{n+1} - u_n = \text{hằng số}$) - chỉ xét phần ngoài \text{}.
+  const withoutTextBlocks = (t) => t.replace(/\\(?:text|textbf|textit|textrm|mathrm|mbox|operatorname)\s*\{[^{}]*\}/g, '');
+  const looksLikeFormula = (inner) => {
+    const t = inner.trim();
+    return t.length > 0
+      && inner.length <= 300
+      && !VIETNAMESE_DIACRITICS.test(withoutTextBlocks(inner))
+      && !/\n\s*\n/.test(inner)
+      && !/^[).,;:\]]/.test(t)
+      && !inner.includes('___HTML_TOKEN_');
+  };
+  const isStrayDollar = (inner) => /^\s*[).,;:\]]/.test(inner) || /\n\s*\n/.test(inner);
+  let inlineOut = '';
+  let pos = 0;
+  while (pos < s.length) {
+    const open = s.indexOf('$', pos);
+    const close = open === -1 ? -1 : s.indexOf('$', open + 1);
+    if (close === -1) {
+      inlineOut += s.slice(pos);
+      break;
     }
-  });
-
-  tokenized = tokenized.replace(/\\\[([\s\S]+?)\\\]/g, (match, formula) => {
-    try {
-      const rendered = `<span class="katex-block-wrapper" style="display:block;margin:10px auto;text-align:center;">${katex.renderToString(
-        formula.trim(),
-        KATEX_OPTS_BLOCK
-      ).replace(/\r?\n/g, ' ')}</span>`;
-      const placeholder = `___HTML_TOKEN_${htmlTokens.length}___`;
-      htmlTokens.push(rendered);
-      return placeholder;
-    } catch {
-      return match;
+    const inner = s.slice(open + 1, close);
+    const html = looksLikeFormula(inner)
+      ? renderKatex(inner.replace(/[\r\n]+/g, ' ').trim(), KATEX_OPTS_INLINE)
+      : null;
+    if (html) {
+      inlineOut += s.slice(pos, open) + stash(html);
+      pos = close + 1;
+    } else {
+      inlineOut += s.slice(pos, open) + (isStrayDollar(inner) ? '' : '$');
+      pos = open + 1;
     }
+  }
+  s = inlineOut;
+
+  // 4. "Sửa tự động" CHỈ trên phần chữ thường (công thức đã được tách hết).
+  s = s
+    // AI quên dấu \ : "a neq 1", "A Leftrightarrow B"
+    .replace(/([a-zA-Z0-9])\s*\bneq\s*([0-9a-zA-Z])/g, '$1 \\neq $2')
+    .replace(/(^|\s)neq(?=\s*[0-9a-zA-Z])/g, '$1\\neq')
+    .replace(/(^|\s)(Leftrightarrow|Rightarrow)(?=\s|$)/g, '$1\\$2');
+  // Ký hiệu đơn lẻ còn sót ngoài $...$ -> render riêng từng ký hiệu
+  s = s.replace(STANDALONE_SYMBOL_RE, (m) => {
+    const html = renderKatex(m, KATEX_OPTS_INLINE);
+    return html ? stash(html) : m;
   });
 
-  // 9. Xử lý Inline Math \(...\)
-  tokenized = tokenized.replace(/\\\(([\s\S]+?)\\\)/g, (match, formula) => {
-    try {
-      const rendered = katex.renderToString(formula.trim(), KATEX_OPTS_INLINE).replace(/\r?\n/g, ' ');
-      const placeholder = `___HTML_TOKEN_${htmlTokens.length}___`;
-      htmlTokens.push(rendered);
-      return placeholder;
-    } catch {
-      return match;
-    }
-  });
+  // 5. Thoát < > còn lại (VD "0<a<1" viết ngoài $) - nếu để nguyên, trình
+  // duyệt hiểu "<a<1 ..." là thẻ HTML và nuốt mất phần chữ phía sau.
+  s = s.replace(/</g, '&lt;').replace(/>/g, '&gt;');
 
-  // 10. Xử lý Inline Math $...$ — cho phép công thức lỡ bị AI ngắt xuống dòng
-  // giữa 2 dấu $ (vẫn khớp được, gộp lại thành 1 dòng trước khi render KaTeX).
-  // CHẶN NUỐT NHẦM VĂN XUÔI: nếu lỡ có 1 dấu $ lẻ (AI quên đóng), việc cho
-  // phép xuống dòng có thể khiến regex "nuốt" luôn cả đoạn văn tiếng Việt
-  // phía sau cho tới dấu $ kế tiếp, rồi bị KaTeX in nghiêng + xoá hết khoảng
-  // trắng (chế độ Toán coi khoảng trắng là vô nghĩa) - làm vỡ chữ tiếng Việt
-  // hoàn toàn. Công thức LaTeX thật chỉ gồm số/chữ Latin/lệnh LaTeX, KHÔNG
-  // BAO GIỜ có tiếng Việt có dấu, nên dùng chính đặc điểm này để nhận diện:
-  // hễ nội dung bắt được có dấu tiếng Việt -> chắc chắn không phải công thức
-  // thật, trả về nguyên văn thay vì đưa vào KaTeX.
-  const VIETNAMESE_DIACRITICS = /[àáảãạăằắẳẵặâầấẩẫậèéẻẽẹêềếểễệìíỉĩịòóỏõọôồốổỗộơờớởỡợùúủũụưừứửữựỳýỷỹỵđÀÁẢÃẠĂẰẮẲẴẶÂẦẤẨẪẬÈÉẺẼẸÊỀẾỂỄỆÌÍỈĨỊÒÓỎÕỌÔỒỐỔỖỘƠỜỚỞỠỢÙÚỦŨỤƯỪỨỬỮỰỲÝỶỸỴĐ]/;
-  tokenized = tokenized.replace(/\$([^\$]{1,300}?)\$/g, (match, formula) => {
-    if (VIETNAMESE_DIACRITICS.test(formula)) return match;
-    try {
-      const cleanFormula = formula.replace(/[\r\n]+/g, ' ').trim();
-      if (!cleanFormula) return match;
-      const rendered = katex.renderToString(cleanFormula, KATEX_OPTS_INLINE).replace(/\r?\n/g, ' ');
-      const placeholder = `___HTML_TOKEN_${htmlTokens.length}___`;
-      htmlTokens.push(rendered);
-      return placeholder;
-    } catch {
-      return match;
-    }
-  });
+  // 6. Dọn dòng rác, in đậm/nghiêng Markdown.
+  s = s
+    .replace(/^[\s]*[-*_]{3,}[\s]*$/gm, () => stash('<hr class="mr-hr" />'))
+    .replace(/^[\s]*\*\*[\s]*$/gm, '')
+    .replace(/^[\s]*\*[\s]*$/gm, '')
+    .replace(/\*\*([^*]+?)\*\*/g, '<strong>$1</strong>')
+    .replace(/(^|[^*])\*([^*\n]+?)\*([^*]|$)/g, '$1<em>$2</em>$3');
 
-  // 10.5 Bọc riêng các KÝ HIỆU TOÁN ĐƠN LẺ (không cần tham số) còn sót lại
-  // NGOÀI mọi cặp $...$ (mọi công thức có $ đã được tách hết ra token ở
-  // bước 10 phía trên) - trường hợp AI quên bọc $ cho 1 ký hiệu đơn lẻ giữa
-  // câu văn (ví dụ "...a > 0,a \neq 1 thì..."). Chỉ áp dụng cho danh sách
-  // ký hiệu AN TOÀN không cần tham số đi kèm, tránh render sai các lệnh
-  // cần đối số như \frac, \sqrt nếu chúng lỡ đứng ngoài $ (hiếm gặp hơn).
-  const STANDALONE_SYMBOLS = [
-    'neq', 'leq', 'geq', 'leftrightarrow', 'Leftrightarrow', 'rightarrow', 'Rightarrow',
-    'in', 'notin', 'forall', 'exists', 'cdot', 'times', 'div', 'pm', 'mp', 'infty',
-    'alpha', 'beta', 'gamma', 'delta', 'pi', 'theta', 'lambda', 'mu', 'sigma', 'phi', 'omega',
-    'subset', 'cup', 'cap', 'emptyset', 'partial', 'nabla', 'approx', 'equiv', 'sim',
-    'propto', 'cong', 'perp', 'parallel', 'angle', 'to',
-  ];
-  const standaloneSymbolPattern = new RegExp(`\\\\(?:${STANDALONE_SYMBOLS.join('|')})(?![a-zA-Z])`, 'g');
-  tokenized = tokenized.replace(standaloneSymbolPattern, (match) => {
-    try {
-      const rendered = katex.renderToString(match, KATEX_OPTS_INLINE);
-      const placeholder = `___HTML_TOKEN_${htmlTokens.length}___`;
-      htmlTokens.push(rendered);
-      return placeholder;
-    } catch {
-      return match;
-    }
-  });
-
-  // 9. Dọn dẹp các ký tự thừa thãi, dòng cô đơn như **, ---, ***
-  tokenized = tokenized
-    .replace(/^[\s]*[-*_]{3,}[\s]*$/gm, '<hr style="border:none;border-top:1px solid #e2e8f0;margin:12px 0;" />')
-    .replace(/^[\s]*\*\*[\s]*$/gm, '') // Dòng chỉ có ** cô đơn
-    .replace(/^[\s]*\*[\s]*$/gm, '');
-
-  // 10. Chuyển đổi Markdown Bold `**text**` và Italic `*text*`
-  tokenized = tokenized.replace(/\*\*([^*]+?)\*\*/g, '<strong>$1</strong>');
-  tokenized = tokenized.replace(/(^|[^\*])\*([^*\n]+?)\*([^\*]|$)/g, '$1<em>$2</em>$3');
-
-  // 11. Xử lý từng dòng để format Headings, Lists, Paragraphs
-  const rawLines = tokenized.split(/\r?\n/);
-  const formattedElements = [];
-
-  for (let i = 0; i < rawLines.length; i++) {
-    let line = rawLines[i].trim();
+  // 7. Dựng tiêu đề / danh sách / đoạn văn theo từng dòng.
+  const out = [];
+  for (const rawLine of s.split(/\r?\n/)) {
+    const line = rawLine.trim();
     if (!line) continue;
 
-    // Nếu dòng là placeholder HTML (như block math hoặc hr) -> giữ nguyên
     if (/^___HTML_TOKEN_\d+___$/.test(line)) {
-      formattedElements.push(line);
+      out.push(line);
       continue;
     }
 
-    // Markdown Headers: #, ##, ###, ####, #####
-    const h1Match = line.match(/^#\s+(.+)$/);
-    if (h1Match) {
-      formattedElements.push(`<h2 style="font-size:17px;font-weight:700;color:#1e293b;margin:14px 0 8px 0;padding-bottom:4px;border-bottom:1.5px solid #e2e8f0;">${h1Match[1]}</h2>`);
+    let m = line.match(/^#\s+(.+)$/);
+    if (m) { out.push(`<h2 class="mr-h1">${m[1]}</h2>`); continue; }
+    m = line.match(/^##\s+(.+)$/);
+    if (m) { out.push(`<h3 class="mr-h2">${m[1]}</h3>`); continue; }
+    m = line.match(/^###\s+(.+)$/);
+    if (m) { out.push(`<div class="mr-h3">${m[1]}</div>`); continue; }
+    m = line.match(/^#{4,6}\s+(.+)$/);
+    if (m) { out.push(`<div class="mr-h4">${m[1]}</div>`); continue; }
+
+    // "1. Tiêu đề" -> số thứ tự trong ô vuông nhỏ
+    m = line.match(/^([1-9]\d*)\.\s+(.*)$/);
+    if (m) {
+      out.push(`<div class="mr-num"><span class="mr-num-badge">${m[1]}</span><div class="mr-num-body">${m[2]}</div></div>`);
       continue;
     }
 
-    const h2Match = line.match(/^##\s+(.+)$/);
-    if (h2Match) {
-      formattedElements.push(`<h3 style="font-size:16px;font-weight:700;color:var(--primary-strong);margin:12px 0 6px 0;">${h2Match[1]}</h3>`);
+    // Gạch đầu dòng cấp 1: "- ", "• ", "* "
+    m = line.match(/^[-•*]\s+(.*)$/);
+    if (m) {
+      out.push(`<div class="mr-li"><span class="mr-li-dot" aria-hidden="true"></span><div class="mr-li-body">${m[1]}</div></div>`);
       continue;
     }
 
-    const h3Match = line.match(/^###\s+(.+)$/);
-    if (h3Match) {
-      formattedElements.push(`<div style="font-size:15px;font-weight:700;color:var(--primary-strong);margin:12px 0 6px 0;display:flex;align-items:center;gap:6px;"><span style="color:#6366f1;">■</span> ${h3Match[1]}</div>`);
+    // Gạch đầu dòng cấp 2: "+ ", "▸ "
+    m = line.match(/^[+▸]\s+(.*)$/);
+    if (m) {
+      out.push(`<div class="mr-li mr-li-2"><span class="mr-li-dot" aria-hidden="true"></span><div class="mr-li-body">${m[1]}</div></div>`);
       continue;
     }
 
-    const h4Match = line.match(/^####\s+(.+)$/);
-    if (h4Match) {
-      formattedElements.push(`<div style="font-size:14px;font-weight:700;color:var(--primary);margin:10px 0 4px 0;display:flex;align-items:center;gap:6px;"><span style="color:var(--primary);">▸</span> ${h4Match[1]}</div>`);
-      continue;
-    }
-
-    // Tiêu đề số thứ tự: "1. Tiêu đề:" hoặc "1. <strong>Tiêu đề:</strong>"
-    const numHeaderMatch = line.match(/^([1-9]\d*)\.\s+(.*)$/);
-    if (numHeaderMatch) {
-      const num = numHeaderMatch[1];
-      const rest = numHeaderMatch[2];
-      formattedElements.push(
-        `<div style="margin-top:10px;margin-bottom:4px;font-weight:700;color:#1e293b;display:flex;align-items:flex-start;gap:6px;">
-          <span style="background:#e0e7ff;color:#4338ca;padding:1px 6px;border-radius:4px;font-size:12px;font-weight:800;flex-shrink:0;">${num}</span>
-          <div style="flex:1;">${rest}</div>
-        </div>`
-      );
-      continue;
-    }
-
-    // Gạch đầu dòng cấp 1: "- " hoặc "• " hoặc "* "
-    if (/^[-•*]\s+/.test(line)) {
-      const content = line.replace(/^[-•*]\s+/, '');
-      formattedElements.push(
-        `<div style="margin-left:10px;margin-top:4px;display:flex;align-items:flex-start;gap:8px;">
-          <span style="color:#6366f1;font-weight:900;flex-shrink:0;margin-top:-1px;">•</span>
-          <div style="flex:1;line-height:1.6;">${content}</div>
-        </div>`
-      );
-      continue;
-    }
-
-    // Gạch đầu dòng cấp 2: "+ " hoặc "▸ "
-    if (/^[+▸]\s+/.test(line)) {
-      const content = line.replace(/^[+▸]\s+/, '');
-      formattedElements.push(
-        `<div style="margin-left:24px;margin-top:3px;display:flex;align-items:flex-start;gap:6px;">
-          <span style="color:#94a3b8;flex-shrink:0;">▸</span>
-          <div style="flex:1;line-height:1.6;">${content}</div>
-        </div>`
-      );
-      continue;
-    }
-
-    // Đoạn văn thông thường
-    formattedElements.push(`<div style="margin-top:4px;line-height:1.65;">${line}</div>`);
+    out.push(`<div class="mr-p">${line}</div>`);
   }
 
-  let result = formattedElements.join('');
-
-  // 12. Khôi phục các thẻ HTML/SVG/IMG và KaTeX nguyên bản
-  htmlTokens.forEach((originalHtml, idx) => {
-    result = result.replace(`___HTML_TOKEN_${idx}___`, originalHtml);
-  });
-
+  // 8. Khôi phục thẻ HTML gốc và công thức đã render (dùng hàm thay thế để
+  // các ký tự "$" trong nội dung không bị hiểu là mẫu thay thế của JS).
+  let result = out.join('');
+  for (let pass = 0; pass < 3 && TOKEN_RE.test(result); pass += 1) {
+    TOKEN_RE.lastIndex = 0;
+    result = result.replace(TOKEN_RE, (m, idx) => (htmlTokens[Number(idx)] ?? m));
+  }
+  TOKEN_RE.lastIndex = 0;
   return result;
 }
 
