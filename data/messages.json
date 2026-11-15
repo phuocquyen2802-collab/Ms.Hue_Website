@@ -118,5 +118,45 @@
     "attachment": null,
     "createdAt": "2026-09-25T01:59:32.249Z",
     "read": true
+  },
+  {
+    "id": "62ce7e12-9917-441a-af99-045a6bfccf2b",
+    "senderId": "u-a2a66897-be8d-461f-bf38-412d5204ffe8",
+    "receiverId": "u-teacher-1",
+    "text": "Dạ Cô ơi, em không hiểu bài chỗ này ạ",
+    "image": null,
+    "attachment": null,
+    "createdAt": "2026-11-13T02:56:58.610Z",
+    "read": true
+  },
+  {
+    "id": "c9208617-4276-40c7-9011-6ac2d6972360",
+    "senderId": "u-teacher-1",
+    "receiverId": "u-a2a66897-be8d-461f-bf38-412d5204ffe8",
+    "text": "Chỗ nào vậy em. Hãy đưa đề cô xem nhé !",
+    "image": null,
+    "attachment": null,
+    "createdAt": "2026-11-13T02:57:12.041Z",
+    "read": true
+  },
+  {
+    "id": "1981ef27-24e5-45b2-a8b3-57fd98cfc804",
+    "senderId": "u-teacher-1",
+    "receiverId": "u-a2a66897-be8d-461f-bf38-412d5204ffe8",
+    "text": "Dạ Cô",
+    "image": null,
+    "attachment": null,
+    "createdAt": "2026-11-13T02:57:16.989Z",
+    "read": true
+  },
+  {
+    "id": "339086f3-dd88-45e5-be8c-a8dbdb022db9",
+    "senderId": "u-a2a66897-be8d-461f-bf38-412d5204ffe8",
+    "receiverId": "u-teacher-1",
+    "text": "Dạ Cô",
+    "image": null,
+    "attachment": null,
+    "createdAt": "2026-11-13T02:57:27.161Z",
+    "read": true
   }
 ]
