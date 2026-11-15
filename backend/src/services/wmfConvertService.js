@@ -10,7 +10,9 @@
 const fs = require('fs');
 const os = require('os');
 const path = require('path');
+const crypto = require('crypto');
 const { execFile } = require('child_process');
+const { pathToFileURL } = require('url');
 const sharp = require('sharp');
 const wmfFontParser = require('./wmfFontParser');
 
@@ -224,7 +226,140 @@ function computeFormulaSizeFromFont(nativeHeightPx, fontSizePt, pxPerPt, hasMult
   return finalizeSize(baseEm * Math.min(stackFactor, 4));
 }
 
-// ---- TẦNG 0 (mới, chính xác NHẤT - ưu tiên cao nhất khi có): đo kích thước
+// ---- CÁCH TÍNH CHÍNH (Bước 34): theo CỠ CHỮ THẬT + DÒNG CHÂN CHỮ đọc từ SVG ----
+//
+// Vì sao các cách cũ bên dưới cho cỡ "chữ to chữ nhỏ": chúng ép MỌI công
+// thức 1 dòng về cùng 1 chiều cao cố định (1.55em). Nhưng ảnh PNG đã được cắt
+// sát nét mực, nên chiều cao ảnh phụ thuộc NỘI DUNG: số "1" chỉ cao bằng
+// chữ hoa (bị phóng to gấp đôi chữ thường), còn "S=(2/3;3)" có phân số trong
+// ngoặc lớn (ngoặc nối liền nên đếm mực ra 1 dải) bị ép nhỏ xíu. Ngoài ra
+// LibreOffice còn tự PHÓNG TO những công thức nhỏ hơn 1 inch (số đơn lẻ có
+// thể bị vẽ to gấp 3 lần công thức dài) nên số pixel không so sánh được
+// giữa các ảnh.
+//
+// Cách mới: SVG do LibreOffice xuất cho CHÍNH công thức đó dùng CÙNG bố cục
+// trang với PNG (A4, công thức đặt giữa trang, cùng tỉ lệ phóng) và ghi rõ
+// từng đoạn chữ: font, cỡ chữ, toạ độ dòng chân chữ (baseline). Từ đó:
+//   - cỡ chữ chính (px trên ảnh PNG) = cỡ lớn nhất của các font chữ/biến số
+//     (bỏ qua font ký hiệu như Symbol vì MathType phóng to chúng để vẽ ngoặc
+//     lớn) -> chiều cao hiển thị = chiều cao ảnh / cỡ chữ chính, tính bằng em.
+//     Nhờ vậy chữ trong MỌI công thức luôn cùng cỡ với chữ của câu hỏi, còn
+//     phân số/hệ phương trình tự cao hơn đúng theo thực tế.
+//   - dòng chân chữ = toạ độ y của nhóm chữ cỡ chính có nhiều ký tự nhất ->
+//     vertical-align để chữ trong công thức nằm đúng hàng với chữ xung quanh.
+//     Không xác định được (VD: chỉ có 1 phân số) thì canh tâm ảnh theo trục
+//     giữa dòng chữ, giống cách TeX canh phân số.
+// FORMULA_EM_SCALE: chữ Times New Roman của MathType có phần thân thấp hơn
+// font giao diện, nhân 1.2 để chữ số/chữ cái trong công thức cao bằng chữ
+// thường xung quanh (đã so trực quan với các mức 1.1/1.2/1.3).
+const FORMULA_EM_SCALE = 1.2;
+const SYMBOL_FONT_RE = /symbol|extra|wingdings|webdings|marlett|system/i;
+const DECORATION_FONT_RE = /extra/i;
+const MATH_AXIS_EM = 0.27; // trục giữa dòng chữ (ngang dấu "=") cao hơn chân chữ ~0.27em
+
+// Font Symbol được LibreOffice xuất ra vùng mã riêng U+F0xx (byte thấp = mã
+// ký tự gốc trong font Symbol); 0xE6-0xFE là các mảnh ghép ngoặc/ngoặc nhọn.
+function isBracketPieceRun(run) {
+  if (!SYMBOL_FONT_RE.test(run.family) || !run.text) return false;
+  return [...run.text].every((ch) => {
+    const code = ch.codePointAt(0) & 0xff;
+    return code >= 0xe6 && code <= 0xfe;
+  });
+}
+
+function parseSvgFormulaLayout(svgText) {
+  const vb = svgText.match(/<svg[^>]*\sviewBox="0 0 ([\d.]+) ([\d.]+)"/);
+  if (!vb) return null;
+  const viewBoxWidth = parseFloat(vb[1]);
+  const viewBoxHeight = parseFloat(vb[2]);
+  if (!viewBoxWidth || !viewBoxHeight) return null;
+
+  const runs = [];
+  const re = /<tspan class="TextPosition" x="(-?[\d.]+)" y="(-?[\d.]+)"><tspan font-family="([^"]*)" font-size="([\d.]+)px"[^>]*>([^<]*)/g;
+  let m;
+  while ((m = re.exec(svgText))) {
+    runs.push({ y: parseFloat(m[2]), family: m[3], size: parseFloat(m[4]), text: m[5] });
+  }
+  return { viewBoxWidth, viewBoxHeight, runs };
+}
+
+// `png`: { rawHeight } = chiều cao trang PNG gốc LibreOffice xuất (chưa cắt),
+// `inkTop` = toạ độ y (px trên trang) của mép trên nét mực, `height` = chiều
+// cao ảnh đã cắt (gồm 1px đệm trên + 1px đệm dưới, xem trimWhitespace).
+function computeFormulaSizeFromLayout(layout, png) {
+  if (!layout || !layout.runs || layout.runs.length === 0) return null;
+  if (!png || !png.rawHeight || !png.height || png.inkTop == null) return null;
+
+  const pxPerUnit = png.rawHeight / layout.viewBoxHeight;
+  const { runs } = layout;
+  const textRuns = runs.filter((r) => !SYMBOL_FONT_RE.test(r.family));
+  let mainSize;
+  if (textRuns.length > 0) {
+    mainSize = Math.max(...textRuns.map((r) => r.size));
+  } else {
+    const sizes = runs.map((r) => r.size).sort((a, b) => a - b);
+    mainSize = sizes[Math.floor(sizes.length / 2)];
+  }
+  const mainPx = mainSize * pxPerUnit;
+  if (!(mainPx > 2)) return null;
+
+  const imgTop = png.inkTop - 1; // 1px đệm phía trên
+  const heightRatio = png.height / mainPx;
+  if (!Number.isFinite(heightRatio) || heightRatio <= 0 || heightRatio > 15) return null;
+
+  // Nhóm các đoạn chữ cỡ chính theo dòng chân chữ, trọng số = số ký tự. Bỏ
+  // qua các MẢNH NGOẶC (MathType ghép ngoặc/ngoặc nhọn lớn từ nhiều ký tự
+  // Symbol mã 0xE6-0xFE xếp chồng, toạ độ y của chúng không phải chân chữ).
+  // Bỏ cả font "Extra" (MT Extra, Euclid Extra): MathType dùng chúng để vẽ
+  // ký hiệu trang trí NẰM TRÊN chữ - mũi tên vectơ (ghép từ nhiều ký tự,
+  // VD "uuur" cho mỗi mũi tên), dấu mũ, dấu phẩy trên - nhiều ký tự hơn cả
+  // chữ cái nên sẽ bị chọn nhầm làm dòng chính.
+  const fullSizeRuns = runs.filter(
+    (r) => r.size >= mainSize * 0.85
+      && r.size <= mainSize * 1.15
+      && !isBracketPieceRun(r)
+      && !DECORATION_FONT_RE.test(r.family)
+  );
+  const tolerance = mainSize * 0.08;
+  const groups = [];
+  fullSizeRuns.forEach((r) => {
+    const weight = Math.max(1, [...r.text].length);
+    const g = groups.find((gg) => Math.abs(gg.y - r.y) <= tolerance);
+    if (g) g.weight += weight;
+    else groups.push({ y: r.y, weight });
+  });
+
+  // Dòng chính = "trung vị theo số ký tự" của các dòng, xếp từ trên xuống:
+  // tử số nằm trên, mẫu số nằm dưới, dòng chính (chứa dấu =, <, ...) nằm
+  // giữa. Chia đôi đúng bằng nhau (VD phân số đơn 2/3) thì không có dòng
+  // chính -> canh tâm ảnh theo trục giữa dòng chữ.
+  groups.sort((a, b) => a.y - b.y);
+  const totalWeight = groups.reduce((sum, g) => sum + g.weight, 0);
+  let mainGroup = null;
+  let cumulative = 0;
+  for (const g of groups) {
+    const before = cumulative;
+    cumulative += g.weight;
+    if (cumulative > totalWeight / 2) {
+      mainGroup = before === totalWeight / 2 ? null : g;
+      break;
+    }
+  }
+
+  const baselinePx = mainGroup
+    ? mainGroup.y * pxPerUnit
+    : imgTop + png.height / 2 + MATH_AXIS_EM * mainPx;
+
+  const displayHeightEm = heightRatio * FORMULA_EM_SCALE;
+  const descentEm = ((imgTop + png.height - baselinePx) / mainPx) * FORMULA_EM_SCALE;
+  const verticalAlignEm = Math.min(0.5, Math.max(-displayHeightEm, -descentEm));
+  return {
+    displayHeightEm: Number(displayHeightEm.toFixed(3)),
+    verticalAlignEm: Number(verticalAlignEm.toFixed(3)),
+  };
+}
+
+// ---- TẦNG 0 cũ (nay là dự phòng): đo kích thước
 // THẬT bằng cách chuyển đổi CHÍNH ảnh WMF/EMF đó sang SVG. LibreOffice khi
 // convert-to svg vẫn bọc cả trang A4 xung quanh (giống PNG), nhưng bên trong
 // luôn ghi kèm 1 thẻ <rect class="BoundingBox" x=".." y=".." width=".."
@@ -306,67 +441,6 @@ function computeFormulaSizeFromSvgRatio(metrics, hasMultipleBands = true) {
   return finalizeSize(DEFAULT_FORMULA_HEIGHT_EM * stackFactor);
 }
 
-// Chuyển 1 lô WMF/EMF sang SVG chỉ để ĐO kích thước (không dùng SVG để hiển
-// thị - font nhúng trong SVG do LibreOffice xuất là "SVG Font", định dạng cũ
-// trình duyệt hiện đại không còn hỗ trợ render, nên ảnh hiển thị thật cho
-// học sinh vẫn luôn là PNG như trước). Nếu LibreOffice lỗi hoặc file nào đó
-// không đọc được BoundingBox, trả về null cho đúng vị trí đó - nơi gọi sẽ tự
-// rơi về Tầng 1/2 dự phòng, không có gì bị "vỡ".
-async function measureSvgMetrics(wmfItems) {
-  if (!isLibreOfficeAvailable() || wmfItems.length === 0) {
-    return wmfItems.map(() => null);
-  }
-
-  const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'wmf-svg-'));
-  const profileDir = path.join(tmpDir, 'profile').replace(/\\/g, '/');
-  const results = new Array(wmfItems.length).fill(null);
-
-  try {
-    for (let batchStart = 0; batchStart < wmfItems.length; batchStart += BATCH_SIZE) {
-      const batch = wmfItems.slice(batchStart, batchStart + BATCH_SIZE);
-      const filePaths = batch.map((item, i) => {
-        const ext = (item && item.ext) ? item.ext : 'wmf';
-        return path.join(tmpDir, `eq-${batchStart + i}.${ext}`);
-      });
-
-      batch.forEach((item, i) => {
-        const buf = (item && item.buffer) ? item.buffer : item;
-        fs.writeFileSync(filePaths[i], buf);
-      });
-
-      try {
-        await runSoffice([
-          `-env:UserInstallation=file:///${profileDir}`,
-          '--headless',
-          '--convert-to',
-          'svg',
-          '--outdir',
-          tmpDir,
-          ...filePaths,
-        ]);
-      } catch (err) {
-        console.error('LibreOffice (đo SVG) lỗi, dùng lại cách ước lượng cũ:', err.message);
-        continue;
-      }
-
-      filePaths.forEach((fPath, i) => {
-        const svgPath = fPath.replace(/\.(wmf|emf)$/i, '.svg');
-        if (!fs.existsSync(svgPath)) return;
-        try {
-          const svgText = fs.readFileSync(svgPath, 'utf8');
-          results[batchStart + i] = parseSvgBoundingBoxMetrics(svgText);
-        } catch {
-          results[batchStart + i] = null;
-        }
-      });
-    }
-  } finally {
-    fs.rmSync(tmpDir, { recursive: true, force: true });
-  }
-
-  return results;
-}
-
 // Trung vị tỉ lệ (chiều cao gốc px / cỡ chữ pt) trên các ảnh ĐÃ ĐỌC ĐƯỢC cỡ
 // chữ thật trong cùng 1 lượt import - dùng làm "pxPerPt" hiệu chỉnh riêng
 // cho lượt import đó (không cần biết trước DPI của LibreOffice).
@@ -388,15 +462,21 @@ function calibratePxPerPt(samples) {
 // vì cần hiệu chỉnh `pxPerPt` dựa trên TOÀN BỘ ảnh trong cùng 1 lượt import.
 async function trimWhitespace(pngBuffer) {
   try {
-    const trimmed = await sharp(pngBuffer)
-      .trim({ background: '#ffffff', threshold: 10 })
+    const rawMeta = await sharp(pngBuffer).metadata();
+    // lineArt: ảnh công thức là hình vẽ vector sạch, bỏ bước lọc nhiễu dành
+    // cho ảnh chụp - nhanh hơn ~4 lần (48ms -> 11ms/ảnh) và không còn xén mất
+    // các nét mảnh 1px nằm sát mép (gạch phân số, dấu mũ...).
+    const { data: trimmed, info } = await sharp(pngBuffer)
+      .trim({ background: '#ffffff', threshold: 10, lineArt: true })
       .extend({ top: 1, bottom: 1, left: 2, right: 2, background: '#ffffff' })
       .png()
-      .toBuffer();
+      .toBuffer({ resolveWithObject: true });
 
-    const meta = await sharp(trimmed).metadata();
-    const w = meta.width || 0;
-    const h = meta.height || 0;
+    const w = info.width || 0;
+    const h = info.height || 0;
+    // Vị trí mép trên nét mực trên trang gốc - cần để đối chiếu với toạ độ
+    // dòng chân chữ đọc từ SVG (xem computeFormulaSizeFromLayout).
+    const inkTop = Number.isFinite(info.trimOffsetTop) ? -info.trimOffsetTop : null;
 
     // Đồ thị, bảng biến thiên, hình học (kích thước lớn thực sự) - loại này hiển thị theo
     // `diagram-img` (KHÔNG bị giới hạn chiều cao như công thức). Đo thực tế trên các đề mẫu
@@ -422,6 +502,9 @@ async function trimWhitespace(pngBuffer) {
       width: w,
       height: h,
       bandCount,
+      rawWidth: rawMeta.width || 0,
+      rawHeight: rawMeta.height || 0,
+      inkTop,
     };
   } catch (err) {
     console.error('Lỗi cắt ảnh công thức:', err.message);
@@ -431,18 +514,218 @@ async function trimWhitespace(pngBuffer) {
       width: 0,
       height: 0,
       bandCount: 0,
+      rawWidth: 0,
+      rawHeight: 0,
+      inkTop: null,
     };
   }
 }
 
-function runSoffice(args) {
+function runSoffice(args, options = {}) {
   return new Promise((resolve, reject) => {
     const sofficePath = findSofficePath();
-    execFile(sofficePath, args, { timeout: SOFFICE_TIMEOUT_MS }, (err, stdout, stderr) => {
+    execFile(sofficePath, args, { timeout: SOFFICE_TIMEOUT_MS, cwd: options.cwd }, (err, stdout, stderr) => {
       if (err) return reject(new Error(`LibreOffice lỗi: ${err.message}\n${stderr}`));
       resolve(stdout);
     });
   });
+}
+
+// ---- TĂNG TỐC XỬ LÝ FILE (Bước 35) ----
+//
+// Đo thực tế 1 đề 340 công thức trên máy 8 luồng CPU: trước đây mất ~80
+// giây, chủ yếu vì (1) mỗi lần import tạo 1 hồ sơ (profile) LibreOffice MỚI
+// -> khởi động lạnh ~7 giây (hồ sơ đã dùng rồi chỉ ~2,5 giây), (2) toàn bộ
+// ảnh PNG do đúng 1 tiến trình LibreOffice vẽ tuần tự (~120ms/ảnh), (3) cắt
+// viền trắng chỉ bắt đầu sau khi cả lô 100 ảnh vẽ xong. Cách làm hiện tại:
+//   - Mỗi tiến trình LibreOffice dùng 1 hồ sơ CỐ ĐỊNH lấy từ "bể" hồ sơ,
+//     dùng lại giữa các lần import, và được khởi động sẵn ngay khi bật
+//     server (warmUp) để lần import đầu tiên cũng không phải chờ.
+//   - Chia ảnh cho nhiều tiến trình LibreOffice vẽ PNG SONG SONG; tiến
+//     trình nào vẽ xong phần mình thì cắt viền ngay trong lúc các tiến
+//     trình khác vẫn đang chạy.
+//   - Cỡ chữ + dòng chân chữ đọc thẳng từ file WMF (wmfFontParser.
+//     parseWmfTextLayout) thay vì chạy thêm 1 lượt LibreOffice xuất SVG chỉ
+//     để đo - lượt SVG chỉ còn dùng cho file không đọc được (EMF, WMF lạ).
+//   - Lưu kết quả từng công thức (theo mã băm nội dung file WMF/EMF) vào bộ
+//     nhớ đệm trên đĩa: tải lại cùng file (VD sửa 1 lỗi chính tả rồi tải
+//     lên lại) hoặc file khác có công thức trùng thì gần như tức thì.
+// Hồ sơ và bộ nhớ đệm nằm trong thư mục tạm của hệ điều hành, KHÔNG nằm
+// trong backend/ (nodemon theo dõi file .json trong backend/ và sẽ tự khởi
+// động lại server giữa chừng nếu bộ nhớ đệm ghi vào đó).
+const WORK_ROOT = path.join(os.tmpdir(), 'khkt-mathinsight');
+const PROFILE_PARENT = path.join(WORK_ROOT, 'lo-profiles');
+// Theo PID: 2 server chạy cùng lúc (hoặc tiến trình LibreOffice cũ còn sót
+// sau khi nodemon khởi động lại) không bao giờ dùng chung 1 hồ sơ.
+const PROFILE_ROOT = path.join(PROFILE_PARENT, `pid-${process.pid}`);
+// Số tiến trình LibreOffice chạy song song = nửa số luồng CPU, tối đa 4. Đo
+// trên máy 8 luồng (4 nhân): 340 ảnh mất 46s với 1 tiến trình, 28s với 2,
+// 22s với 3, 18-20s với 4; chạy 6 tiến trình cùng lúc lại CHẬM hơn vì các
+// tiến trình tranh nhau CPU.
+const MAX_PARALLEL_SOFFICE = Math.max(2, Math.min(4, Math.floor(os.cpus().length / 2)));
+// Không chia nhỏ hơn mức này - mỗi tiến trình tốn ~2,5s khởi động cố định.
+const MIN_FILES_PER_WORKER = 12;
+
+const profilePool = [];
+let profileCounter = 0;
+
+function acquireProfile() {
+  let slot = profilePool.find((p) => !p.busy);
+  if (!slot) {
+    profileCounter += 1;
+    slot = { dir: path.join(PROFILE_ROOT, `p${profileCounter}`), busy: false };
+    profilePool.push(slot);
+  }
+  slot.busy = true;
+  return slot;
+}
+
+// `broken`: tiến trình LibreOffice dùng hồ sơ này bị lỗi/quá thời gian -
+// có thể còn sót tiến trình con đang giữ hồ sơ, bỏ hẳn hồ sơ đó cho an toàn.
+function releaseProfile(slot, broken = false) {
+  slot.busy = false;
+  if (!broken) return;
+  const idx = profilePool.indexOf(slot);
+  if (idx >= 0) profilePool.splice(idx, 1);
+  fs.rm(slot.dir, { recursive: true, force: true }, () => {});
+}
+
+// pathToFileURL cho đúng dạng URL trên mọi hệ điều hành: Windows ra
+// file:///C:/..., Linux (server/Docker) ra file:///tmp/... - cách ghép chuỗi
+// cũ sinh ra file:////tmp/... (4 dấu gạch) trên Linux, LibreOffice hiểu sai.
+function profileArg(slot) {
+  return `-env:UserInstallation=${pathToFileURL(slot.dir).href}`;
+}
+
+// Chạy LibreOffice cho 1 nhóm file (tên file tương đối trong `workDir`, giữ
+// dòng lệnh ngắn) với 1 hồ sơ riêng, chia lô BATCH_SIZE file/lần gọi.
+async function convertWithProfile(format, fileNames, workDir, outDir) {
+  const slot = acquireProfile();
+  let broken = false;
+  try {
+    for (let i = 0; i < fileNames.length; i += BATCH_SIZE) {
+      try {
+        // eslint-disable-next-line no-await-in-loop
+        await runSoffice(
+          [profileArg(slot), '--headless', '--convert-to', format, '--outdir', outDir, ...fileNames.slice(i, i + BATCH_SIZE)],
+          { cwd: workDir }
+        );
+      } catch (err) {
+        broken = true;
+        console.error(`LibreOffice (${format}) lỗi:`, err.message);
+      }
+    }
+  } finally {
+    releaseProfile(slot, broken);
+  }
+}
+
+// Chia `items` thành `count` nhóm xen kẽ (công thức đầu/cuối đề thường dài
+// ngắn khác nhau - chia xen kẽ để các tiến trình xong gần cùng lúc).
+function splitInterleaved(items, count) {
+  const groups = Array.from({ length: count }, () => []);
+  items.forEach((item, i) => groups[i % count].push(item));
+  return groups.filter((g) => g.length > 0);
+}
+
+// ---- Bộ nhớ đệm kết quả trên đĩa ----
+// Phiên bản bộ nhớ đệm gắn với cách tính cỡ: đổi FORMULA_EM_SCALE hoặc độ
+// phân giải xuất ảnh thì kết quả cũ tự động không dùng nữa.
+const CACHE_DIR = path.join(WORK_ROOT, 'formula-cache', `b36-s${FORMULA_EM_SCALE}-r${PNG_RENDER_SCALE}`);
+const CACHE_MAX_AGE_MS = 30 * 24 * 60 * 60 * 1000;
+
+function cacheKeyFor(item) {
+  const buf = (item && item.buffer) ? item.buffer : item;
+  const ext = (item && item.ext) ? item.ext : 'wmf';
+  return crypto.createHash('sha1').update(ext).update(buf).digest('hex');
+}
+
+async function readCache(key) {
+  try {
+    return JSON.parse(await fs.promises.readFile(path.join(CACHE_DIR, `${key}.json`), 'utf8'));
+  } catch {
+    return null;
+  }
+}
+
+async function writeCache(key, value) {
+  try {
+    await fs.promises.mkdir(CACHE_DIR, { recursive: true });
+    await fs.promises.writeFile(path.join(CACHE_DIR, `${key}.json`), JSON.stringify(value));
+  } catch (err) {
+    console.error('Không ghi được bộ nhớ đệm công thức:', err.message);
+  }
+}
+
+function pruneOldFiles(dir, maxAgeMs) {
+  let entries = [];
+  try {
+    entries = fs.readdirSync(dir, { withFileTypes: true });
+  } catch {
+    return;
+  }
+  const now = Date.now();
+  entries.forEach((entry) => {
+    const full = path.join(dir, entry.name);
+    try {
+      if (now - fs.statSync(full).mtimeMs > maxAgeMs) fs.rmSync(full, { recursive: true, force: true });
+    } catch {
+      // bỏ qua file đang bị khoá/đã xoá
+    }
+  });
+}
+
+function isProcessAlive(pid) {
+  try {
+    process.kill(pid, 0); // tín hiệu 0: chỉ kiểm tra tiến trình còn tồn tại, không gửi gì
+    return true;
+  } catch (err) {
+    return err.code === 'EPERM'; // có tồn tại nhưng không đủ quyền
+  }
+}
+
+// Gọi 1 lần ngay sau khi server khởi động: dọn hồ sơ của các lần chạy
+// trước, xoá bộ nhớ đệm quá 30 ngày, rồi khởi động sẵn các hồ sơ LibreOffice
+// (chuyển 1 file SVG tí hon) để lần import đầu tiên không phải chờ khởi động
+// lạnh. Chạy nền, lỗi gì cũng chỉ ghi log.
+async function warmUp() {
+  if (!isLibreOfficeAvailable()) return;
+
+  // Chỉ dọn hồ sơ của các tiến trình server ĐÃ TẮT - server khác đang chạy
+  // song song (VD 2 backend cùng lúc) vẫn đang dùng hồ sơ của nó.
+  try {
+    fs.readdirSync(PROFILE_PARENT).forEach((name) => {
+      const pid = Number((name.match(/^pid-(\d+)$/) || [])[1]);
+      if (!pid || pid === process.pid || isProcessAlive(pid)) return;
+      fs.rm(path.join(PROFILE_PARENT, name), { recursive: true, force: true }, () => {});
+    });
+  } catch {
+    // chưa có thư mục hồ sơ nào
+  }
+  try {
+    fs.readdirSync(path.join(WORK_ROOT, 'formula-cache')).forEach((name) => {
+      const full = path.join(WORK_ROOT, 'formula-cache', name);
+      if (full !== CACHE_DIR) fs.rm(full, { recursive: true, force: true }, () => {});
+    });
+  } catch {
+    // chưa có bộ nhớ đệm
+  }
+  pruneOldFiles(CACHE_DIR, CACHE_MAX_AGE_MS);
+
+  const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'lo-warm-'));
+  try {
+    // Mỗi tiến trình 1 file riêng - ghi chung 1 file đầu ra sẽ lỗi khi chạy song song.
+    const names = Array.from({ length: MAX_PARALLEL_SOFFICE }, (_, i) => `warm${i}.svg`);
+    names.forEach((name) => fs.writeFileSync(
+      path.join(tmpDir, name),
+      '<svg xmlns="http://www.w3.org/2000/svg" width="8" height="8"><rect width="8" height="8"/></svg>'
+    ));
+    const started = Date.now();
+    await Promise.all(names.map((name) => convertWithProfile('png', [name], tmpDir, tmpDir)));
+    console.log(`LibreOffice đã sẵn sàng (${MAX_PARALLEL_SOFFICE} tiến trình, ${((Date.now() - started) / 1000).toFixed(1)}s)`);
+  } finally {
+    fs.rmSync(tmpDir, { recursive: true, force: true });
+  }
 }
 
 // ĐÃ THỬ (Bước x): ép bảng thay thế font của LibreOffice (Tools > Options >
@@ -466,20 +749,11 @@ function runSoffice(args) {
 async function convertDocumentToPdfBuffer(fileBuffer, originalExt) {
   if (!isLibreOfficeAvailable()) return null;
   const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'doc2pdf-'));
-  const profileDir = path.join(tmpDir, 'profile').replace(/\\/g, '/');
   const ext = (originalExt || 'docx').replace(/^\./, '');
   const srcPath = path.join(tmpDir, `doc.${ext}`);
   try {
     fs.writeFileSync(srcPath, fileBuffer);
-    await runSoffice([
-      `-env:UserInstallation=file:///${profileDir}`,
-      '--headless',
-      '--convert-to',
-      'pdf',
-      '--outdir',
-      tmpDir,
-      srcPath,
-    ]);
+    await convertWithProfile('pdf', [`doc.${ext}`], tmpDir, tmpDir);
     const pdfPath = path.join(tmpDir, 'doc.pdf');
     if (!fs.existsSync(pdfPath)) return null;
     return fs.readFileSync(pdfPath);
@@ -491,118 +765,176 @@ async function convertDocumentToPdfBuffer(fileBuffer, originalExt) {
   }
 }
 
-// Chuyển 1 mảng buffer WMF/EMF thành mảng { base64, isDiagram, displayHeightEm,
-// verticalAlignEm } (giữ nguyên thứ tự đầu vào). Chạy song song:
-//   A) Đo kích thước THẬT qua SVG (Tầng 0, xem `measureSvgMetrics` phía
-//      trên) - chính xác nhất, ưu tiên dùng cho mọi ảnh đo được.
-//   B) Chuyển đổi sang PNG để hiển thị (ảnh thật gửi cho học sinh/giáo viên
-//      xem) + đọc cỡ chữ thật qua LOGFONT làm dự phòng (Tầng 1/2) cho những
-//      ảnh Tầng 0 không đo được (LibreOffice lỗi, định dạng lạ...).
+// Bố cục đọc từ WMF dựa trên giả định về cách LibreOffice đặt công thức
+// lên trang (xem wmfFontParser.parseWmfTextLayout). Kiểm tra chéo với nét
+// mực THẬT trên ảnh PNG: khung công thức tính ra phải chứa trọn nét mực -
+// lệch (VD bản LibreOffice khác đổi cách đặt trang) thì đo lại bằng SVG.
+function wmfLayoutMatchesInk(layout, png) {
+  if (!layout || !png || png.inkTop == null || !png.rawHeight) return false;
+  const pxPerUnit = png.rawHeight / layout.viewBoxHeight;
+  const tolerancePx = 3;
+  const inkBottom = png.inkTop + png.height - 2; // bỏ 2px đệm trên/dưới
+  return png.inkTop >= layout.frameTop * pxPerUnit - tolerancePx
+    && inkBottom <= layout.frameBottom * pxPerUnit + tolerancePx;
+}
+
+// Xuất SVG cho các công thức `indices` (chia đều cho `workerCount` tiến
+// trình) rồi đọc bố cục chữ từ SVG vào `svgInfos`.
+async function measureWithSvg(indices, workerCount, fileNameOf, tmpDir, svgDir, svgInfos) {
+  if (indices.length === 0) return;
+  await Promise.all(splitInterleaved(indices, workerCount).map(async (group) => {
+    await convertWithProfile('svg', group.map(fileNameOf), tmpDir, svgDir);
+    await Promise.all(group.map(async (idx) => {
+      try {
+        const svgText = await fs.promises.readFile(path.join(svgDir, `e${idx}.svg`), 'utf8');
+        svgInfos[idx] = {
+          metrics: parseSvgBoundingBoxMetrics(svgText),
+          layout: parseSvgFormulaLayout(svgText),
+        };
+      } catch {
+        svgInfos[idx] = null; // không có SVG -> dùng tầng dự phòng
+      }
+    }));
+  }));
+}
+
+// Chuyển 1 mảng buffer WMF/EMF thành mảng { base64, isDiagram, width, height,
+// displayHeightEm, verticalAlignEm } (giữ nguyên thứ tự đầu vào):
+//   - Công thức đã có trong bộ nhớ đệm -> lấy ngay, không chạy LibreOffice.
+//   - Phần còn lại: nhiều tiến trình LibreOffice vẽ PNG song song (ảnh hiển
+//     thị thật cho học sinh/giáo viên); cỡ chữ + dòng chân chữ đọc từ WMF.
+//   - Công thức không đọc được bố cục từ WMF (EMF, WMF lạ, kiểm tra chéo
+//     không khớp) -> xuất thêm SVG để đo. SVG không dùng để hiển thị vì font
+//     nhúng trong đó là "SVG Font" trình duyệt không hỗ trợ.
+//   - Không đo được bằng cả 2 cách -> các tầng dự phòng cũ (font đọc từ
+//     WMF/EMF, hoặc ước lượng theo pixel).
 async function convertWmfBuffersToPng(wmfItems) {
   if (!isLibreOfficeAvailable()) {
     return wmfItems.map(() => null);
   }
   if (wmfItems.length === 0) return [];
 
-  const svgMetricsPromise = measureSvgMetrics(wmfItems);
+  const bufferOf = (idx) => ((wmfItems[idx] && wmfItems[idx].buffer) ? wmfItems[idx].buffer : wmfItems[idx]);
+  const extOf = (idx) => (wmfItems[idx] && wmfItems[idx].ext) || 'wmf';
+
+  const keys = wmfItems.map(cacheKeyFor);
+  const cached = await Promise.all(keys.map(readCache));
+  const results = new Array(wmfItems.length).fill(null);
+  const pending = [];
+  cached.forEach((hit, idx) => {
+    if (hit) results[idx] = hit;
+    else pending.push(idx);
+  });
+  if (pending.length === 0) return results;
 
   const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'wmf-convert-'));
-  const profileDir = path.join(tmpDir, 'profile').replace(/\\/g, '/');
-  const results = new Array(wmfItems.length).fill(null);
+  const pngDir = path.join(tmpDir, 'png');
+  const svgDir = path.join(tmpDir, 'svg');
+  fs.mkdirSync(pngDir);
+  fs.mkdirSync(svgDir);
+  const raw = new Array(wmfItems.length).fill(null);
+  const svgInfos = new Array(wmfItems.length).fill(null);
+  const wmfLayouts = new Array(wmfItems.length).fill(null);
 
   try {
-    for (let batchStart = 0; batchStart < wmfItems.length; batchStart += BATCH_SIZE) {
-      const batch = wmfItems.slice(batchStart, batchStart + BATCH_SIZE);
-      const filePaths = batch.map((item, i) => {
-        const ext = (item && item.ext) ? item.ext : 'wmf';
-        return path.join(tmpDir, `eq-${batchStart + i}.${ext}`);
-      });
+    const fileNameOf = (idx) => `e${idx}.${extOf(idx)}`;
+    pending.forEach((idx) => {
+      fs.writeFileSync(path.join(tmpDir, fileNameOf(idx)), bufferOf(idx));
+      if (extOf(idx) === 'wmf') wmfLayouts[idx] = wmfFontParser.parseWmfTextLayout(bufferOf(idx));
+    });
+    const needSvg = pending.filter((idx) => !wmfLayouts[idx]);
 
-      batch.forEach((item, i) => {
-        const buf = (item && item.buffer) ? item.buffer : item;
-        fs.writeFileSync(filePaths[i], buf);
-      });
+    // Thường không cần SVG -> dồn hết tiến trình cho PNG; nếu cần thì chia
+    // theo tỉ lệ số ảnh (xuất SVG nhanh hơn vẽ PNG ~1,5 lần).
+    const workerBudget = Math.min(MAX_PARALLEL_SOFFICE, Math.max(1, Math.ceil(pending.length / MIN_FILES_PER_WORKER)));
+    const svgWorkers = needSvg.length === 0
+      ? 0
+      : Math.max(1, Math.min(workerBudget - 1, Math.round((workerBudget * needSvg.length) / (pending.length * 2.5))));
+    const pngWorkers = Math.max(1, workerBudget - svgWorkers);
 
-      try {
-        await runSoffice([
-          `-env:UserInstallation=file:///${profileDir}`,
-          '--headless',
-          '--convert-to',
-          PNG_EXPORT_FILTER,
-          '--outdir',
-          tmpDir,
-          ...filePaths,
-        ]);
-      } catch (err) {
-        console.error('LibreOffice run error:', err.message);
-        continue;
-      }
+    const pngJobs = splitInterleaved(pending, pngWorkers).map(async (group) => {
+      await convertWithProfile(PNG_EXPORT_FILTER, group.map(fileNameOf), tmpDir, pngDir);
+      // Cắt viền ngay khi nhóm này xong, trong lúc các tiến trình khác vẫn chạy.
+      await Promise.all(group.map(async (idx) => {
+        const pngPath = path.join(pngDir, `e${idx}.png`);
+        if (!fs.existsSync(pngPath)) return;
+        const trimmed = await trimWhitespace(await fs.promises.readFile(pngPath));
+        const fontSizePt = wmfFontParser.extractFontSizePt(bufferOf(idx), extOf(idx));
+        raw[idx] = { ...trimmed, fontSizePt };
+      }));
+    });
+    await Promise.all([
+      ...pngJobs,
+      measureWithSvg(needSvg, Math.max(1, svgWorkers), fileNameOf, tmpDir, svgDir, svgInfos),
+    ]);
 
-      // eslint-disable-next-line no-await-in-loop
-      await Promise.all(
-        filePaths.map(async (fPath, i) => {
-          const pngPath = fPath.replace(/\.(wmf|emf)$/i, '.png');
-          if (fs.existsSync(pngPath)) {
-            const raw = fs.readFileSync(pngPath);
-            const trimmed = await trimWhitespace(raw);
-            const item = batch[i];
-            const ext = (item && item.ext) ? item.ext : 'wmf';
-            const srcBuf = (item && item.buffer) ? item.buffer : item;
-            const fontSizePt = wmfFontParser.extractFontSizePt(srcBuf, ext);
-            results[batchStart + i] = { ...trimmed, fontSizePt };
-          }
-        })
-      );
-    }
+    // Bố cục WMF không khớp nét mực thật -> đo lại bằng SVG (hiếm gặp).
+    const recheck = pending.filter((idx) => (
+      wmfLayouts[idx] && raw[idx] && !raw[idx].isDiagram && !wmfLayoutMatchesInk(wmfLayouts[idx], raw[idx])
+    ));
+    recheck.forEach((idx) => { wmfLayouts[idx] = null; });
+    await measureWithSvg(recheck, Math.min(MAX_PARALLEL_SOFFICE, Math.max(1, Math.ceil(recheck.length / MIN_FILES_PER_WORKER))), fileNameOf, tmpDir, svgDir, svgInfos);
   } finally {
-    fs.rmSync(tmpDir, { recursive: true, force: true });
+    fs.rm(tmpDir, { recursive: true, force: true }, () => {});
   }
 
-  // Chỉ hiệu chỉnh pxPerPt dựa trên các ảnh XÁC NHẬN LÀ 1 DÒNG THẬT
-  // (bandCount<=1) - loại các ảnh phân số/nhiều tầng ra khỏi mẫu hiệu chỉnh
-  // để không làm lệch tỉ lệ "1pt tương ứng bao nhiêu px cho 1 dòng".
-  const singleLineSamples = results
-    .filter((r) => r && !r.isDiagram && r.bandCount <= 1)
+  // Chỉ hiệu chỉnh pxPerPt (dùng cho tầng dự phòng) dựa trên các ảnh XÁC
+  // NHẬN LÀ 1 DÒNG THẬT (bandCount<=1) - loại ảnh phân số/nhiều tầng ra khỏi
+  // mẫu để không làm lệch tỉ lệ "1pt tương ứng bao nhiêu px cho 1 dòng".
+  const fresh = pending.map((idx) => raw[idx]).filter(Boolean);
+  const singleLineSamples = fresh
+    .filter((r) => !r.isDiagram && r.bandCount <= 1)
     .map((r) => ({ heightPx: r.height, fontSizePt: r.fontSizePt }));
   const pxPerPt = calibratePxPerPt(
     singleLineSamples.length > 0
       ? singleLineSamples
-      : results.filter(Boolean).map((r) => ({ heightPx: r.height, fontSizePt: r.fontSizePt }))
+      : fresh.map((r) => ({ heightPx: r.height, fontSizePt: r.fontSizePt }))
   );
 
-  // Chờ kết quả đo SVG (Tầng 0) chạy song song ở trên xong.
-  const svgMetricsList = await svgMetricsPromise;
-
-  return results.map((r, idx) => {
-    if (!r) return null;
+  const cacheWrites = [];
+  pending.forEach((idx) => {
+    const r = raw[idx];
+    if (!r) return;
+    const { fontSizePt, bandCount, rawWidth, rawHeight, inkTop, ...rest } = r;
     if (r.isDiagram) {
-      const { fontSizePt, bandCount, ...rest } = r;
-      return rest;
+      results[idx] = rest;
+      cacheWrites.push(writeCache(keys[idx], rest));
+      return;
     }
 
-    const svgMetrics = svgMetricsList[idx];
-    const hasMultipleBands = r.bandCount >= 2;
-    let size = computeFormulaSizeFromSvgRatio(svgMetrics, hasMultipleBands);
+    const svgInfo = svgInfos[idx] || {};
+    const hasMultipleBands = bandCount >= 2;
+    // Cách chính (Bước 34): cỡ chữ + dòng chân chữ thật (từ WMF, hoặc SVG).
+    // Chỉ khi không có mới dùng các tầng cũ.
+    let size = computeFormulaSizeFromLayout(wmfLayouts[idx] || svgInfo.layout, r);
+    // Chỉ lưu đệm kết quả của cách chính - các tầng dự phòng phụ thuộc vào
+    // cả lượt import (pxPerPt) nên không cố định theo từng công thức.
+    const cacheable = Boolean(size);
+    if (!size) size = computeFormulaSizeFromSvgRatio(svgInfo.metrics, hasMultipleBands);
     if (!size) {
-      // Tầng 1/2 (dự phòng): SVG đo lỗi cho đúng ảnh này -> quay lại cách
-      // cũ (font-parse WMF/EMF hoặc ước lượng thuần theo pixel).
-      size = r.fontSizePt
-        ? computeFormulaSizeFromFont(r.height, r.fontSizePt, pxPerPt, hasMultipleBands)
+      size = fontSizePt
+        ? computeFormulaSizeFromFont(r.height, fontSizePt, pxPerPt, hasMultipleBands)
         : computeFormulaSize(r.height, hasMultipleBands);
     }
 
-    const { fontSizePt, bandCount, ...rest } = r;
-    return { ...rest, displayHeightEm: size.displayHeightEm, verticalAlignEm: size.verticalAlignEm };
+    results[idx] = { ...rest, displayHeightEm: size.displayHeightEm, verticalAlignEm: size.verticalAlignEm };
+    if (cacheable) cacheWrites.push(writeCache(keys[idx], results[idx]));
   });
+  await Promise.all(cacheWrites);
+
+  return results;
 }
 
 module.exports = {
   isLibreOfficeAvailable,
+  warmUp,
   convertWmfBuffersToPng,
   convertDocumentToPdfBuffer,
   trimWhitespace,
   computeFormulaSize,
   computeFormulaSizeFromFont,
+  computeFormulaSizeFromLayout,
+  parseSvgFormulaLayout,
   calibratePxPerPt,
   countInkBands,
 };

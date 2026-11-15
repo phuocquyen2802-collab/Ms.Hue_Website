@@ -2,11 +2,14 @@
 // (khi cỡ tự động lúc import chưa vừa ý) - dùng ở cả màn hình "Tạo đề thi mới"
 // (TeacherExamsPage.jsx, đang ở bước xem trước) và màn hình "Soạn câu hỏi" (ExamEditorPage.jsx).
 
+// Các mức theo thang cỡ tự động mới (Bước 34, wmfConvertService): chữ trong
+// công thức cao bằng chữ thường khi công thức 1 dòng không chỉ số cao ~0.9em,
+// có chỉ số trên/dưới ~1.3em, phân số ~2.5em, hệ 2-3 dòng ~3.6em trở lên.
 export const FORMULA_SIZE_PRESETS = [
-  { label: 'Nhỏ', heightEm: 1.3 },
-  { label: 'Vừa (1 dòng)', heightEm: 1.8 },
-  { label: 'Phân số', heightEm: 3.0 },
-  { label: 'Lớn (nhiều tầng)', heightEm: 4.2 },
+  { label: 'Nhỏ', heightEm: 0.9 },
+  { label: 'Vừa (1 dòng)', heightEm: 1.3 },
+  { label: 'Phân số', heightEm: 2.5 },
+  { label: 'Lớn (nhiều tầng)', heightEm: 3.6 },
 ];
 
 export function valignForHeightEm(heightEm) {
@@ -44,6 +47,20 @@ export function extractFormulaSize(tagOrStyle) {
   return m ? parseFloat(m[1]) : 1.8;
 }
 
+// Style mới cho 1 thẻ ảnh khi đổi cỡ: nếu ảnh đã có sẵn vertical-align (do
+// lúc import tính theo đúng dòng chân chữ của công thức) thì co giãn nó theo
+// cùng tỉ lệ để chữ vẫn nằm đúng hàng; chỉ dùng `fallbackValignEm` khi ảnh
+// chưa có thông tin này.
+function buildSizedStyle(tag, heightEm, fallbackValignEm) {
+  const oldH = String(tag).match(/height:\s*([\d.]+)em/i);
+  const oldV = String(tag).match(/vertical-align:\s*(-?[\d.]+)em/i);
+  let valign = fallbackValignEm;
+  if (oldH && oldV && parseFloat(oldH[1]) > 0) {
+    valign = (parseFloat(oldV[1]) * heightEm) / parseFloat(oldH[1]);
+  }
+  return `height:${heightEm}em;vertical-align:${Number(valign.toFixed(3))}em;`;
+}
+
 // Thay style height/vertical-align của đúng ảnh công thức thứ `targetIndex`
 export function applyFormulaSize(html, targetIndex, heightEm, vAlignEm) {
   return applyFormulaSizeToIndices(html, [targetIndex], heightEm, vAlignEm);
@@ -54,12 +71,12 @@ export function applyFormulaSizeToAll(html, heightEm, vAlignEm) {
   if (!html) return html;
   const imgs = listFormulaImgTags(html);
   if (imgs.length === 0) return html;
-  const newStyle = `height:${heightEm}em;vertical-align:${vAlignEm}em;`;
 
   let result = '';
   let lastEnd = 0;
   imgs.forEach((target) => {
     result += html.slice(lastEnd, target.start);
+    const newStyle = buildSizedStyle(target.tag, heightEm, vAlignEm);
     let newTag = target.tag;
     if (/style="[^"]*"/.test(newTag)) {
       newTag = newTag.replace(/style="[^"]*"/, `style="${newStyle}"`);
@@ -81,13 +98,13 @@ export function applyFormulaSizeToIndices(html, targetIndices, heightEm, vAlignE
 
   const imgs = listFormulaImgTags(html);
   if (imgs.length === 0) return html;
-  const newStyle = `height:${heightEm}em;vertical-align:${vAlignEm}em;`;
 
   let result = '';
   let lastEnd = 0;
   imgs.forEach((target) => {
     result += html.slice(lastEnd, target.start);
     if (targetSet.has(target.index)) {
+      const newStyle = buildSizedStyle(target.tag, heightEm, vAlignEm);
       let newTag = target.tag;
       if (/style="[^"]*"/.test(newTag)) {
         newTag = newTag.replace(/style="[^"]*"/, `style="${newStyle}"`);
