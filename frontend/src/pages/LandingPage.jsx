@@ -3,6 +3,7 @@ import BrandMark from '../components/BrandMark';
 import UiIcon from '../components/UiIcon';
 import { renderMath } from '../utils/mathRender';
 import { APP_NAME, APP_TAGLINE } from '../config/brand';
+import { useAuth } from '../context/AuthContext';
 
 // Trang giới thiệu (hiện ở "/" khi chưa đăng nhập). Nút "Đăng nhập" dẫn sang
 // /login như cũ. Nội dung chỉ mô tả các tính năng phần mềm đang có thật.
@@ -128,6 +129,10 @@ function ProductCollage() {
 
 export default function LandingPage() {
   const year = new Date().getFullYear();
+  // Đã đăng nhập: nút chính dẫn thẳng vào trang làm việc thay vì trang đăng nhập.
+  const { user } = useAuth();
+  const ctaTo = user ? (user.role === 'teacher' ? '/teacher' : '/student') : '/login';
+  const ctaLabel = user ? 'Vào trang của tôi' : 'Đăng nhập';
 
   return (
     <div className="lp">
@@ -142,7 +147,7 @@ export default function LandingPage() {
             <a href="#cach-hoat-dong" onClick={scrollToId('cach-hoat-dong')}>Cách hoạt động</a>
             <a href="#doi-tuong" onClick={scrollToId('doi-tuong')}>Giáo viên và học sinh</a>
           </nav>
-          <Link to="/login" className="btn lp-header-cta">Đăng nhập</Link>
+          <Link to={ctaTo} className="btn lp-header-cta">{ctaLabel}</Link>
         </div>
       </header>
 
@@ -164,7 +169,7 @@ export default function LandingPage() {
                 do AI soạn, giáo viên duyệt.
               </p>
               <div className="lp-hero-actions">
-                <Link to="/login" className="btn btn-lg">Đăng nhập</Link>
+                <Link to={ctaTo} className="btn btn-lg">{ctaLabel}</Link>
                 <a href="#cach-hoat-dong" className="btn btn-lg secondary" onClick={scrollToId('cach-hoat-dong')}>
                   Xem cách hoạt động
                 </a>
@@ -248,9 +253,9 @@ export default function LandingPage() {
             <div className="lp-cta-inner">
               <div>
                 <h2>Bắt đầu học cùng {APP_NAME}</h2>
-                <p>Học sinh đăng nhập bằng tài khoản do giáo viên cấp.</p>
+                <p>{user ? `Bạn đang đăng nhập với tài khoản ${user.name}.` : 'Học sinh đăng nhập bằng tài khoản do giáo viên cấp.'}</p>
               </div>
-              <Link to="/login" className="btn btn-lg lp-cta-btn">Đăng nhập</Link>
+              <Link to={ctaTo} className="btn btn-lg lp-cta-btn">{ctaLabel}</Link>
             </div>
           </div>
         </section>

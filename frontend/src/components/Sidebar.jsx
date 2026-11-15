@@ -133,7 +133,7 @@ export default function Sidebar() {
 
   async function handleLogout() {
     await logout();
-    navigate('/login');
+    navigate('/');
   }
 
   const avatarChar = user.name ? user.name.trim().charAt(0).toUpperCase() : 'U';

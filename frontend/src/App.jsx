@@ -1,6 +1,5 @@
 import { Routes, Route, Navigate } from 'react-router-dom';
 import ProtectedRoute from './components/ProtectedRoute';
-import { useAuth } from './context/AuthContext';
 
 import LoginPage from './pages/LoginPage';
 import LandingPage from './pages/LandingPage';
@@ -22,21 +21,15 @@ import SettingsPage from './pages/SettingsPage';
 import AnnouncementsPage from './pages/AnnouncementsPage';
 import AiAssistantPage from './pages/AiAssistantPage';
 
-// "/": chưa đăng nhập thì hiện trang giới thiệu (nút Đăng nhập dẫn sang
-// /login), đã đăng nhập thì vào thẳng trang làm việc theo vai trò.
-function HomeRedirect() {
-  const { user } = useAuth();
-  if (!user) return <LandingPage />;
-  return <Navigate to={user.role === 'teacher' ? '/teacher' : '/student'} replace />;
-}
-
 export default function App() {
   return (
     <Routes>
       <Route path="/login" element={<LoginPage />} />
       <Route path="/register" element={<Navigate to="/login" replace />} />
 
-      <Route path="/" element={<HomeRedirect />} />
+      {/* "/" luôn là trang giới thiệu (kể cả khi đã đăng nhập - khi đó nút
+          chính đổi thành "Vào trang của tôi", xem LandingPage). */}
+      <Route path="/" element={<LandingPage />} />
 
       {/* Teacher Routes */}
       <Route

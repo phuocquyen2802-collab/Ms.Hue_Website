@@ -21,7 +21,7 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
-// Nếu token hết hạn/không hợp lệ ở các trang được bảo vệ, tự động đăng xuất và quay về trang login
+// Nếu token hết hạn/không hợp lệ ở các trang được bảo vệ, tự động đăng xuất và quay về trang giới thiệu
 api.interceptors.response.use(
   (response) => response,
   (error) => {
@@ -29,8 +29,8 @@ api.interceptors.response.use(
     if (error.response && error.response.status === 401 && !isLoginRequest) {
       localStorage.removeItem('token');
       localStorage.removeItem('user');
-      if (window.location.pathname !== '/login') {
-        window.location.href = '/login';
+      if (window.location.pathname !== '/' && window.location.pathname !== '/login') {
+        window.location.href = '/';
       }
     }
     return Promise.reject(error);
