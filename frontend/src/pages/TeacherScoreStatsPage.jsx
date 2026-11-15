@@ -1,6 +1,7 @@
 import { useEffect, useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import api from '../services/api';
+import UiIcon, { scoreLevel, formatScore } from '../components/UiIcon';
 
 export default function TeacherScoreStatsPage() {
   const [loading, setLoading] = useState(true);
@@ -104,89 +105,89 @@ export default function TeacherScoreStatsPage() {
     initData();
   }, []);
 
+  const summary = (() => {
+    if (comparisonRows.length === 0) return null;
+    const scores = comparisonRows.map((r) => r.score);
+    return {
+      count: scores.length,
+      avg: scores.reduce((a, b) => a + b, 0) / scores.length,
+      max: Math.max(...scores),
+      below5: scores.filter((x) => x < 5).length,
+    };
+  })();
+
   return (
-    <div className="container" style={{ maxWidth: 1200, paddingBottom: 60 }}>
-      {/* Header */}
-      <div className="page-header" style={{ marginBottom: 20 }}>
+    <div className="container" style={{ maxWidth: 1200 }}>
+      <div className="page-header">
         <div>
-          <h1 className="page-title">🏆 Thống kê điểm số</h1>
-          <p className="page-subtitle">
-            So sánh điểm giữa các học sinh theo lớp, theo nhóm hoặc theo từng đề
-          </p>
+          <h1 className="page-title">Thống kê điểm số</h1>
+          <p className="page-subtitle">So sánh điểm giữa các học sinh theo lớp, theo nhóm hoặc theo từng đề</p>
         </div>
       </div>
 
       {loading ? (
-        <div className="empty-state">
-          <div className="empty-state-icon">⏳</div>
-          <div className="empty-state-title">Đang tải dữ liệu...</div>
+        <div className="card">
+          <div className="empty-state">
+            <div className="spinner" style={{ margin: '0 auto 12px' }} />
+            <div className="empty-state-title">Đang tải dữ liệu…</div>
+          </div>
         </div>
       ) : (
-        <div
-          className="card"
-          style={{
-            padding: '18px 20px',
-            borderRadius: 12,
-            border: '1px solid var(--border)',
-            background: 'var(--bg-card)',
-            boxShadow: '0 2px 8px rgba(0,0,0,0.03)',
-          }}
-        >
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 10, marginBottom: 14 }}>
-            <h2 style={{ margin: 0, fontSize: 16 }}>🏆 So sánh điểm giữa học sinh</h2>
+        <div className="card">
+          <div className="card-header">
+            <div className="card-title-group">
+              <h2>Bảng xếp hạng</h2>
+              <p className="card-hint">
+                {compareExamId === 'all'
+                  ? 'Điểm trung bình của mỗi học sinh qua các đề đã nộp.'
+                  : 'Điểm lần làm gần nhất của mỗi học sinh ở đề này.'}
+              </p>
+            </div>
           </div>
 
-          {/* Bộ lọc: đề + phạm vi (lớp/nhóm) */}
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10, marginBottom: 16 }}>
-            <select
-              value={compareExamId}
-              onChange={(e) => setCompareExamId(e.target.value)}
-              style={{ width: 'auto', minWidth: 220, padding: '8px 12px', fontSize: 13 }}
-            >
-              <option value="all">📊 Điểm trung bình mọi đề</option>
-              {examOptionsForCompare.map((ex) => (
-                <option key={ex.id} value={ex.id}>📝 {ex.title}</option>
-              ))}
-            </select>
+          <div className="toolbar" style={{ marginBottom: 16 }}>
+            <label className="toolbar-field">
+              Đề thi
+              <select value={compareExamId} onChange={(e) => setCompareExamId(e.target.value)} style={{ minWidth: 220 }}>
+                <option value="all">Trung bình mọi đề</option>
+                {examOptionsForCompare.map((ex) => (
+                  <option key={ex.id} value={ex.id}>{ex.title}</option>
+                ))}
+              </select>
+            </label>
 
-            <div style={{ display: 'inline-flex', background: '#f1f5f9', padding: 4, borderRadius: 20, border: '1px solid #e2e8f0', gap: 4 }}>
+            <div className="toolbar-spacer" />
+
+            <div className="segmented" role="group" aria-label="Phạm vi so sánh">
               <button
                 type="button"
+                className={`segmented-btn${compareScopeType === 'class' ? ' is-active' : ''}`}
+                aria-pressed={compareScopeType === 'class'}
                 onClick={() => { setCompareScopeType('class'); setCompareScopeValue('all'); }}
-                className={`btn sm ${compareScopeType === 'class' ? '' : 'secondary'}`}
-                style={{ borderRadius: 16, padding: '5px 14px' }}
               >
-                🏫 Theo lớp
+                Theo lớp
               </button>
               <button
                 type="button"
+                className={`segmented-btn${compareScopeType === 'group' ? ' is-active' : ''}`}
+                aria-pressed={compareScopeType === 'group'}
                 onClick={() => { setCompareScopeType('group'); setCompareScopeValue(groups[0]?.id || 'all'); }}
-                className={`btn sm ${compareScopeType === 'group' ? '' : 'secondary'}`}
-                style={{ borderRadius: 16, padding: '5px 14px' }}
                 disabled={groups.length === 0}
-                title={groups.length === 0 ? 'Chưa có nhóm nào - tạo ở mục Quản lý học sinh' : ''}
+                title={groups.length === 0 ? 'Chưa có nhóm nào. Tạo nhóm ở mục Quản lý học sinh.' : undefined}
               >
-                🗂️ Theo nhóm
+                Theo nhóm
               </button>
             </div>
 
             {compareScopeType === 'class' ? (
-              <select
-                value={compareScopeValue}
-                onChange={(e) => setCompareScopeValue(e.target.value)}
-                style={{ width: 'auto', minWidth: 160, padding: '8px 12px', fontSize: 13 }}
-              >
+              <select aria-label="Chọn lớp" value={compareScopeValue} onChange={(e) => setCompareScopeValue(e.target.value)}>
                 <option value="all">Tất cả lớp</option>
                 {classesList.map((cls) => (
                   <option key={cls} value={cls}>Lớp {cls}</option>
                 ))}
               </select>
             ) : (
-              <select
-                value={compareScopeValue}
-                onChange={(e) => setCompareScopeValue(e.target.value)}
-                style={{ width: 'auto', minWidth: 160, padding: '8px 12px', fontSize: 13 }}
-              >
+              <select aria-label="Chọn nhóm" value={compareScopeValue} onChange={(e) => setCompareScopeValue(e.target.value)}>
                 {groups.map((g) => (
                   <option key={g.id} value={g.id}>{g.name}</option>
                 ))}
@@ -194,67 +195,57 @@ export default function TeacherScoreStatsPage() {
             )}
           </div>
 
-          {/* Bảng xếp hạng */}
+          {summary && (
+            <div className="stat-strip">
+              <div className="stat-item">
+                <span className="stat-item-label">Học sinh</span>
+                <span className="stat-item-value">{summary.count}</span>
+              </div>
+              <div className="stat-item">
+                <span className="stat-item-label">Điểm trung bình</span>
+                <span className={`stat-item-value score-text is-${scoreLevel(summary.avg)}`}>{summary.avg.toFixed(1)}</span>
+              </div>
+              <div className="stat-item">
+                <span className="stat-item-label">Cao nhất</span>
+                <span className="stat-item-value">{formatScore(summary.max)}</span>
+              </div>
+              <div className="stat-item">
+                <span className="stat-item-label">Dưới 5 điểm</span>
+                <span className={`stat-item-value${summary.below5 > 0 ? ' score-text is-low' : ''}`}>{summary.below5}</span>
+              </div>
+            </div>
+          )}
+
           {comparisonRows.length === 0 ? (
-            <div className="empty-state" style={{ padding: '24px 16px' }}>
-              <div className="empty-state-icon">📭</div>
-              <div className="empty-state-title">Chưa có dữ liệu để so sánh</div>
-              <p className="empty-state-desc">Chưa có học sinh nào trong phạm vi này nộp bài đề đã chọn.</p>
+            <div className="empty-state">
+              <div className="empty-state-icon is-svg"><UiIcon name="chart" size={22} /></div>
+              <div className="empty-state-title">Chưa có bài nộp trong phạm vi này</div>
+              <p className="empty-state-desc">Khi học sinh nộp bài, bảng xếp hạng sẽ hiện ở đây. Thử chọn lớp, nhóm hoặc đề khác.</p>
             </div>
           ) : (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            <ol className="rank-list">
               {comparisonRows.map((row, idx) => {
                 const rank = idx + 1;
-                const medal = rank === 1 ? '🥇' : rank === 2 ? '🥈' : rank === 3 ? '🥉' : null;
+                const level = scoreLevel(row.score);
                 const barPercent = Math.max(0, Math.min(100, (row.score / 10) * 100));
                 return (
-                  <div
-                    key={row.studentId}
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: 12,
-                      padding: '10px 14px',
-                      borderRadius: 10,
-                      border: '1px solid var(--border-light)',
-                      background: rank <= 3 ? 'var(--gold-soft, #fef9ec)' : '#ffffff',
-                    }}
-                  >
-                    <div style={{ width: 28, textAlign: 'center', fontWeight: 800, fontSize: medal ? 18 : 13, color: 'var(--text-muted)', flexShrink: 0 }}>
-                      {medal || rank}
+                  <li key={row.studentId} className="rank-row">
+                    <span className={`rank-badge${rank <= 3 ? ` is-top${rank}` : ''}`}>{rank}</span>
+                    <div className="rank-name">
+                      <Link to={`/teacher/analytics?studentId=${row.studentId}`}>{row.name}</Link>
+                      <span className="class-badge">{row.className ? `Lớp ${row.className}` : 'Chưa phân lớp'}</span>
                     </div>
-                    <Link
-                      to={`/teacher/analytics?studentId=${row.studentId}`}
-                      style={{ minWidth: 160, fontWeight: 700, fontSize: 13.5, color: 'var(--text-main)', textDecoration: 'none', flexShrink: 0 }}
-                    >
-                      {row.name}
-                    </Link>
-                    <span className="tag-badge" style={{ margin: 0, fontSize: 11, flexShrink: 0 }}>
-                      {row.className ? `Lớp ${row.className}` : 'Chưa phân lớp'}
+                    <div className="score-bar rank-bar" aria-hidden="true">
+                      <span className={`is-${level}`} style={{ width: `${barPercent}%` }} />
+                    </div>
+                    <span className={`rank-score score-text is-${level}`}>
+                      {row.score.toFixed(1)}<small>/10</small>
                     </span>
-                    <div style={{ flex: 1, minWidth: 80, height: 8, background: '#f1f5f9', borderRadius: 999, overflow: 'hidden' }}>
-                      <div
-                        style={{
-                          width: `${barPercent}%`,
-                          height: '100%',
-                          borderRadius: 999,
-                          background: row.score >= 5 ? 'var(--success, #10b981)' : 'var(--danger, #ef4444)',
-                        }}
-                      />
-                    </div>
-                    <div style={{ width: 90, textAlign: 'right', flexShrink: 0 }}>
-                      <strong style={{ fontSize: 14, color: row.score >= 5 ? 'var(--success, #10b981)' : 'var(--danger, #ef4444)' }}>
-                        {row.score.toFixed(1)}
-                      </strong>
-                      <span style={{ fontSize: 11, color: 'var(--text-muted)', marginLeft: 4 }}>/10</span>
-                    </div>
-                    <div style={{ width: 100, fontSize: 11, color: 'var(--text-muted)', textAlign: 'right', flexShrink: 0 }}>
-                      {row.label}
-                    </div>
-                  </div>
+                    <span className="rank-meta">{row.label}</span>
+                  </li>
                 );
               })}
-            </div>
+            </ol>
           )}
         </div>
       )}

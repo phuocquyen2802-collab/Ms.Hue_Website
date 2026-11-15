@@ -446,10 +446,10 @@ export default function StudentWeakTopicsPage() {
                   color: 'var(--text-main)',
                   marginBottom: 18,
                   lineHeight: 1.75,
-                  background: 'linear-gradient(135deg, #eff6ff 0%, #f8fafc 100%)',
+                  background: 'linear-gradient(135deg, var(--primary-light) 0%, #f8fafc 100%)',
                   padding: '16px 20px',
                   borderRadius: 10,
-                  border: '1px solid #bfdbfe',
+                  border: '1px solid var(--primary-border)',
                 }}
                 dangerouslySetInnerHTML={{ __html: renderMath(activeRoadmap.roadmap.summary) }}
               />
@@ -546,7 +546,7 @@ export default function StudentWeakTopicsPage() {
                   to={`/student/exams/${activeSubmission.examId}`}
                   className="btn"
                   style={{
-                    background: 'linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)',
+                    background: 'linear-gradient(135deg, var(--primary) 0%, var(--primary-hover) 100%)',
                     color: '#ffffff',
                     padding: '10px 22px',
                     fontSize: 14,
@@ -555,7 +555,7 @@ export default function StudentWeakTopicsPage() {
                     display: 'inline-flex',
                     alignItems: 'center',
                     gap: 8,
-                    boxShadow: '0 4px 12px rgba(37, 99, 235, 0.25)',
+                    boxShadow: '0 4px 12px rgba(41, 82, 217, 0.25)',
                     border: 'none',
                     transition: 'all 0.2s ease',
                   }}

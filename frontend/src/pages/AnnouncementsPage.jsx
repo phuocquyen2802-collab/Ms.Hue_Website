@@ -1,8 +1,13 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import api from '../services/api';
+import UiIcon from '../components/UiIcon';
 
 const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+
+// Bảng tin tự cập nhật ngầm (không hiện "Đang tải") để bài đăng/bình luận
+// mới từ người khác hiện ra mà không cần tải lại trang.
+const REFRESH_INTERVAL_MS = 5000;
 const BACKEND_BASE = API_BASE.replace(/\/api$/, '');
 
 function getFullUrl(url) {
@@ -68,20 +73,35 @@ export default function AnnouncementsPage() {
   const [editCommentText, setEditCommentText] = useState('');
   const [savingCommentId, setSavingCommentId] = useState(null);
 
-  async function loadData() {
-    setLoading(true);
+  // Đánh số từng lượt tải: chỉ nhận kết quả của lượt MỚI NHẤT, tránh việc
+  // 1 lượt tải ngầm cũ về chậm ghi đè mất dữ liệu vừa đăng/sửa.
+  const loadSeqRef = useRef(0);
+
+  const loadData = useCallback(async ({ silent = false } = {}) => {
+    loadSeqRef.current += 1;
+    const seq = loadSeqRef.current;
+    if (!silent) setLoading(true);
     try {
       const { data } = await api.get('/announcements');
-      setAnnouncements(data);
+      if (seq === loadSeqRef.current) setAnnouncements(data);
     } catch (err) {
-      console.error(err);
+      if (!silent) console.error(err);
     } finally {
-      setLoading(false);
+      if (seq === loadSeqRef.current) setLoading(false);
     }
-  }
+  }, []);
 
   useEffect(() => {
     loadData();
+
+    const refresh = () => {
+      if (!document.hidden) loadData({ silent: true });
+    };
+    const timer = setInterval(refresh, REFRESH_INTERVAL_MS);
+    window.addEventListener('focus', refresh);
+    document.addEventListener('visibilitychange', refresh);
+    window.addEventListener('app:refresh-notifications', refresh);
+
     if (isTeacher) {
       api.get('/teacher/students')
         .then(({ data }) => {
@@ -91,6 +111,13 @@ export default function AnnouncementsPage() {
         .catch(() => {});
       api.get('/teacher/groups').then(({ data }) => setGroups(data || [])).catch(() => {});
     }
+
+    return () => {
+      clearInterval(timer);
+      window.removeEventListener('focus', refresh);
+      document.removeEventListener('visibilitychange', refresh);
+      window.removeEventListener('app:refresh-notifications', refresh);
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -113,14 +140,19 @@ export default function AnnouncementsPage() {
       formData.append('audienceType', newAudienceType);
       if (newAudienceType !== 'all') formData.append('audienceValue', newAudienceValue);
       newFiles.forEach((f) => formData.append('files', f));
-      await api.post('/announcements', formData, { headers: { 'Content-Type': 'multipart/form-data' } });
+      const { data: created } = await api.post('/announcements', formData, { headers: { 'Content-Type': 'multipart/form-data' } });
+      // Hiện bài vừa đăng ngay lập tức từ kết quả trả về, sau đó mới đồng bộ
+      // lại toàn bộ danh sách.
+      if (created && created.id) {
+        setAnnouncements((prev) => [created, ...prev.filter((a) => a.id !== created.id)]);
+      }
       setNewTitle('');
       setNewContent('');
       setNewFiles([]);
       setNewAudienceType('all');
       setNewAudienceValue('');
       window.dispatchEvent(new Event('app:refresh-notifications'));
-      await loadData();
+      await loadData({ silent: true });
     } catch (err) {
       setPostError(err.response?.data?.message || 'Đăng thông báo thất bại');
     } finally {
@@ -160,7 +192,7 @@ export default function AnnouncementsPage() {
       editNewFiles.forEach((f) => formData.append('files', f));
       await api.put(`/announcements/${id}`, formData, { headers: { 'Content-Type': 'multipart/form-data' } });
       setEditingId(null);
-      await loadData();
+      await loadData({ silent: true });
     } catch (err) {
       alert(err.response?.data?.message || 'Lỗi khi sửa thông báo');
     }
@@ -170,7 +202,7 @@ export default function AnnouncementsPage() {
     if (!window.confirm('Xoá thông báo này? Toàn bộ bình luận bên dưới sẽ bị xoá theo.')) return;
     try {
       await api.delete(`/announcements/${a.id}`);
-      await loadData();
+      await loadData({ silent: true });
     } catch (err) {
       alert(err.response?.data?.message || 'Lỗi khi xoá thông báo');
     }
@@ -183,7 +215,7 @@ export default function AnnouncementsPage() {
     try {
       await api.post(`/announcements/${announcementId}/comments`, { content });
       setCommentDrafts((prev) => ({ ...prev, [announcementId]: '' }));
-      await loadData();
+      await loadData({ silent: true });
     } catch (err) {
       alert(err.response?.data?.message || 'Lỗi khi gửi bình luận');
     } finally {
@@ -195,7 +227,7 @@ export default function AnnouncementsPage() {
     if (!window.confirm('Xoá bình luận này?')) return;
     try {
       await api.delete(`/announcements/comments/${commentId}`);
-      await loadData();
+      await loadData({ silent: true });
     } catch (err) {
       alert(err.response?.data?.message || 'Lỗi khi xoá bình luận');
     }
@@ -213,7 +245,7 @@ export default function AnnouncementsPage() {
     try {
       await api.put(`/announcements/comments/${commentId}`, { content });
       setEditingCommentId(null);
-      await loadData();
+      await loadData({ silent: true });
     } catch (err) {
       alert(err.response?.data?.message || 'Lỗi khi sửa bình luận');
     } finally {
@@ -221,101 +253,120 @@ export default function AnnouncementsPage() {
     }
   }
 
+  function renderAudienceSelect({ type, value, onTypeChange, onValueChange, idPrefix }) {
+    return (
+      <>
+        <label className="toolbar-field" htmlFor={`${idPrefix}-audience`}>
+          Gửi tới
+          <select id={`${idPrefix}-audience`} value={type} onChange={(e) => onTypeChange(e.target.value)}>
+            <option value="all">Tất cả học sinh</option>
+            <option value="class">Một lớp</option>
+            <option value="group">Một nhóm</option>
+          </select>
+        </label>
+        {type === 'class' && (
+          <select aria-label="Chọn lớp nhận thông báo" value={value} onChange={(e) => onValueChange(e.target.value)}>
+            <option value="">Chọn lớp</option>
+            {classesList.map((c) => <option key={c} value={c}>Lớp {c}</option>)}
+          </select>
+        )}
+        {type === 'group' && (
+          <select aria-label="Chọn nhóm nhận thông báo" value={value} onChange={(e) => onValueChange(e.target.value)}>
+            <option value="">Chọn nhóm</option>
+            {groups.map((g) => <option key={g.id} value={g.id}>{g.name}</option>)}
+          </select>
+        )}
+      </>
+    );
+  }
+
   return (
-    <div className="container" style={{ maxWidth: 760 }}>
+    <div className="container" style={{ maxWidth: 780 }}>
       <div className="page-header">
         <div>
           <h1 className="page-title">Thông tin chung</h1>
           <p className="page-subtitle">
             {isTeacher
-              ? 'Đăng thông báo cho toàn bộ học sinh, mọi người đều có thể bình luận bên dưới'
-              : 'Thông báo từ giáo viên - bạn có thể bình luận bên dưới mỗi bài'}
+              ? 'Đăng thông báo cho học sinh, mọi người có thể bình luận bên dưới mỗi bài'
+              : 'Thông báo từ giáo viên, bạn có thể bình luận bên dưới mỗi bài'}
           </p>
         </div>
       </div>
 
-      {/* Ô đăng thông báo mới - CHỈ giáo viên */}
+      {/* Ô đăng thông báo mới - chỉ giáo viên */}
       {isTeacher && (
-        <div className="card">
+        <div className="card composer">
           <form onSubmit={handlePost}>
-            <div className="form-group" style={{ marginBottom: 10 }}>
-              <input
-                type="text"
-                placeholder="Tiêu đề (tuỳ chọn)…"
-                value={newTitle}
-                onChange={(e) => setNewTitle(e.target.value)}
-                style={{ fontWeight: 700 }}
-              />
-            </div>
-            <div className="form-group">
-              <textarea
-                placeholder="Bạn muốn thông báo điều gì tới học sinh?"
-                value={newContent}
-                onChange={(e) => setNewContent(e.target.value)}
-                rows={3}
-                style={{ resize: 'vertical', width: '100%', padding: '8px 12px', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-color)', fontFamily: 'inherit', fontSize: 14 }}
-              />
-            </div>
-            <div className="form-group" style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap', marginBottom: 10 }}>
-              <span style={{ fontSize: 12.5, fontWeight: 700, color: 'var(--text-muted)' }}>Gửi tới:</span>
-              <select
-                value={newAudienceType}
-                onChange={(e) => { setNewAudienceType(e.target.value); setNewAudienceValue(''); }}
-                style={{ fontSize: 13, padding: '5px 8px' }}
-              >
-                <option value="all">🌐 Tất cả học sinh</option>
-                <option value="class">🏫 Theo lớp</option>
-                <option value="group">🗂️ Theo nhóm</option>
-              </select>
-              {newAudienceType === 'class' && (
-                <select value={newAudienceValue} onChange={(e) => setNewAudienceValue(e.target.value)} style={{ fontSize: 13, padding: '5px 8px' }}>
-                  <option value="">-- Chọn lớp --</option>
-                  {classesList.map((c) => <option key={c} value={c}>Lớp {c}</option>)}
-                </select>
-              )}
-              {newAudienceType === 'group' && (
-                <select value={newAudienceValue} onChange={(e) => setNewAudienceValue(e.target.value)} style={{ fontSize: 13, padding: '5px 8px' }}>
-                  <option value="">-- Chọn nhóm --</option>
-                  {groups.map((g) => <option key={g.id} value={g.id}>{g.name}</option>)}
-                </select>
-              )}
-            </div>
-            <div className="form-group">
-              <label htmlFor="ann-files" className="btn sm secondary" style={{ display: 'inline-flex', cursor: 'pointer' }}>
-                🖼️ Đính kèm ảnh / tệp
-              </label>
-              <input
-                id="ann-files"
-                type="file"
-                multiple
-                style={{ display: 'none' }}
-                onChange={(e) => setNewFiles(Array.from(e.target.files || []))}
-              />
-              {newFiles.length > 0 && (
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 8 }}>
-                  {newFiles.map((f, i) => (
-                    <span key={i} className="tag-badge" style={{ margin: 0 }}>
-                      {f.type.startsWith('image/') ? '🖼️' : '📎'} {f.name}
-                      <button
-                        type="button"
-                        onClick={() => setNewFiles((prev) => prev.filter((_, idx) => idx !== i))}
-                        style={{ background: 'none', border: 'none', cursor: 'pointer', marginLeft: 4, color: 'var(--danger)', fontWeight: 700 }}
-                      >
-                        ✕
-                      </button>
-                    </span>
-                  ))}
-                </div>
-              )}
-            </div>
-            {postError && (
-              <p className="error-text" role="alert" aria-live="polite">
-                <span aria-hidden="true">⚠️</span> {postError}
-              </p>
+            <input
+              type="text"
+              className="composer-title"
+              placeholder="Tiêu đề (không bắt buộc)"
+              aria-label="Tiêu đề thông báo"
+              value={newTitle}
+              onChange={(e) => setNewTitle(e.target.value)}
+            />
+            <textarea
+              className="composer-body"
+              placeholder="Nội dung thông báo cho học sinh"
+              aria-label="Nội dung thông báo"
+              value={newContent}
+              onChange={(e) => setNewContent(e.target.value)}
+              rows={4}
+            />
+
+            {newFiles.length > 0 && (
+              <div className="file-chips">
+                {newFiles.map((f, i) => (
+                  <span key={i} className="file-chip">
+                    <UiIcon name={f.type.startsWith('image/') ? 'image' : 'file'} size={14} />
+                    <span className="file-chip-name">{f.name}</span>
+                    <button
+                      type="button"
+                      onClick={() => setNewFiles((prev) => prev.filter((_, idx) => idx !== i))}
+                      aria-label={`Bỏ tệp ${f.name}`}
+                    >
+                      <UiIcon name="close" size={13} />
+                    </button>
+                  </span>
+                ))}
+              </div>
             )}
-            <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+
+            <input
+              id="ann-files"
+              type="file"
+              multiple
+              className="visually-hidden"
+              tabIndex={-1}
+              onChange={(e) => {
+                setNewFiles(Array.from(e.target.files || []));
+                e.target.value = '';
+              }}
+            />
+
+            {postError && (
+              <div className="ce-alert is-danger" role="alert" aria-live="polite">
+                <UiIcon name="alert" size={17} />
+                <span>{postError}</span>
+              </div>
+            )}
+
+            <div className="composer-bar">
+              <button type="button" className="btn sm secondary" onClick={() => document.getElementById('ann-files')?.click()}>
+                <UiIcon name="image" size={15} />
+                Đính kèm ảnh hoặc tệp
+              </button>
+              {renderAudienceSelect({
+                idPrefix: "new",
+                type: newAudienceType,
+                value: newAudienceValue,
+                onTypeChange: (t) => { setNewAudienceType(t); setNewAudienceValue(''); },
+                onValueChange: setNewAudienceValue,
+              })}
+              <div className="toolbar-spacer" />
               <button className="btn" type="submit" disabled={posting}>
-                {posting ? 'Đang đăng…' : '📢 Đăng thông báo'}
+                <UiIcon name="send" size={16} />
+                {posting ? 'Đang đăng…' : 'Đăng thông báo'}
               </button>
             </div>
           </form>
@@ -326,17 +377,17 @@ export default function AnnouncementsPage() {
       {loading ? (
         <div className="card">
           <div className="empty-state">
-            <div className="empty-state-icon">⏳</div>
+            <div className="spinner" style={{ margin: '0 auto 12px' }} />
             <div className="empty-state-title">Đang tải bảng tin…</div>
           </div>
         </div>
       ) : announcements.length === 0 ? (
         <div className="card">
           <div className="empty-state">
-            <div className="empty-state-icon">📢</div>
+            <div className="empty-state-icon is-svg"><UiIcon name="megaphone" size={22} /></div>
             <div className="empty-state-title">Chưa có thông báo nào</div>
             <p className="empty-state-desc">
-              {isTeacher ? 'Đăng thông báo đầu tiên cho học sinh ở ô phía trên.' : 'Khi giáo viên đăng thông báo, nó sẽ xuất hiện ở đây.'}
+              {isTeacher ? 'Viết thông báo đầu tiên cho học sinh ở ô phía trên.' : 'Khi giáo viên đăng thông báo, nó sẽ hiện ở đây.'}
             </p>
           </div>
         </div>
@@ -346,267 +397,204 @@ export default function AnnouncementsPage() {
           const isEditing = editingId === a.id;
 
           return (
-            <div key={a.id} className="card">
-              {/* Header bài đăng */}
-              <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 10, marginBottom: 10 }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                  <div className="table-avatar" style={{ width: 40, height: 40, fontSize: 15, background: 'var(--primary-light)', color: 'var(--gold-text)' }}>
-                    {a.authorName?.trim().charAt(0).toUpperCase() || 'G'}
+            <article key={a.id} className="card post">
+              <header className="post-head">
+                <span className="avatar" aria-hidden="true">{a.authorName?.trim().charAt(0).toUpperCase() || 'G'}</span>
+                <div className="post-author">
+                  <div className="post-author-row">
+                    <strong>{a.authorName}</strong>
+                    <span className="role-badge">Giáo viên</span>
+                    {a.audienceType !== 'all' && <span className="class-badge">Gửi {a.audienceLabel}</span>}
                   </div>
-                  <div>
-                    <div style={{ fontWeight: 700, fontSize: 14, color: 'var(--text-main)' }}>
-                      {a.authorName} <span className="tag-badge" style={{ marginLeft: 6, fontSize: 10.5 }}>Giáo viên</span>
-                      {a.audienceType !== 'all' && (
-                        <span className="tag-badge" style={{ marginLeft: 6, fontSize: 10.5, background: 'var(--primary-light)' }}>
-                          {a.audienceType === 'class' ? '🏫' : '🗂️'} {a.audienceLabel}
-                        </span>
-                      )}
-                    </div>
-                    <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>
-                      {timeAgo(a.createdAt)}{a.updatedAt ? ' (đã chỉnh sửa)' : ''}
-                    </div>
-                    <div style={{ fontSize: 10.5, color: 'var(--text-muted)', opacity: 0.75 }}>
-                      🕒 {formatPostedDate(a.createdAt)}
-                    </div>
+                  <div className="meta-row">
+                    <span>{timeAgo(a.createdAt)}{a.updatedAt ? ' (đã chỉnh sửa)' : ''}</span>
+                    <span>{formatPostedDate(a.createdAt)}</span>
                   </div>
                 </div>
                 {isTeacher && isMine && !isEditing && (
-                  <div className="action-buttons">
-                    <button type="button" className="btn sm secondary" onClick={() => startEdit(a)}>Sửa</button>
-                    <button type="button" className="btn sm outline-danger" onClick={() => handleDeleteAnnouncement(a)}>Xoá</button>
+                  <div className="row-actions">
+                    <button type="button" className="icon-btn" onClick={() => startEdit(a)} aria-label="Sửa thông báo" title="Sửa thông báo">
+                      <UiIcon name="edit" size={15} />
+                    </button>
+                    <button type="button" className="icon-btn is-danger" onClick={() => handleDeleteAnnouncement(a)} aria-label="Xoá thông báo" title="Xoá thông báo">
+                      <UiIcon name="trash" size={15} />
+                    </button>
                   </div>
                 )}
-              </div>
+              </header>
 
-              {/* Nội dung bài đăng / form sửa */}
               {isEditing ? (
-                <div style={{ marginBottom: 10 }}>
+                <div className="post-edit">
                   <input
                     type="text"
+                    className="composer-title"
                     value={editTitle}
                     onChange={(e) => setEditTitle(e.target.value)}
-                    placeholder="Tiêu đề (tuỳ chọn)…"
-                    style={{ fontWeight: 700, marginBottom: 8 }}
+                    placeholder="Tiêu đề (không bắt buộc)"
+                    aria-label="Tiêu đề thông báo"
                   />
                   <textarea
+                    className="composer-body"
                     value={editContent}
                     onChange={(e) => setEditContent(e.target.value)}
-                    rows={3}
-                    style={{ resize: 'vertical', width: '100%', padding: '8px 12px', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-color)', fontFamily: 'inherit', fontSize: 14, marginBottom: 8 }}
+                    rows={4}
+                    aria-label="Nội dung thông báo"
                   />
 
-                  <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap', marginBottom: 8 }}>
-                    <span style={{ fontSize: 12.5, fontWeight: 700, color: 'var(--text-muted)' }}>Gửi tới:</span>
-                    <select
-                      value={editAudienceType}
-                      onChange={(e) => { setEditAudienceType(e.target.value); setEditAudienceValue(''); }}
-                      style={{ fontSize: 13, padding: '5px 8px' }}
-                    >
-                      <option value="all">🌐 Tất cả học sinh</option>
-                      <option value="class">🏫 Theo lớp</option>
-                      <option value="group">🗂️ Theo nhóm</option>
-                    </select>
-                    {editAudienceType === 'class' && (
-                      <select value={editAudienceValue} onChange={(e) => setEditAudienceValue(e.target.value)} style={{ fontSize: 13, padding: '5px 8px' }}>
-                        <option value="">-- Chọn lớp --</option>
-                        {classesList.map((c) => <option key={c} value={c}>Lớp {c}</option>)}
-                      </select>
-                    )}
-                    {editAudienceType === 'group' && (
-                      <select value={editAudienceValue} onChange={(e) => setEditAudienceValue(e.target.value)} style={{ fontSize: 13, padding: '5px 8px' }}>
-                        <option value="">-- Chọn nhóm --</option>
-                        {groups.map((g) => <option key={g.id} value={g.id}>{g.name}</option>)}
-                      </select>
-                    )}
-                  </div>
-
-                  {a.attachments.length > 0 && (
-                    <div style={{ marginBottom: 8 }}>
-                      <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-muted)', marginBottom: 6 }}>Ảnh/tệp đã đính kèm:</div>
-                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-                        {a.attachments.map((att) => {
-                          const marked = editRemoveAttachments.includes(att.filename);
-                          return (
-                            <span
-                              key={att.filename}
-                              className="tag-badge"
-                              style={{ margin: 0, textDecoration: marked ? 'line-through' : 'none', opacity: marked ? 0.5 : 1 }}
+                  {(a.attachments.length > 0 || editNewFiles.length > 0) && (
+                    <div className="file-chips">
+                      {a.attachments.map((att) => {
+                        const marked = editRemoveAttachments.includes(att.filename);
+                        return (
+                          <span key={att.filename} className={`file-chip${marked ? ' is-removed' : ''}`}>
+                            <UiIcon name={att.isImage ? 'image' : 'file'} size={14} />
+                            <span className="file-chip-name">{att.originalName}</span>
+                            <button
+                              type="button"
+                              onClick={() => toggleRemoveAttachment(att.filename)}
+                              aria-label={marked ? `Giữ lại ${att.originalName}` : `Gỡ ${att.originalName}`}
+                              title={marked ? 'Giữ lại tệp này' : 'Gỡ tệp này khi lưu'}
                             >
-                              {att.isImage ? '🖼️' : '📎'} {att.originalName}
-                              <button
-                                type="button"
-                                onClick={() => toggleRemoveAttachment(att.filename)}
-                                title={marked ? 'Bỏ đánh dấu xoá' : 'Đánh dấu xoá'}
-                                style={{ background: 'none', border: 'none', cursor: 'pointer', marginLeft: 4, color: 'var(--danger)', fontWeight: 700 }}
-                              >
-                                {marked ? '↺' : '✕'}
-                              </button>
-                            </span>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  )}
-
-                  <label htmlFor={`ann-edit-files-${a.id}`} className="btn sm secondary" style={{ display: 'inline-flex', cursor: 'pointer', marginBottom: 8 }}>
-                    🖼️ Thêm ảnh / tệp
-                  </label>
-                  <input
-                    id={`ann-edit-files-${a.id}`}
-                    type="file"
-                    multiple
-                    style={{ display: 'none' }}
-                    onChange={(e) => setEditNewFiles(Array.from(e.target.files || []))}
-                  />
-                  {editNewFiles.length > 0 && (
-                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 8 }}>
+                              <UiIcon name={marked ? 'undo' : 'close'} size={13} />
+                            </button>
+                          </span>
+                        );
+                      })}
                       {editNewFiles.map((f, i) => (
-                        <span key={i} className="tag-badge" style={{ margin: 0 }}>
-                          {f.type.startsWith('image/') ? '🖼️' : '📎'} {f.name}
+                        <span key={`new-${i}`} className="file-chip is-new">
+                          <UiIcon name={f.type.startsWith('image/') ? 'image' : 'file'} size={14} />
+                          <span className="file-chip-name">{f.name}</span>
                         </span>
                       ))}
                     </div>
                   )}
 
-                  <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
+                  <input
+                    id={`ann-edit-files-${a.id}`}
+                    type="file"
+                    multiple
+                    className="visually-hidden"
+                    tabIndex={-1}
+                    onChange={(e) => {
+                      setEditNewFiles(Array.from(e.target.files || []));
+                      e.target.value = '';
+                    }}
+                  />
+
+                  <div className="composer-bar">
+                    <button
+                      type="button"
+                      className="btn sm secondary"
+                      onClick={() => document.getElementById(`ann-edit-files-${a.id}`)?.click()}
+                    >
+                      <UiIcon name="image" size={15} />
+                      Thêm ảnh hoặc tệp
+                    </button>
+                    {renderAudienceSelect({
+                      idPrefix: `edit-${a.id}`,
+                      type: editAudienceType,
+                      value: editAudienceValue,
+                      onTypeChange: (t) => { setEditAudienceType(t); setEditAudienceValue(''); },
+                      onValueChange: setEditAudienceValue,
+                    })}
+                    <div className="toolbar-spacer" />
                     <button type="button" className="btn sm secondary" onClick={() => setEditingId(null)}>Huỷ</button>
-                    <button type="button" className="btn sm" onClick={() => handleSaveEdit(a.id)}>Lưu</button>
+                    <button type="button" className="btn sm" onClick={() => handleSaveEdit(a.id)}>Lưu thay đổi</button>
                   </div>
                 </div>
               ) : (
-                <div style={{ marginBottom: 10 }}>
-                  {a.title && <div style={{ fontWeight: 700, fontSize: 15.5, marginBottom: 4, color: 'var(--text-main)' }}>{a.title}</div>}
-                  <div style={{ fontSize: 14, lineHeight: 1.65, color: 'var(--text-main)', whiteSpace: 'pre-wrap' }}>{a.content}</div>
+                <div className="post-body">
+                  {a.title && <h3 className="post-title">{a.title}</h3>}
+                  <div className="post-content">{a.content}</div>
 
-                  {a.attachments.length > 0 && (
-                    <div style={{ marginTop: 10 }}>
-                      {/* Ảnh: lưới xem trực tiếp */}
-                      {a.attachments.some((att) => att.isImage) && (
-                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))', gap: 8, marginBottom: 8 }}>
-                          {a.attachments.filter((att) => att.isImage).map((att) => (
-                            <a key={att.filename} href={getFullUrl(att.url)} target="_blank" rel="noopener noreferrer">
-                              <img
-                                src={getFullUrl(att.url)}
-                                alt={att.originalName}
-                                style={{ width: '100%', height: 140, objectFit: 'cover', borderRadius: 8, border: '1px solid var(--border-color)' }}
-                              />
-                            </a>
-                          ))}
-                        </div>
-                      )}
-                      {/* Tệp khác: danh sách tải về */}
-                      {a.attachments.some((att) => !att.isImage) && (
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-                          {a.attachments.filter((att) => !att.isImage).map((att) => (
-                            <a
-                              key={att.filename}
-                              href={getFullUrl(att.url)}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              style={{ fontSize: 13, display: 'inline-flex', alignItems: 'center', gap: 6 }}
-                            >
-                              📎 {att.originalName}
-                            </a>
-                          ))}
-                        </div>
-                      )}
+                  {a.attachments.some((att) => att.isImage) && (
+                    <div className="post-images">
+                      {a.attachments.filter((att) => att.isImage).map((att) => (
+                        <a key={att.filename} href={getFullUrl(att.url)} target="_blank" rel="noopener noreferrer">
+                          <img src={getFullUrl(att.url)} alt={att.originalName} />
+                        </a>
+                      ))}
+                    </div>
+                  )}
+                  {a.attachments.some((att) => !att.isImage) && (
+                    <div className="post-files">
+                      {a.attachments.filter((att) => !att.isImage).map((att) => (
+                        <a key={att.filename} className="post-file" href={getFullUrl(att.url)} target="_blank" rel="noopener noreferrer">
+                          <UiIcon name="file" size={16} />
+                          <span>{att.originalName}</span>
+                        </a>
+                      ))}
                     </div>
                   )}
                 </div>
               )}
 
               {/* Bình luận */}
-              <div style={{ borderTop: '1px solid var(--border-light)', paddingTop: 10 }}>
-                <div style={{ fontSize: 12.5, fontWeight: 700, color: 'var(--text-muted)', marginBottom: 8 }}>
-                  💬 {a.commentCount} bình luận
+              <div className="post-comments">
+                <div className="post-comments-count">
+                  <UiIcon name="message" size={15} />
+                  {a.commentCount} bình luận
                 </div>
 
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 10 }}>
-                  {a.comments.map((c) => (
-                    <div key={c.id} style={{ display: 'flex', alignItems: 'flex-start', gap: 8 }}>
-                      <div className="table-avatar" style={{ width: 28, height: 28, fontSize: 11, flexShrink: 0 }}>
-                        {c.authorName?.trim().charAt(0).toUpperCase() || '?'}
-                      </div>
-                      <div style={{ flex: 1, background: 'var(--bg-subtle)', borderRadius: 10, padding: '6px 12px' }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
-                          <span style={{ fontWeight: 700, fontSize: 12.5, color: 'var(--text-main)' }}>
-                            {c.authorName}
-                            {c.authorRole === 'teacher' && <span className="tag-badge" style={{ marginLeft: 6, fontSize: 10 }}>GV</span>}
-                          </span>
-                          <div style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
-                            {c.authorId === user?.id && editingCommentId !== c.id && (
-                              <button
-                                type="button"
-                                onClick={() => startEditComment(c)}
-                                style={{ background: 'none', border: 'none', color: 'var(--text-muted)', fontSize: 11, cursor: 'pointer' }}
-                              >
-                                Sửa
-                              </button>
-                            )}
-                            {(c.authorId === user?.id || isTeacher) && editingCommentId !== c.id && (
-                              <button
-                                type="button"
-                                onClick={() => handleDeleteComment(c.id)}
-                                style={{ background: 'none', border: 'none', color: 'var(--text-muted)', fontSize: 11, cursor: 'pointer' }}
-                              >
-                                Xoá
-                              </button>
-                            )}
+                {a.comments.length > 0 && (
+                  <ul className="comment-list">
+                    {a.comments.map((c) => (
+                      <li key={c.id} className="comment">
+                        <span className="avatar is-sm" aria-hidden="true">{c.authorName?.trim().charAt(0).toUpperCase() || '?'}</span>
+                        <div className="comment-bubble">
+                          <div className="comment-head">
+                            <strong>{c.authorName}</strong>
+                            {c.authorRole === 'teacher' && <span className="role-badge">Giáo viên</span>}
+                            <span className="comment-time">{timeAgo(c.createdAt)}{c.updatedAt ? ' (đã sửa)' : ''}</span>
                           </div>
-                        </div>
 
-                        {editingCommentId === c.id ? (
-                          <div style={{ marginTop: 4 }}>
-                            <input
-                              type="text"
-                              value={editCommentText}
-                              onChange={(e) => setEditCommentText(e.target.value)}
-                              onKeyDown={(e) => { if (e.key === 'Enter') handleSaveEditComment(c.id); }}
-                              autoFocus
-                              style={{ width: '100%', fontSize: 13, padding: '5px 10px' }}
-                            />
-                            <div style={{ display: 'flex', gap: 8, marginTop: 4 }}>
+                          {editingCommentId === c.id ? (
+                            <div className="comment-edit">
+                              <input
+                                type="text"
+                                value={editCommentText}
+                                onChange={(e) => setEditCommentText(e.target.value)}
+                                onKeyDown={(e) => { if (e.key === 'Enter') handleSaveEditComment(c.id); }}
+                                aria-label="Sửa bình luận"
+                                autoFocus
+                              />
                               <button
                                 type="button"
                                 className="btn sm"
                                 onClick={() => handleSaveEditComment(c.id)}
                                 disabled={savingCommentId === c.id || !editCommentText.trim()}
-                                style={{ padding: '3px 10px', fontSize: 11.5 }}
                               >
                                 Lưu
                               </button>
-                              <button
-                                type="button"
-                                className="btn sm secondary"
-                                onClick={() => setEditingCommentId(null)}
-                                style={{ padding: '3px 10px', fontSize: 11.5 }}
-                              >
-                                Huỷ
-                              </button>
+                              <button type="button" className="btn sm secondary" onClick={() => setEditingCommentId(null)}>Huỷ</button>
                             </div>
-                          </div>
-                        ) : (
-                          <>
-                            <div style={{ fontSize: 13.5, color: 'var(--text-main)', marginTop: 2, whiteSpace: 'pre-wrap' }}>{c.content}</div>
-                            <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 2 }}>
-                              {timeAgo(c.createdAt)}{c.updatedAt ? ' (đã chỉnh sửa)' : ''}
-                            </div>
-                          </>
-                        )}
-                      </div>
-                    </div>
-                  ))}
-                </div>
+                          ) : (
+                            <div className="comment-content">{c.content}</div>
+                          )}
 
-                {/* Ô nhập bình luận mới - cả giáo viên & học sinh */}
-                <div style={{ display: 'flex', gap: 8 }}>
+                          {editingCommentId !== c.id && (c.authorId === user?.id || isTeacher) && (
+                            <div className="comment-actions">
+                              {c.authorId === user?.id && (
+                                <button type="button" className="text-btn is-muted" onClick={() => startEditComment(c)}>Sửa</button>
+                              )}
+                              <button type="button" className="text-btn is-muted" onClick={() => handleDeleteComment(c.id)}>Xoá</button>
+                            </div>
+                          )}
+                        </div>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+
+                <div className="comment-form">
+                  <span className="avatar is-sm" aria-hidden="true">{user?.name?.trim().charAt(0).toUpperCase() || '?'}</span>
                   <input
                     type="text"
                     placeholder="Viết bình luận…"
+                    aria-label="Viết bình luận"
                     value={commentDrafts[a.id] || ''}
                     onChange={(e) => setCommentDrafts((prev) => ({ ...prev, [a.id]: e.target.value }))}
                     onKeyDown={(e) => { if (e.key === 'Enter') handleAddComment(a.id); }}
-                    style={{ flex: 1, fontSize: 13.5, padding: '7px 12px' }}
                   />
                   <button
                     type="button"
@@ -618,7 +606,7 @@ export default function AnnouncementsPage() {
                   </button>
                 </div>
               </div>
-            </div>
+            </article>
           );
         })
       )}

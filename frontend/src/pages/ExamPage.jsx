@@ -112,8 +112,8 @@ export default function ExamPage() {
                 fontSize: 13.5,
                 fontWeight: 700,
                 color: 'var(--primary)',
-                background: 'rgba(37,99,235,0.08)',
-                border: '1px solid rgba(37,99,235,0.2)',
+                background: 'rgba(41, 82, 217,0.08)',
+                border: '1px solid rgba(41, 82, 217,0.2)',
                 padding: '6px 16px',
                 borderRadius: 20,
               }}
@@ -129,8 +129,8 @@ export default function ExamPage() {
             style={{
               marginTop: 12,
               padding: '8px 14px',
-              background: 'rgba(37,99,235,0.06)',
-              border: '1px solid rgba(37,99,235,0.2)',
+              background: 'rgba(41, 82, 217,0.06)',
+              border: '1px solid rgba(41, 82, 217,0.2)',
               borderRadius: 8,
               fontSize: 13,
               display: 'flex',

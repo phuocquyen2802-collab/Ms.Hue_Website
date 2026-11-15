@@ -106,9 +106,9 @@ export default function OxyzDiagram({ points, vectors, plane }) {
           const proj = project(p.coords);
           return (
             <g key={p.name}>
-              <circle cx={proj.x} cy={proj.y} r="2.8" fill="#2563eb" />
+              <circle cx={proj.x} cy={proj.y} r="2.8" fill="var(--primary)" />
               <foreignObject x={proj.x + 6} y={proj.y - 18} width="60" height="18" style={{ overflow: 'visible' }}>
-                <div style={{ fontSize: 13, fontWeight: 700, color: '#2563eb', whiteSpace: 'nowrap' }} dangerouslySetInnerHTML={{ __html: renderLabel(`${p.name}(${p.coords.join(';')})`) }} />
+                <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--primary)', whiteSpace: 'nowrap' }} dangerouslySetInnerHTML={{ __html: renderLabel(`${p.name}(${p.coords.join(';')})`) }} />
               </foreignObject>
             </g>
           );

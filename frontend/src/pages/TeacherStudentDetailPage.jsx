@@ -88,7 +88,7 @@ export default function TeacherStudentDetailPage() {
               width: 48,
               height: 48,
               borderRadius: '50%',
-              background: 'linear-gradient(135deg, #2563eb, #3b82f6)',
+              background: 'linear-gradient(135deg, var(--primary), var(--primary))',
               color: '#ffffff',
               display: 'flex',
               alignItems: 'center',

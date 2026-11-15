@@ -66,14 +66,14 @@ export default function AnswerKeyPanel({ examId, answerKeyFile, compact = false 
     <div
       style={{
         marginTop: 8,
-        border: '1px solid #bfdbfe',
-        background: '#eff6ff',
+        border: '1px solid var(--primary-border)',
+        background: 'var(--primary-light)',
         borderRadius: 8,
         padding: '6px 10px',
       }}
     >
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'nowrap' }}>
-        <span style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 12.5, fontWeight: 700, color: '#1d4ed8', whiteSpace: 'nowrap' }}>
+        <span style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 12.5, fontWeight: 700, color: 'var(--primary-hover)', whiteSpace: 'nowrap' }}>
           📄 Đáp án chi tiết
         </span>
         <div style={{ display: 'flex', gap: 5, marginLeft: 'auto' }}>

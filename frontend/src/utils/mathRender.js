@@ -208,19 +208,19 @@ export function renderMath(text) {
 
     const h2Match = line.match(/^##\s+(.+)$/);
     if (h2Match) {
-      formattedElements.push(`<h3 style="font-size:16px;font-weight:700;color:#1e3a8a;margin:12px 0 6px 0;">${h2Match[1]}</h3>`);
+      formattedElements.push(`<h3 style="font-size:16px;font-weight:700;color:var(--primary-strong);margin:12px 0 6px 0;">${h2Match[1]}</h3>`);
       continue;
     }
 
     const h3Match = line.match(/^###\s+(.+)$/);
     if (h3Match) {
-      formattedElements.push(`<div style="font-size:15px;font-weight:700;color:#1e40af;margin:12px 0 6px 0;display:flex;align-items:center;gap:6px;"><span style="color:#6366f1;">■</span> ${h3Match[1]}</div>`);
+      formattedElements.push(`<div style="font-size:15px;font-weight:700;color:var(--primary-strong);margin:12px 0 6px 0;display:flex;align-items:center;gap:6px;"><span style="color:#6366f1;">■</span> ${h3Match[1]}</div>`);
       continue;
     }
 
     const h4Match = line.match(/^####\s+(.+)$/);
     if (h4Match) {
-      formattedElements.push(`<div style="font-size:14px;font-weight:700;color:#2563eb;margin:10px 0 4px 0;display:flex;align-items:center;gap:6px;"><span style="color:#3b82f6;">▸</span> ${h4Match[1]}</div>`);
+      formattedElements.push(`<div style="font-size:14px;font-weight:700;color:var(--primary);margin:10px 0 4px 0;display:flex;align-items:center;gap:6px;"><span style="color:var(--primary);">▸</span> ${h4Match[1]}</div>`);
       continue;
     }
 

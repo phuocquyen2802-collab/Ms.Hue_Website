@@ -279,7 +279,7 @@ export default function TeacherSubmissionDetailPage() {
                 width: 52,
                 height: 52,
                 borderRadius: '50%',
-                background: 'linear-gradient(135deg, #2563eb, #3b82f6)',
+                background: 'linear-gradient(135deg, var(--primary), var(--primary))',
                 color: '#ffffff',
                 display: 'flex',
                 alignItems: 'center',
@@ -343,7 +343,7 @@ export default function TeacherSubmissionDetailPage() {
                       style={{
                         padding: '6px 12px',
                         borderRadius: 8,
-                        background: isCurrent ? 'rgba(37,99,235,0.1)' : '#f8fafc',
+                        background: isCurrent ? 'rgba(41, 82, 217,0.1)' : '#f8fafc',
                         border: isCurrent ? '2px solid var(--primary)' : '1px solid #e2e8f0',
                         textDecoration: 'none',
                         fontSize: 12,
@@ -616,7 +616,7 @@ export default function TeacherSubmissionDetailPage() {
                       </div>
 
                       <div>
-                        <label style={{ display: 'block', fontSize: 12, fontWeight: 700, color: '#1e40af', marginBottom: 4 }}>
+                        <label style={{ display: 'block', fontSize: 12, fontWeight: 700, color: 'var(--primary-strong)', marginBottom: 4 }}>
                           📘 Lý thuyết & Công thức trọng tâm:
                         </label>
                         <div className="formula-edit-box" style={{ minHeight: 60 }}>
@@ -709,8 +709,8 @@ export default function TeacherSubmissionDetailPage() {
                           </div>
 
                           {step.theory && (
-                            <div style={{ background: '#f8fafc', padding: '12px 16px', borderRadius: 8, borderLeft: '4px solid #3b82f6' }}>
-                              <div style={{ fontSize: 13, fontWeight: 700, color: '#1e40af', marginBottom: 6 }}>
+                            <div style={{ background: '#f8fafc', padding: '12px 16px', borderRadius: 8, borderLeft: '4px solid var(--primary)' }}>
+                              <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--primary-strong)', marginBottom: 6 }}>
                                 📘 Lý thuyết & Công thức trọng tâm:
                               </div>
                               <div style={{ fontSize: 13.5, lineHeight: 1.7, color: '#1e293b' }} dangerouslySetInnerHTML={{ __html: renderMath(step.theory) }} />
@@ -759,7 +759,7 @@ export default function TeacherSubmissionDetailPage() {
 
             return (submission.answers || []).map((ans, idx) => {
               const isCorrect = ans.isCorrect;
-              const topicName = (ans.tags && ans.tags.length > 0) ? ans.tags[0] : 'Toán 12';
+              const topicName = (ans.tags && ans.tags.length > 0) ? ans.tags[0] : 'Chưa phân loại';
               const isNewTopic = topicName !== currentTopicName;
               if (isNewTopic) {
                 currentTopicName = topicName;
@@ -777,7 +777,7 @@ export default function TeacherSubmissionDetailPage() {
                         marginTop: idx > 0 ? 10 : 0,
                         marginBottom: 2,
                         padding: '10px 16px',
-                        background: 'linear-gradient(135deg, #2563eb 0%, #3b82f6 100%)',
+                        background: 'linear-gradient(135deg, var(--primary) 0%, var(--primary) 100%)',
                         color: '#fff',
                         borderRadius: 'var(--radius-md)',
                         display: 'flex',

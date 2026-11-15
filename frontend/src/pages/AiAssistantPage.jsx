@@ -2,11 +2,13 @@ import { useState, useRef, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import api from '../services/api';
 import { renderMath } from '../utils/mathRender';
+import BrandMark from '../components/BrandMark';
+import { APP_NAME, APP_TITLE } from '../config/brand';
 
 function greetingMessage(user) {
   return {
     role: 'assistant',
-    content: `Xin chào ${user?.name ? `**${user.name}**` : ''}! 👋 Tôi là **Trợ lý AI Toán 12**, có thể:\n- 💡 Giải chi tiết từng bước\n- 📚 Tóm tắt lý thuyết\n- ⚙️ Mẹo bấm máy tính Casio\n- 📝 Tạo đề thi/câu hỏi\n\nNhập câu hỏi bên dưới để bắt đầu nhé! ✨`,
+    content: `Xin chào ${user?.name ? `**${user.name}**` : ''}! 👋 Tôi là **trợ lý AI của ${APP_TITLE}**, có thể:\n- 💡 Giải chi tiết từng bước\n- 📚 Tóm tắt lý thuyết\n- ⚙️ Mẹo bấm máy tính Casio\n- 📝 Tạo đề thi/câu hỏi\n\nNhập câu hỏi bên dưới để bắt đầu nhé! ✨`,
     timestamp: new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }),
   };
 }
@@ -188,25 +190,10 @@ export default function AiAssistantPage() {
       {/* Header */}
       <div className="page-header" style={{ marginBottom: 12, flexShrink: 0 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-          <div
-            style={{
-              width: 44,
-              height: 44,
-              borderRadius: 12,
-              background: 'linear-gradient(135deg, #6366f1 0%, #a855f7 50%, #ec4899 100%)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              fontSize: 22,
-              color: '#fff',
-              boxShadow: '0 4px 14px rgba(99, 102, 241, 0.35)',
-            }}
-          >
-            🤖
-          </div>
+          <BrandMark size={44} />
           <div>
             <h1 className="page-title" style={{ fontSize: 22, margin: 0, display: 'flex', alignItems: 'center', gap: 8 }}>
-              Trợ lý AI Gemini Toán 12
+              Trợ lý {APP_NAME}
               <span
                 style={{
                   fontSize: 11,
@@ -383,7 +370,7 @@ export default function AiAssistantPage() {
                     height: 36,
                     borderRadius: '50%',
                     background: isUser
-                      ? 'linear-gradient(135deg, #3b82f6, #1d4ed8)'
+                      ? 'linear-gradient(135deg, var(--primary), var(--primary-hover))'
                       : 'linear-gradient(135deg, #6366f1, #a855f7)',
                     display: 'flex',
                     alignItems: 'center',
@@ -416,12 +403,12 @@ export default function AiAssistantPage() {
                     style={{
                       padding: '12px 18px',
                       borderRadius: isUser ? '16px 4px 16px 16px' : '4px 16px 16px 16px',
-                      background: isUser ? 'linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)' : '#ffffff',
+                      background: isUser ? 'linear-gradient(135deg, var(--primary) 0%, var(--primary-hover) 100%)' : '#ffffff',
                       color: isUser ? '#ffffff' : '#1e293b',
                       fontSize: 14.5,
                       lineHeight: 1.6,
                       boxShadow: isUser
-                        ? '0 4px 12px rgba(37, 99, 235, 0.25)'
+                        ? '0 4px 12px rgba(41, 82, 217, 0.25)'
                         : '0 2px 8px rgba(0, 0, 0, 0.04), 0 1px 2px rgba(0, 0, 0, 0.06)',
                       border: isUser ? 'none' : '1px solid #e2e8f0',
                       wordBreak: 'break-word',

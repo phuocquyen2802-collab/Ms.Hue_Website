@@ -42,7 +42,7 @@ export default function VariationTableDiagram({ points, signs, values }) {
 
   return (
     <div style={{ overflowX: 'auto', margin: '12px 0', display: 'flex', justifyContent: 'center' }}>
-      <div style={{ border: `1.5px solid ${borderColor}`, background: '#fffefb', borderRadius: 4 }}>
+      <div style={{ border: `1.5px solid ${borderColor}`, background: '#ffffff', borderRadius: 4 }}>
         {/* Hàng x */}
         <div style={{ ...rowStyle, borderBottom: `1.5px solid ${borderColor}` }}>
           <div style={{ ...cellBase, fontWeight: 700, background: '#f8fafc' }} dangerouslySetInnerHTML={{ __html: renderInlineMath('x') }} />

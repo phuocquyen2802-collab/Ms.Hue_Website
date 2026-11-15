@@ -155,7 +155,7 @@ export default function ResultPage() {
             let qNumInTopic = 0;
 
             return submission.answers.map((a, idx) => {
-              const topicName = (a.tags && a.tags.length > 0) ? a.tags[0] : 'Toán 12';
+              const topicName = (a.tags && a.tags.length > 0) ? a.tags[0] : 'Chưa phân loại';
               const isNewTopic = topicName !== currentTopicName;
               if (isNewTopic) {
                 currentTopicName = topicName;
@@ -173,7 +173,7 @@ export default function ResultPage() {
                         marginTop: idx > 0 ? 10 : 0,
                         marginBottom: 2,
                         padding: '10px 16px',
-                        background: 'linear-gradient(135deg, #2563eb 0%, #3b82f6 100%)',
+                        background: 'linear-gradient(135deg, var(--primary) 0%, var(--primary) 100%)',
                         color: '#fff',
                         borderRadius: 'var(--radius-md)',
                         display: 'flex',

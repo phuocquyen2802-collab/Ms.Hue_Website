@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import api from '../services/api';
+import UiIcon from '../components/UiIcon';
 
 const EMPTY_STUDENT_FORM = { name: '', email: '', password: '', className: '' };
 
@@ -171,85 +172,98 @@ export default function TeacherDashboard() {
 
   return (
     <div className="container">
-      {/* Tiêu đề & Nút hành động */}
       <div className="page-header">
         <div>
           <h1 className="page-title">Quản lý học sinh</h1>
-          <p className="page-subtitle">Theo dõi số lượng học sinh theo lớp và danh sách tài khoản</p>
+          <p className="page-subtitle">Tài khoản học sinh, lớp học và nhóm để giao bài nhanh</p>
         </div>
         <div className="header-actions">
           <button className="btn" onClick={() => setShowAddModal(true)}>
-            + Thêm học sinh
+            <UiIcon name="plus" size={17} />
+            Thêm học sinh
           </button>
         </div>
       </div>
 
-      {/* Thẻ thống kê số lượng */}
       <div className="metrics-grid">
         <div className="metric-card">
           <div className="metric-info">
             <span className="metric-title">Tổng số học sinh</span>
             <span className="metric-value">{students.length}</span>
-            <span className="metric-sub">Học sinh trong hệ thống</span>
+            <span className="metric-sub">Tài khoản đang hoạt động</span>
           </div>
-          <div className="metric-icon-box blue">👥</div>
+          <div className="metric-icon-box blue"><UiIcon name="users" size={20} /></div>
         </div>
-
         <div className="metric-card">
           <div className="metric-info">
             <span className="metric-title">Số lớp học</span>
             <span className="metric-value">{distinctClasses.length}</span>
-            <span className="metric-sub">Các lớp đang phụ trách</span>
+            <span className="metric-sub">Lớp đang phụ trách</span>
           </div>
-          <div className="metric-icon-box green">🏫</div>
+          <div className="metric-icon-box green"><UiIcon name="book" size={20} /></div>
+        </div>
+        <div className="metric-card">
+          <div className="metric-info">
+            <span className="metric-title">Nhóm học sinh</span>
+            <span className="metric-value">{groups.length}</span>
+            <span className="metric-sub">Dùng để giao bài nhanh</span>
+          </div>
+          <div className="metric-icon-box slate"><UiIcon name="folder" size={20} /></div>
         </div>
       </div>
 
       {/* Danh sách học sinh */}
       <div className="card">
-        <div className="card-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12 }}>
-          <h2 style={{ margin: 0 }}>Danh sách học sinh ({filteredStudents.length})</h2>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0 }}>
-            <div className="search-input-wrapper" style={{ width: 220, margin: 0 }}>
-              <span className="search-icon">🔍</span>
+        <div className="card-header">
+          <div className="card-title-row">
+            <h2>Danh sách học sinh</h2>
+            <span className="count-badge">{filteredStudents.length}</span>
+          </div>
+          <div className="toolbar">
+            <select aria-label="Lọc theo lớp" value={classFilter} onChange={(e) => setClassFilter(e.target.value)}>
+              <option value="all">Tất cả lớp ({students.length})</option>
+              {distinctClasses.map((cls) => (
+                <option key={cls} value={cls}>Lớp {cls}</option>
+              ))}
+            </select>
+            <div className="search-field">
+              <UiIcon name="search" size={16} />
               <input
-                type="text"
-                placeholder="Tìm tên, email…"
+                type="search"
+                placeholder="Tìm tên hoặc email"
                 aria-label="Tìm học sinh theo tên hoặc email"
                 value={studentSearch}
                 onChange={(e) => setStudentSearch(e.target.value)}
                 spellCheck={false}
-                style={{ padding: '8px 12px 8px 32px', height: 38 }}
+                style={{ width: 220 }}
               />
             </div>
-
-            <select
-              style={{ width: 'auto', minWidth: 140, padding: '8px 12px', height: 38, margin: 0 }}
-              value={classFilter}
-              onChange={(e) => setClassFilter(e.target.value)}
-            >
-              <option value="all">Tất cả lớp ({students.length})</option>
-              {distinctClasses.map((cls) => (
-                <option key={cls} value={cls}>
-                  Lớp {cls}
-                </option>
-              ))}
-            </select>
           </div>
         </div>
 
         {loading ? (
           <div className="empty-state">
-            <div className="empty-state-icon">⏳</div>
+            <div className="spinner" style={{ margin: '0 auto 12px' }} />
             <div className="empty-state-title">Đang tải danh sách…</div>
           </div>
         ) : filteredStudents.length === 0 ? (
           <div className="empty-state">
-            <div className="empty-state-icon">👤</div>
-            <div className="empty-state-title">Chưa có học sinh nào</div>
-            <button className="btn sm" style={{ marginTop: 10 }} onClick={() => setShowAddModal(true)}>
-              + Thêm học sinh mới
-            </button>
+            <div className="empty-state-icon is-svg"><UiIcon name="users" size={22} /></div>
+            {students.length === 0 ? (
+              <>
+                <div className="empty-state-title">Chưa có học sinh nào</div>
+                <p className="empty-state-desc">Tạo tài khoản cho học sinh để giao bài và theo dõi kết quả học tập.</p>
+                <button className="btn" onClick={() => setShowAddModal(true)}>
+                  <UiIcon name="plus" size={17} />
+                  Thêm học sinh
+                </button>
+              </>
+            ) : (
+              <>
+                <div className="empty-state-title">Không tìm thấy học sinh phù hợp</div>
+                <p className="empty-state-desc">Thử đổi từ khoá tìm kiếm hoặc chọn lớp khác.</p>
+              </>
+            )}
           </div>
         ) : (
           <div className="table-responsive">
@@ -257,9 +271,9 @@ export default function TeacherDashboard() {
               <thead>
                 <tr>
                   <th>Họ và tên</th>
-                  <th className="nowrap" style={{ width: 120 }}>Lớp</th>
-                  <th className="nowrap" style={{ width: 220 }}>Tài khoản / Email</th>
-                  <th className="nowrap" style={{ textAlign: 'right', width: 240 }}>Thao tác</th>
+                  <th style={{ width: 150 }}>Lớp</th>
+                  <th style={{ width: 240 }}>Tài khoản</th>
+                  <th style={{ textAlign: 'right', width: 120 }}>Thao tác</th>
                 </tr>
               </thead>
               <tbody>
@@ -269,7 +283,7 @@ export default function TeacherDashboard() {
 
                   if (isEditing) {
                     return (
-                      <tr key={s.id} style={{ background: 'var(--primary-light)' }}>
+                      <tr key={s.id} className="is-editing">
                         <td>
                           <input
                             type="text"
@@ -279,7 +293,7 @@ export default function TeacherDashboard() {
                             autoFocus
                           />
                         </td>
-                        <td className="nowrap">
+                        <td>
                           <input
                             type="text"
                             aria-label="Lớp học"
@@ -287,15 +301,11 @@ export default function TeacherDashboard() {
                             onChange={(e) => setEditForm({ ...editForm, className: e.target.value })}
                           />
                         </td>
-                        <td className="nowrap">{s.email}</td>
-                        <td className="nowrap" style={{ textAlign: 'right' }}>
-                          <div className="action-buttons" style={{ justifyContent: 'flex-end' }}>
-                            <button className="btn sm" onClick={() => handleSaveEdit(s.id)}>
-                              Lưu
-                            </button>
-                            <button className="btn sm secondary" onClick={() => setEditingId(null)}>
-                              Huỷ
-                            </button>
+                        <td className="text-muted-cell">{s.email}</td>
+                        <td>
+                          <div className="row-actions">
+                            <button className="btn sm" onClick={() => handleSaveEdit(s.id)}>Lưu</button>
+                            <button className="btn sm secondary" onClick={() => setEditingId(null)}>Huỷ</button>
                           </div>
                         </td>
                       </tr>
@@ -307,51 +317,36 @@ export default function TeacherDashboard() {
                       <td>
                         <Link
                           to={`/teacher/analytics?studentId=${s.id}`}
-                          className="table-avatar-cell"
-                          style={{ textDecoration: 'none' }}
-                          title="Xem kết quả bài làm của học sinh này"
+                          className="person-link"
+                          title="Xem kết quả học tập của học sinh này"
                         >
-                          <div className="table-avatar">{initial}</div>
-                          <span style={{ fontWeight: 600, color: 'var(--text-main)' }}>{s.name}</span>
+                          <span className="avatar" aria-hidden="true">{initial}</span>
+                          <span className="person-name">{s.name}</span>
                         </Link>
                       </td>
-                      <td className="nowrap">
-                        <span className="tag-badge" style={{ margin: 0 }}>
-                          {s.className ? `Lớp ${s.className}` : 'Chưa phân lớp'}
-                        </span>
+                      <td>
+                        <span className="class-badge">{s.className ? `Lớp ${s.className}` : 'Chưa phân lớp'}</span>
                       </td>
-                      <td className="nowrap" style={{ color: 'var(--text-muted)' }}>
-                        {s.email}
-                      </td>
-                      <td className="nowrap" style={{ textAlign: 'right' }}>
-                        <div className="action-buttons" style={{ justifyContent: 'flex-end' }}>
+                      <td className="text-muted-cell">{s.email}</td>
+                      <td>
+                        <div className="row-actions">
                           <button
                             type="button"
-                            className="btn sm secondary"
+                            className="icon-btn"
                             onClick={() => startEdit(s)}
+                            aria-label={`Sửa thông tin ${s.name}`}
                             title="Sửa thông tin"
-                            style={{ whiteSpace: 'nowrap', display: 'inline-flex', alignItems: 'center', gap: 5 }}
                           >
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                              <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
-                              <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
-                            </svg>
-                            <span>Sửa</span>
+                            <UiIcon name="edit" size={15} />
                           </button>
                           <button
                             type="button"
-                            className="btn sm outline-danger"
+                            className="icon-btn is-danger"
                             onClick={() => handleDeleteStudent(s)}
+                            aria-label={`Xoá học sinh ${s.name}`}
                             title="Xoá học sinh"
-                            style={{ whiteSpace: 'nowrap' }}
                           >
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                              <polyline points="3 6 5 6 21 6"></polyline>
-                              <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
-                              <line x1="10" y1="11" x2="10" y2="17"></line>
-                              <line x1="14" y1="11" x2="14" y2="17"></line>
-                            </svg>
-                            <span>Xoá</span>
+                            <UiIcon name="trash" size={15} />
                           </button>
                         </div>
                       </td>
@@ -364,62 +359,65 @@ export default function TeacherDashboard() {
         )}
       </div>
 
-      {/* Quản lý nhóm học sinh - dùng để giao bài nhanh cho 1 tập học sinh tuỳ ý (không nhất thiết cùng lớp) */}
+      {/* Nhóm học sinh - giao bài nhanh cho 1 tập học sinh tuỳ ý (không nhất thiết cùng lớp) */}
       <div className="card">
-        <div className="card-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12 }}>
-          <div>
-            <h2 style={{ margin: 0 }}>Nhóm học sinh ({groups.length})</h2>
-            <p style={{ margin: '2px 0 0', fontSize: 12.5, color: 'var(--text-muted)' }}>
-              Gom học sinh tuỳ ý thành nhóm để giao bài nhanh (VD: nhóm ôn thêm, đội tuyển…)
-            </p>
+        <div className="card-header">
+          <div className="card-title-group">
+            <div className="card-title-row">
+              <h2>Nhóm học sinh</h2>
+              <span className="count-badge">{groups.length}</span>
+            </div>
+            <p className="card-hint">Gom học sinh thành nhóm để giao bài nhanh, VD nhóm ôn thêm hoặc đội tuyển.</p>
           </div>
-          <button className="btn sm" onClick={openCreateGroupModal}>
-            + Tạo nhóm
+          <button className="btn sm secondary" onClick={openCreateGroupModal}>
+            <UiIcon name="plus" size={15} />
+            Tạo nhóm
           </button>
         </div>
 
         {groups.length === 0 ? (
           <div className="empty-state">
-            <div className="empty-state-icon">🗂️</div>
+            <div className="empty-state-icon is-svg"><UiIcon name="folder" size={22} /></div>
             <div className="empty-state-title">Chưa có nhóm nào</div>
-            <p className="empty-state-desc">Tạo nhóm để giao bài nhanh cho nhiều học sinh cùng lúc, không cần chọn tay từng người mỗi lần.</p>
+            <p className="empty-state-desc">Tạo nhóm để giao bài cho nhiều học sinh cùng lúc, không phải chọn tay từng người.</p>
           </div>
         ) : (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+          <ul className="group-list">
             {groups.map((g) => (
-              <div
-                key={g.id}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  gap: 12,
-                  flexWrap: 'wrap',
-                  padding: '12px 16px',
-                  border: '1px solid var(--border-color)',
-                  borderRadius: 'var(--radius-md)',
-                  background: '#ffffff',
-                }}
-              >
-                <div style={{ minWidth: 220 }}>
-                  <div style={{ fontWeight: 700, fontSize: 14.5, color: 'var(--text-main)' }}>
-                    🗂️ {g.name} <span style={{ fontWeight: 500, color: 'var(--text-muted)', fontSize: 12.5 }}>({g.students.length} học sinh)</span>
+              <li key={g.id} className="group-row">
+                <span className="group-icon" aria-hidden="true"><UiIcon name="folder" size={18} /></span>
+                <div className="group-info">
+                  <div className="group-name">
+                    {g.name}
+                    <span className="count-badge">{g.students.length} học sinh</span>
                   </div>
-                  <div style={{ fontSize: 12.5, color: 'var(--text-muted)', marginTop: 4 }}>
-                    {g.students.map((s) => s.name).join(', ') || '—'}
+                  <div className="group-members" title={g.students.map((st) => st.name).join(', ')}>
+                    {g.students.map((st) => st.name).join(', ') || 'Chưa có thành viên'}
                   </div>
                 </div>
-                <div className="action-buttons">
-                  <button type="button" className="btn sm secondary" onClick={() => openEditGroupModal(g)}>
-                    Sửa
+                <div className="row-actions">
+                  <button
+                    type="button"
+                    className="icon-btn"
+                    onClick={() => openEditGroupModal(g)}
+                    aria-label={`Sửa nhóm ${g.name}`}
+                    title="Sửa nhóm"
+                  >
+                    <UiIcon name="edit" size={15} />
                   </button>
-                  <button type="button" className="btn sm outline-danger" onClick={() => handleDeleteGroup(g)}>
-                    Xoá
+                  <button
+                    type="button"
+                    className="icon-btn is-danger"
+                    onClick={() => handleDeleteGroup(g)}
+                    aria-label={`Xoá nhóm ${g.name}`}
+                    title="Xoá nhóm"
+                  >
+                    <UiIcon name="trash" size={15} />
                   </button>
                 </div>
-              </div>
+              </li>
             ))}
-          </div>
+          </ul>
         )}
       </div>
 
@@ -446,13 +444,8 @@ export default function TeacherDashboard() {
           >
             <div className="card-header">
               <h2>{editingGroup ? 'Sửa nhóm học sinh' : 'Tạo nhóm học sinh'}</h2>
-              <button
-                type="button"
-                aria-label="Đóng"
-                style={{ background: 'none', border: 'none', fontSize: 20, cursor: 'pointer', color: 'var(--text-muted)' }}
-                onClick={() => setShowGroupModal(false)}
-              >
-                ✕
+              <button type="button" className="ce-close" aria-label="Đóng" onClick={() => setShowGroupModal(false)}>
+                <UiIcon name="close" size={18} />
               </button>
             </div>
 
@@ -475,57 +468,37 @@ export default function TeacherDashboard() {
                   Chọn học sinh <span style={{ color: 'var(--danger)' }}>*</span>{' '}
                   <span style={{ fontWeight: 500, color: 'var(--text-muted)' }}>({groupForm.studentIds.length} đã chọn)</span>
                 </label>
-                <input
-                  type="text"
-                  placeholder="Tìm tên học sinh…"
-                  value={groupSearch}
-                  onChange={(e) => setGroupSearch(e.target.value)}
-                  spellCheck={false}
-                  style={{ marginBottom: 8 }}
-                />
-                <div
-                  style={{
-                    maxHeight: 260,
-                    overflowY: 'auto',
-                    border: '1px solid var(--border-color)',
-                    borderRadius: 'var(--radius-md)',
-                    padding: 8,
-                  }}
-                >
+                <div className="search-field" style={{ display: 'flex', marginBottom: 8 }}>
+                  <UiIcon name="search" size={16} />
+                  <input
+                    type="search"
+                    placeholder="Tìm tên học sinh"
+                    aria-label="Tìm học sinh"
+                    value={groupSearch}
+                    onChange={(e) => setGroupSearch(e.target.value)}
+                    spellCheck={false}
+                  />
+                </div>
+                <div className="pick-list">
                   {students
                     .filter((s) => s.name.toLowerCase().includes(groupSearch.toLowerCase()))
-                    .map((s) => (
-                      <label
-                        key={s.id}
-                        style={{
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: 8,
-                          padding: '6px 8px',
-                          borderRadius: 6,
-                          cursor: 'pointer',
-                          fontSize: 13.5,
-                        }}
-                      >
-                        <input
-                          type="checkbox"
-                          checked={groupForm.studentIds.includes(s.id)}
-                          onChange={() => toggleGroupStudent(s.id)}
-                          style={{ width: 'auto' }}
-                        />
-                        <span>{s.name}</span>
-                        {s.className && <span style={{ color: 'var(--text-muted)', fontSize: 12 }}>({s.className})</span>}
-                      </label>
-                    ))}
-                  {students.length === 0 && (
-                    <p style={{ fontSize: 13, color: 'var(--text-muted)', margin: 0 }}>Chưa có học sinh nào.</p>
-                  )}
+                    .map((s) => {
+                      const isChecked = groupForm.studentIds.includes(s.id);
+                      return (
+                        <label key={s.id} className={`ce-student${isChecked ? ' is-checked' : ''}`}>
+                          <input type="checkbox" checked={isChecked} onChange={() => toggleGroupStudent(s.id)} />
+                          <span className="ce-student-name">{s.name}</span>
+                          <span className="ce-student-class">{s.className ? `Lớp ${s.className}` : 'Chưa phân lớp'}</span>
+                        </label>
+                      );
+                    })}
+                  {students.length === 0 && <div className="ce-empty">Chưa có học sinh nào.</div>}
                 </div>
               </div>
 
               {groupError && (
                 <p className="error-text" role="alert" aria-live="polite">
-                  <span aria-hidden="true">⚠️</span> {groupError}
+                  {groupError}
                 </p>
               )}
 
@@ -565,13 +538,8 @@ export default function TeacherDashboard() {
           >
             <div className="card-header">
               <h2>Thêm học sinh mới</h2>
-              <button
-                type="button"
-                aria-label="Đóng"
-                style={{ background: 'none', border: 'none', fontSize: 20, cursor: 'pointer', color: 'var(--text-muted)' }}
-                onClick={() => setShowAddModal(false)}
-              >
-                ✕
+              <button type="button" className="ce-close" aria-label="Đóng" onClick={() => setShowAddModal(false)}>
+                <UiIcon name="close" size={18} />
               </button>
             </div>
 
@@ -633,7 +601,7 @@ export default function TeacherDashboard() {
 
               {addError && (
                 <p className="error-text" role="alert" aria-live="polite">
-                  <span aria-hidden="true">⚠️</span> {addError}
+                  {addError}
                 </p>
               )}
 

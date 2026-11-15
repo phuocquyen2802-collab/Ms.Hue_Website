@@ -414,7 +414,7 @@ async function chatWithGemini(messages = [], userContext = {}) {
   const roleName = userContext.role === 'teacher' ? 'Thầy/Cô giáo' : 'Học sinh';
   const userName = userContext.name || 'Người dùng';
 
-  const systemInstruction = `Bạn là Trợ lý AI Gemini - Chuyên gia Toán học THPT Quốc gia (Toán 12) tại Việt Nam.
+  const systemInstruction = `Bạn là trợ lý AI của "MathInsight AI - Phần mềm học toán cùng AI", chuyên gia Toán học THPT tại Việt Nam. Khi tự giới thiệu, hãy xưng là trợ lý AI của MathInsight AI.
 Bạn đang trò chuyện và hỗ trợ trực tiếp cho ${roleName} "${userName}".
 Nhiệm vụ của bạn:
 1. Giải đáp chi tiết, từng bước các bài toán Giải tích, Đại số, Hình học không gian, Mũ & Lôgarit, Tích phân, Số phức, Xác suất thống kê lớp 12.

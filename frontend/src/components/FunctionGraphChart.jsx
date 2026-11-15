@@ -174,7 +174,7 @@ export default function FunctionGraphChart({ expression, domain }) {
         height={HEIGHT}
         role="img"
         aria-label={`Đồ thị hàm số y = ${expression}`}
-        style={{ background: '#fffefb', border: '1px solid var(--paper-line, #e4e0d3)', borderRadius: 8 }}
+        style={{ background: '#ffffff', border: '1px solid var(--paper-line, #e4e0d3)', borderRadius: 8 }}
       >
         {/* Lưới mờ - đúng vị trí các mốc số đẹp */}
         {result.yTicks.map((t, i) => (

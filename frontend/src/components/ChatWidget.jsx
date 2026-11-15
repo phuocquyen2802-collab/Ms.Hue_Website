@@ -56,7 +56,7 @@ function formatFileSize(bytes) {
 function getFileMeta(fileName) {
   const ext = (fileName || '').split('.').pop()?.toLowerCase();
   if (['doc', 'docx'].includes(ext)) {
-    return { icon: '📄', label: 'WORD', color: '#2563eb', bg: '#eff6ff', border: '#bfdbfe' };
+    return { icon: '📄', label: 'WORD', color: 'var(--primary)', bg: 'var(--primary-light)', border: 'var(--primary-border)' };
   }
   if (['pdf'].includes(ext)) {
     return { icon: '📕', label: 'PDF', color: '#dc2626', bg: '#fef2f2', border: '#fecaca' };
@@ -396,7 +396,7 @@ export default function ChatWidget() {
                     width: 36,
                     height: 36,
                     borderRadius: '50%',
-                    background: 'linear-gradient(135deg, #3b82f6, #1d4ed8)',
+                    background: 'linear-gradient(135deg, var(--primary), var(--primary-hover))',
                     color: '#fff',
                     display: 'flex',
                     alignItems: 'center',
@@ -590,7 +590,7 @@ export default function ChatWidget() {
                             width: 24,
                             height: 24,
                             borderRadius: '50%',
-                            background: '#3b82f6',
+                            background: 'var(--primary)',
                             color: '#fff',
                             display: 'flex',
                             alignItems: 'center',
@@ -609,13 +609,13 @@ export default function ChatWidget() {
                           maxWidth: '82%',
                           padding: msg.image && !msg.text ? '4px' : '8px 12px',
                           borderRadius: isMe ? '16px 16px 4px 16px' : '16px 16px 16px 4px',
-                          background: isMe ? 'linear-gradient(135deg, #2563eb, #1d4ed8)' : '#ffffff',
+                          background: isMe ? 'linear-gradient(135deg, var(--primary), var(--primary-hover))' : '#ffffff',
                           color: isMe ? '#ffffff' : '#0f172a',
                           fontSize: 13,
                           lineHeight: 1.45,
                           wordBreak: 'break-word',
                           boxShadow: isMe
-                            ? '0 2px 6px rgba(37,99,235,0.25)'
+                            ? '0 2px 6px rgba(41, 82, 217,0.25)'
                             : '0 1px 3px rgba(0,0,0,0.06)',
                           border: isMe ? 'none' : '1px solid #e2e8f0',
                         }}
@@ -667,7 +667,7 @@ export default function ChatWidget() {
                                   height: 34,
                                   borderRadius: 8,
                                   background: isMe ? '#ffffff' : fileMeta.color,
-                                  color: isMe ? '#2563eb' : '#ffffff',
+                                  color: isMe ? 'var(--primary)' : '#ffffff',
                                   display: 'flex',
                                   alignItems: 'center',
                                   justifyContent: 'center',
@@ -908,7 +908,7 @@ export default function ChatWidget() {
                 width: 32,
                 height: 32,
                 borderRadius: '50%',
-                background: showEmojiPicker ? '#eff6ff' : '#f1f5f9',
+                background: showEmojiPicker ? 'var(--primary-light)' : '#f1f5f9',
                 border: 'none',
                 cursor: 'pointer',
                 display: 'flex',
@@ -951,7 +951,7 @@ export default function ChatWidget() {
                 width: 32,
                 height: 32,
                 borderRadius: '50%',
-                background: inputText.trim() || selectedRawFile ? '#2563eb' : '#e2e8f0',
+                background: inputText.trim() || selectedRawFile ? 'var(--primary)' : '#e2e8f0',
                 color: inputText.trim() || selectedRawFile ? '#ffffff' : '#94a3b8',
                 border: 'none',
                 cursor: inputText.trim() || selectedRawFile ? 'pointer' : 'default',
@@ -1108,8 +1108,8 @@ export default function ChatWidget() {
                   fontSize: 11.5,
                   fontWeight: 700,
                   cursor: 'pointer',
-                  background: filterTab === 'all' ? '#eff6ff' : '#f1f5f9',
-                  color: filterTab === 'all' ? '#2563eb' : '#64748b',
+                  background: filterTab === 'all' ? 'var(--primary-light)' : '#f1f5f9',
+                  color: filterTab === 'all' ? 'var(--primary)' : '#64748b',
                 }}
               >
                 Tất cả ({contacts.length})
@@ -1168,7 +1168,7 @@ export default function ChatWidget() {
                     cursor: 'pointer',
                     background:
                       activePartner?.id === contact.id
-                        ? '#eff6ff'
+                        ? 'var(--primary-light)'
                         : contact.unreadCount > 0
                         ? '#fff1f2'
                         : '#ffffff',
@@ -1193,7 +1193,7 @@ export default function ChatWidget() {
                         borderRadius: '50%',
                         background: contact.unreadCount > 0
                           ? 'linear-gradient(135deg, #ef4444, #dc2626)'
-                          : 'linear-gradient(135deg, #3b82f6, #1d4ed8)',
+                          : 'linear-gradient(135deg, var(--primary), var(--primary-hover))',
                         color: '#ffffff',
                         display: 'flex',
                         alignItems: 'center',
@@ -1342,7 +1342,7 @@ export default function ChatWidget() {
                   height: 9,
                   borderRadius: '50%',
                   background: '#22c55e',
-                  border: '2px solid #2563eb',
+                  border: '2px solid var(--primary)',
                   boxShadow: '0 0 6px #22c55e',
                 }}
               />

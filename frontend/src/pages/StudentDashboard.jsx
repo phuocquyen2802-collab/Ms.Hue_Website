@@ -213,7 +213,7 @@ function ExamCardItem({ exam, examSubs, submitted, aiChildren = [], submissions 
           padding: '12px 18px',
           flexWrap: 'wrap',
           gap: 12,
-          background: expanded ? 'rgba(37,99,235,0.02)' : '#ffffff',
+          background: expanded ? 'rgba(41, 82, 217,0.02)' : '#ffffff',
         }}
       >
         {/* Left: Icon + Title & Description */}
@@ -223,7 +223,7 @@ function ExamCardItem({ exam, examSubs, submitted, aiChildren = [], submissions 
               width: 38,
               height: 38,
               borderRadius: 10,
-              background: submitted ? 'rgba(37,99,235,0.08)' : '#f1f5f9',
+              background: submitted ? 'rgba(41, 82, 217,0.08)' : '#f1f5f9',
               color: submitted ? 'var(--primary)' : '#64748b',
               display: 'flex',
               alignItems: 'center',
@@ -295,9 +295,9 @@ function ExamCardItem({ exam, examSubs, submitted, aiChildren = [], submissions 
                 onClick={() => setExpanded(!expanded)}
                 style={{
                   height: 35,
-                  border: expanded ? '1.5px solid #2563eb' : '1.5px solid #cbd5e1',
-                  background: expanded ? '#eff6ff' : '#ffffff',
-                  color: expanded ? '#1d4ed8' : '#334155',
+                  border: expanded ? '1.5px solid var(--primary)' : '1.5px solid #cbd5e1',
+                  background: expanded ? 'var(--primary-light)' : '#ffffff',
+                  color: expanded ? 'var(--primary-hover)' : '#334155',
                   borderRadius: 7,
                   padding: '0 12px',
                   fontSize: 12.5,
@@ -321,8 +321,8 @@ function ExamCardItem({ exam, examSubs, submitted, aiChildren = [], submissions 
                     width: 18,
                     height: 18,
                     borderRadius: '50%',
-                    background: expanded ? '#dbeafe' : '#f1f5f9',
-                    color: expanded ? '#1d4ed8' : '#64748b',
+                    background: expanded ? 'var(--primary-tint)' : '#f1f5f9',
+                    color: expanded ? 'var(--primary-hover)' : '#64748b',
                     fontSize: 9,
                     fontWeight: 800,
                     transition: 'transform 0.2s ease',

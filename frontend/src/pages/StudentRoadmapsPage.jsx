@@ -293,10 +293,10 @@ export default function StudentRoadmapsPage() {
                       color: 'var(--text-main)',
                       marginBottom: 18,
                       lineHeight: 1.75,
-                      background: 'linear-gradient(135deg, #eff6ff 0%, #f8fafc 100%)',
+                      background: 'linear-gradient(135deg, var(--primary-light) 0%, #f8fafc 100%)',
                       padding: '16px 20px',
                       borderRadius: 10,
-                      border: '1px solid #bfdbfe',
+                      border: '1px solid var(--primary-border)',
                     }}
                     dangerouslySetInnerHTML={{ __html: renderMath(activeSubmission.roadmap.roadmap.summary) }}
                   />

@@ -63,7 +63,7 @@ export default function NotificationBell() {
               id: s.id,
               type: 'submission',
               avatarText: initial,
-              avatarBg: 'linear-gradient(135deg, #2563eb, #3b82f6)',
+              avatarBg: 'linear-gradient(135deg, var(--primary), var(--primary))',
               badgeIcon: '📝',
               badgeBg: '#10b981',
               title: s.studentName,
@@ -86,7 +86,7 @@ export default function NotificationBell() {
                 avatarText: initial,
                 avatarBg: 'linear-gradient(135deg, #f59e0b, #d97706)',
                 badgeIcon: '💬',
-                badgeBg: '#2563eb',
+                badgeBg: 'var(--primary)',
                 title: c.authorName,
                 desc: `đã bình luận vào bài "${a.title || 'Thông tin chung'}": ${c.content.slice(0, 60)}${c.content.length > 60 ? '…' : ''}`,
                 timestamp: c.createdAt,
@@ -122,9 +122,9 @@ export default function NotificationBell() {
             avatarText: isAiExam ? '🎯' : '📝',
             avatarBg: isAiExam
               ? 'linear-gradient(135deg, #10b981, #059669)'
-              : 'linear-gradient(135deg, #3b82f6, #1d4ed8)',
+              : 'linear-gradient(135deg, var(--primary), var(--primary-hover))',
             badgeIcon: isAiExam ? 'AI' : '★',
-            badgeBg: isAiExam ? '#8b5cf6' : '#2563eb',
+            badgeBg: isAiExam ? '#8b5cf6' : 'var(--primary)',
             title: isAiExam ? 'Bài tập AI mới' : 'Đề kiểm tra mới',
             desc: `"${e.title}" đã được giao cho bạn`,
             timestamp: e.createdAt,
@@ -180,9 +180,9 @@ export default function NotificationBell() {
           id: `announcement-${a.id}`,
           type: 'announcement',
           avatarText: '📢',
-          avatarBg: 'linear-gradient(135deg, #1d4ed8, #1e3a8a)',
+          avatarBg: 'linear-gradient(135deg, var(--primary-hover), var(--primary-strong))',
           badgeIcon: '📌',
-          badgeBg: '#2563eb',
+          badgeBg: 'var(--primary)',
           title: a.authorName,
           desc: `đã đăng thông báo${a.title ? ` "${a.title}"` : ''}: ${a.content.slice(0, 60)}${a.content.length > 60 ? '…' : ''}`,
           timestamp: a.createdAt,
@@ -273,31 +273,36 @@ export default function NotificationBell() {
         type="button"
         onClick={() => setOpen((o) => !o)}
         title="Thông báo"
+        aria-label={unreadCount > 0 ? `Thông báo, ${unreadCount} chưa đọc` : 'Thông báo'}
+        aria-expanded={open}
         style={{
-          width: 44,
-          height: 44,
+          width: 42,
+          height: 42,
           borderRadius: '50%',
-          border: '1.5px solid #e2e8f0',
+          border: '1px solid var(--line-strong)',
           background: '#ffffff',
+          color: open ? 'var(--primary)' : '#3a4562',
           cursor: 'pointer',
-          fontSize: 20,
           position: 'relative',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          boxShadow: '0 4px 14px rgba(0,0,0,0.08)',
-          transition: 'all 0.2s ease',
+          boxShadow: '0 4px 12px -4px rgba(21, 32, 58, 0.18)',
+          transition: 'border-color 0.15s ease, color 0.15s ease',
         }}
         onMouseEnter={(e) => {
-          e.currentTarget.style.transform = 'scale(1.06)';
-          e.currentTarget.style.boxShadow = '0 6px 18px rgba(0,0,0,0.12)';
+          e.currentTarget.style.borderColor = 'var(--primary-border)';
+          e.currentTarget.style.color = 'var(--primary)';
         }}
         onMouseLeave={(e) => {
-          e.currentTarget.style.transform = 'scale(1)';
-          e.currentTarget.style.boxShadow = '0 4px 14px rgba(0,0,0,0.08)';
+          e.currentTarget.style.borderColor = 'var(--line-strong)';
+          e.currentTarget.style.color = open ? 'var(--primary)' : '#3a4562';
         }}
       >
-        🔔
+        <svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M6 9.5a6 6 0 0 1 12 0c0 4.5 1.8 6.5 2.5 7.2H3.5C4.2 16 6 14 6 9.5Z" />
+          <path d="M10 20a2.2 2.2 0 0 0 4 0" />
+        </svg>
         {unreadCount > 0 && (
           <span
             style={{
@@ -361,7 +366,7 @@ export default function NotificationBell() {
                   style={{
                     background: 'transparent',
                     border: 'none',
-                    color: 'var(--primary, #2563eb)',
+                    color: 'var(--primary, var(--primary))',
                     fontSize: 12.5,
                     fontWeight: 600,
                     cursor: 'pointer',
@@ -369,7 +374,7 @@ export default function NotificationBell() {
                     borderRadius: 6,
                     transition: 'background 0.15s ease',
                   }}
-                  onMouseEnter={(e) => (e.currentTarget.style.background = '#eff6ff')}
+                  onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--primary-light)')}
                   onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
                 >
                   ✓ Đã đọc tất cả
@@ -430,8 +435,8 @@ export default function NotificationBell() {
                   fontSize: 13,
                   fontWeight: 700,
                   cursor: 'pointer',
-                  background: tab === 'all' ? 'var(--primary-light, #eff6ff)' : '#f1f5f9',
-                  color: tab === 'all' ? 'var(--primary, #2563eb)' : '#64748b',
+                  background: tab === 'all' ? 'var(--primary-light, var(--primary-light))' : '#f1f5f9',
+                  color: tab === 'all' ? 'var(--primary, var(--primary))' : '#64748b',
                   transition: 'all 0.15s ease',
                 }}
               >
@@ -447,8 +452,8 @@ export default function NotificationBell() {
                   fontSize: 13,
                   fontWeight: 700,
                   cursor: 'pointer',
-                  background: tab === 'unread' ? 'var(--primary-light, #eff6ff)' : '#f1f5f9',
-                  color: tab === 'unread' ? 'var(--primary, #2563eb)' : '#64748b',
+                  background: tab === 'unread' ? 'var(--primary-light, var(--primary-light))' : '#f1f5f9',
+                  color: tab === 'unread' ? 'var(--primary, var(--primary))' : '#64748b',
                   transition: 'all 0.15s ease',
                 }}
               >
@@ -501,7 +506,7 @@ export default function NotificationBell() {
                         width: 44,
                         height: 44,
                         borderRadius: '50%',
-                        background: n.avatarBg || 'linear-gradient(135deg, #3b82f6, #2563eb)',
+                        background: n.avatarBg || 'linear-gradient(135deg, var(--primary), var(--primary))',
                         color: '#ffffff',
                         display: 'flex',
                         alignItems: 'center',
@@ -522,7 +527,7 @@ export default function NotificationBell() {
                           width: 20,
                           height: 20,
                           borderRadius: '50%',
-                          background: n.badgeBg || '#2563eb',
+                          background: n.badgeBg || 'var(--primary)',
                           color: '#ffffff',
                           display: 'flex',
                           alignItems: 'center',

@@ -1,6 +1,92 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import BrandMark from '../components/BrandMark';
+import { APP_NAME, APP_TAGLINE } from '../config/brand';
+
+// Hình minh hoạ bên trái: đồ thị y = x³ − 3x trên giấy kẻ ô, đánh dấu điểm
+// cực đại (CĐ) và cực tiểu (CT). Toạ độ màn hình: gốc O tại (280; 170),
+// 1 đơn vị trục x = 80px, 1 đơn vị trục y = 40px, ô lưới 40px.
+const O = { x: 280, y: 170 };
+const UX = 80;
+const UY = 40;
+const toX = (x) => O.x + x * UX;
+const toY = (y) => O.y - y * UY;
+
+const CURVE = (() => {
+  const pts = [];
+  const n = 90;
+  for (let i = 0; i <= n; i += 1) {
+    const x = -2.15 + (4.3 * i) / n;
+    const y = x * x * x - 3 * x;
+    pts.push(`${i ? 'L' : 'M'}${toX(x).toFixed(1)} ${toY(y).toFixed(1)}`);
+  }
+  return pts.join(' ');
+})();
+
+const GRID_X = Array.from({ length: 15 }, (_, i) => i * 40);
+const GRID_Y = Array.from({ length: 9 }, (_, i) => 10 + i * 40);
+
+function CubicPlot() {
+  const max = { x: toX(-1), y: toY(2) };
+  const min = { x: toX(1), y: toY(-2) };
+
+  return (
+    <figure className="auth-plot" aria-label="Đồ thị hàm số y = x mũ 3 trừ 3x với điểm cực đại và cực tiểu">
+      <svg viewBox="0 0 560 340" role="img" aria-hidden="true">
+        <g className="auth-plot-grid">
+          {GRID_X.map((x) => (
+            <line key={`gx${x}`} x1={x} y1="0" x2={x} y2="340" />
+          ))}
+          {GRID_Y.map((y) => (
+            <line key={`gy${y}`} x1="0" y1={y} x2="560" y2={y} />
+          ))}
+        </g>
+
+        <g className="auth-plot-axis">
+          <line x1="12" y1={O.y} x2="546" y2={O.y} />
+          <line x1={O.x} y1="332" x2={O.x} y2="8" />
+          <path d={`M546 ${O.y} l-8 -4 v8 Z`} />
+          <path d={`M${O.x} 8 l-4 8 h8 Z`} />
+          <text x="540" y={O.y + 20}>x</text>
+          <text x={O.x + 10} y="20">y</text>
+          <text x={O.x - 14} y={O.y + 18}>O</text>
+          {[-2, -1, 1, 2].map((t) => (
+            <text key={`tx${t}`} x={toX(t)} y={t === 1 ? O.y - 8 : O.y + 18} textAnchor="middle">
+              {t < 0 ? `−${-t}` : t}
+            </text>
+          ))}
+          <text x={O.x + 10} y={max.y + 5}>2</text>
+          <text x={O.x - 10} y={min.y + 5} textAnchor="end">−2</text>
+        </g>
+
+        <g className="auth-plot-guides">
+          <path d={`M${max.x} ${max.y} V${O.y} M${max.x} ${max.y} H${O.x}`} />
+          <path d={`M${min.x} ${min.y} V${O.y} M${min.x} ${min.y} H${O.x}`} />
+          <path d={`M${min.x} ${min.y} L${min.x + 18} ${min.y + 22}`} className="auth-plot-leader" />
+        </g>
+
+        <path className="auth-plot-curve" d={CURVE} pathLength="1" />
+
+        <g className="auth-plot-points">
+          <circle cx={max.x} cy={max.y} r="6" className="auth-plot-point" />
+          <text x={max.x} y={max.y - 16} textAnchor="middle" className="auth-plot-label">CĐ</text>
+          <circle cx={min.x} cy={min.y} r="7" className="auth-plot-point insight" />
+          <text x={min.x} y={min.y - 16} textAnchor="middle" className="auth-plot-label">CT</text>
+          <text x="24" y="40" className="auth-plot-eq">y = x³ − 3x</text>
+        </g>
+      </svg>
+
+      <figcaption className="auth-plot-note">
+        <span className="auth-plot-note-dot" aria-hidden="true" />
+        <span>
+          <strong>Gợi ý từ AI</strong>
+          Ôn lại cực trị của hàm số.
+        </span>
+      </figcaption>
+    </figure>
+  );
+}
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');
@@ -19,7 +105,7 @@ export default function LoginPage() {
       const user = await login(email, password);
       navigate(user.role === 'teacher' ? '/teacher' : '/student');
     } catch (err) {
-      setError(err.response?.data?.message || 'Sai tài khoản hoặc mật khẩu. Vui lòng kiểm tra lại!');
+      setError(err.response?.data?.message || 'Sai tài khoản hoặc mật khẩu. Kiểm tra lại rồi thử lần nữa.');
     } finally {
       setLoading(false);
     }
@@ -27,33 +113,43 @@ export default function LoginPage() {
 
   return (
     <div className="auth-page">
-      <div className="auth-hero">
-        <div className="auth-hero-mark">∑</div>
+      <section className="auth-hero">
+        <div className="auth-hero-brand">
+          <BrandMark size={40} />
+          <div>
+            <div className="auth-hero-name">{APP_NAME}</div>
+            <div className="auth-hero-tagline">{APP_TAGLINE}</div>
+          </div>
+        </div>
+
         <div className="auth-hero-body">
-          <h1>Ôn tập Toán 12 bài bản, đúng lộ trình.</h1>
+          <h1>Học toán cùng AI, biết rõ mình cần ôn phần nào.</h1>
           <p>
-            Làm bài trắc nghiệm và nhận kết quả ngay. Hệ thống phân tích các
-            chuyên đề còn yếu và đề xuất lộ trình ôn tập phù hợp trước kỳ thi
-            THPT Quốc gia.
+            Làm bài trắc nghiệm và nhận kết quả ngay. {APP_NAME} phân tích các
+            chuyên đề còn yếu, gợi ý lộ trình ôn tập và bài tập tương tự cho
+            từng học sinh.
           </p>
         </div>
-        <div className="auth-hero-foot">Dành cho giáo viên và học sinh lớp 12</div>
-      </div>
 
-      <div className="auth-form-side">
+        <CubicPlot />
+
+        <div className="auth-hero-foot">Dành cho giáo viên và học sinh</div>
+      </section>
+
+      <main className="auth-form-side">
         <div className="auth-card">
           <div className="auth-brand">
             <h2>Đăng nhập</h2>
-            <p className="auth-subtitle">Nhập thông tin tài khoản do giáo viên hoặc nhà trường cấp</p>
+            <p className="auth-subtitle">Dùng tài khoản do giáo viên hoặc nhà trường cấp.</p>
           </div>
 
           <form onSubmit={handleSubmit}>
             <div className="form-group">
-              <label htmlFor="login-email">Tài khoản / Email</label>
+              <label htmlFor="login-email">Tài khoản hoặc email</label>
               <input
                 id="login-email"
                 type="text"
-                placeholder="ten@email.com hoặc tên đăng nhập…"
+                placeholder="ten@email.com hoặc tên đăng nhập"
                 value={email}
                 onChange={(e) => {
                   setEmail(e.target.value);
@@ -70,7 +166,7 @@ export default function LoginPage() {
                 <input
                   id="login-password"
                   type={showPassword ? 'text' : 'password'}
-                  placeholder="Nhập mật khẩu…"
+                  placeholder="Nhập mật khẩu"
                   value={password}
                   onChange={(e) => {
                     setPassword(e.target.value);
@@ -85,7 +181,6 @@ export default function LoginPage() {
                   onClick={() => setShowPassword((v) => !v)}
                   aria-label={showPassword ? 'Ẩn mật khẩu' : 'Hiện mật khẩu'}
                   aria-pressed={showPassword}
-                  tabIndex={0}
                 >
                   {showPassword ? (
                     <svg aria-hidden="true" width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
@@ -105,17 +200,24 @@ export default function LoginPage() {
 
             {error && (
               <div className="auth-error" role="alert" aria-live="polite">
-                <span aria-hidden="true" style={{ fontSize: 16 }}>⚠️</span>
+                <svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <circle cx="12" cy="12" r="9.5" />
+                  <path d="M12 7.5v5.5M12 16.5h.01" />
+                </svg>
                 <span>{error}</span>
               </div>
             )}
 
-            <button className="btn" type="submit" disabled={loading} style={{ width: '100%', marginTop: 4 }}>
+            <button className="btn auth-submit" type="submit" disabled={loading}>
               {loading ? 'Đang đăng nhập…' : 'Đăng nhập'}
             </button>
           </form>
+
+          <p className="auth-help">
+            Học sinh chưa có tài khoản? Liên hệ giáo viên để được cấp.
+          </p>
         </div>
-      </div>
+      </main>
     </div>
   );
 }

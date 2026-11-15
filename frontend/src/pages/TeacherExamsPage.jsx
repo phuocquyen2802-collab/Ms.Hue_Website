@@ -2,6 +2,7 @@ import React, { useEffect, useState, useMemo, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import api from '../services/api';
 import { renderMath } from '../utils/mathRender';
+import UiIcon, { scoreLevel, formatScore, ScoreTrend } from '../components/UiIcon';
 import {
   FORMULA_SIZE_PRESETS,
   valignForHeightEm,
@@ -60,6 +61,9 @@ export default function TeacherExamsPage() {
   const [activeQuickSelect, setActiveQuickSelect] = useState({ type: null, key: null });
   const [createAssignSearch, setCreateAssignSearch] = useState('');
   const [createAssignClassFilter, setCreateAssignClassFilter] = useState('all');
+  const [wordDragActive, setWordDragActive] = useState(false);
+  const wordInputRef = useRef(null);
+  const createAnswerKeyInputRef = useRef(null);
 
   const distinctClasses = useMemo(() => {
     const set = new Set();
@@ -803,14 +807,14 @@ export default function TeacherExamsPage() {
           <h1 className="page-title">Quản lý bài tập</h1>
           <p className="page-subtitle">Tạo đề thi trắc nghiệm, soạn câu hỏi và phân phối cho học sinh</p>
         </div>
-        <div className="header-actions">
-          <button
-            className={`btn ${showCreateForm ? 'secondary' : ''}`}
-            onClick={() => setShowCreateForm(!showCreateForm)}
-          >
-            {showCreateForm ? '✕ Đóng form' : '+ Tạo đề thi mới'}
-          </button>
-        </div>
+        {!showCreateForm && (
+          <div className="header-actions">
+            <button className="btn" onClick={() => setShowCreateForm(true)}>
+              <UiIcon name="plus" size={17} />
+              Tạo đề thi mới
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Thông báo thành công */}
@@ -851,741 +855,633 @@ export default function TeacherExamsPage() {
         </div>
       )}
 
-      {/* Thẻ thống kê */}
-      <div className="metrics-grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))' }}>
+      {/* Thẻ số liệu */}
+      <div className="metrics-grid">
         <div className="metric-card">
           <div className="metric-info">
             <span className="metric-title">Tổng số đề thi</span>
             <span className="metric-value">{exams.length}</span>
-            <span className="metric-sub">Kho đề đã tạo</span>
+            <span className="metric-sub">Trong kho đề của bạn</span>
           </div>
-          <div className="metric-icon-box blue">📚</div>
+          <div className="metric-icon-box blue"><UiIcon name="book" size={20} /></div>
         </div>
-
         <div className="metric-card">
           <div className="metric-info">
-            <span className="metric-title">Đang phát hành</span>
-            <span className="metric-value" style={{ color: 'var(--success)' }}>
-              {assignedCount}
-            </span>
-            <span className="metric-sub">Đã giao cho học sinh</span>
+            <span className="metric-title">Đang giao</span>
+            <span className="metric-value">{assignedCount}</span>
+            <span className="metric-sub">Học sinh đang làm bài</span>
           </div>
-          <div className="metric-icon-box green">🚀</div>
+          <div className="metric-icon-box green"><UiIcon name="send" size={20} /></div>
+        </div>
+        <div className="metric-card">
+          <div className="metric-info">
+            <span className="metric-title">Lượt nộp bài</span>
+            <span className="metric-value">{submissions.length}</span>
+            <span className="metric-sub">Từ tất cả các đề</span>
+          </div>
+          <div className="metric-icon-box slate"><UiIcon name="inbox" size={20} /></div>
         </div>
       </div>
 
-      {/* Form tạo đề thi */}
-      {showCreateForm && (
-        <div className="card" style={{ border: '2px solid var(--primary-border)', boxShadow: 'var(--shadow-md)' }}>
-          <div className="card-header">
-            <h2>Tạo đề thi mới</h2>
-          </div>
-          <form className="form-panel" onSubmit={handleCreateExam}>
-            {/* Tải lên File Word */}
-            <div
-              style={{
-                background: 'var(--bg-subtle)',
-                padding: '16px 18px',
-                borderRadius: 'var(--radius-md)',
-                border: '1.5px dashed var(--primary-border)',
-                marginBottom: 16,
-              }}
-            >
-              <label style={{ display: 'block', fontWeight: 700, fontSize: 14, color: 'var(--text-main)', marginBottom: 6 }}>
-                📄 Upload file word tại đây (.docx)
-              </label>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
-                <input
-                  type="file"
-                  accept=".docx,.txt"
-                  onChange={handleWordFileChange}
-                  disabled={uploadingWord || creating}
-                  style={{ padding: '8px 12px', fontSize: 13, flex: 1, minWidth: 220, background: '#ffffff' }}
-                />
+      {/* Form tạo đề thi: 4 bước theo đúng thứ tự giáo viên thao tác */}
+      {showCreateForm && (() => {
+        const step1Done = parsedQuestions.length > 0;
+        const step2Done = Boolean(newExam.title && newExam.title.trim()) && Number(newExam.durationMinutes) > 0;
+        const step4Done = createAssignedStudents.length > 0;
+        const answerKeyNeedsConfirm = Boolean(
+          createAnswerKeyFile && answerKeyCoverage?.supported && !answerKeyCoverage.isComplete && !forceCreateDespiteMissing
+        );
+        const missing = [];
+        if (!step1Done) missing.push('tải file đề thi');
+        if (!(newExam.title && newExam.title.trim())) missing.push('đặt tên đề');
+        if (!step4Done) missing.push('chọn học sinh nhận đề');
+        if (answerKeyNeedsConfirm) missing.push('xác nhận đáp án chi tiết còn thiếu lời giải');
+        const canSubmit = missing.length === 0 && !creating && !uploadingWord;
+        const allStudentsSelected = students.length > 0 && createAssignedStudents.length === students.length;
+
+        function closeCreateForm() {
+          setShowCreateForm(false);
+          setWordFile(null);
+          setParsedQuestions([]);
+          setCreateAssignedStudents([]);
+        }
+
+        function pickWordFile(fileList) {
+          if (!fileList || fileList.length === 0 || uploadingWord || creating) return;
+          handleWordFileChange({ target: { files: fileList } });
+        }
+
+        return (
+          <div className="card create-exam">
+            <div className="ce-header">
+              <div>
+                <h2>Tạo đề thi mới</h2>
+                <p>Tải file Word đề thi, kiểm tra câu hỏi rồi giao cho học sinh.</p>
               </div>
+              <button type="button" className="ce-close" onClick={closeCreateForm} aria-label="Đóng form tạo đề">
+                <UiIcon name="close" size={18} />
+              </button>
+            </div>
 
-              {uploadingWord && (
-                <div style={{ marginTop: 10 }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12.5, fontWeight: 600, color: 'var(--primary)', marginBottom: 5 }}>
-                    <span>⏳ Đang xử lí file. Vui lòng đợi giấy lát...</span>
-                    <span>{Math.round(uploadProgress)}%</span>
-                  </div>
-                  <div className="progress-bar-wrapper" style={{ maxWidth: '100%', height: 8 }}>
-                    <div className="progress-bar-fill" style={{ width: `${uploadProgress}%`, background: 'var(--primary)', transition: 'width 0.3s ease' }} />
-                  </div>
-                  <div style={{ fontSize: 11.5, color: 'var(--text-muted)', marginTop: 4 }}>
-                    Đề có nhiều công thức Toán sẽ mất nhiều thời gian hơn do phải dựng từng ảnh công thức.
-                  </div>
+            <form className="form-panel" onSubmit={handleCreateExam}>
+              <input
+                ref={wordInputRef}
+                type="file"
+                accept=".docx,.txt"
+                className="visually-hidden"
+                tabIndex={-1}
+                onChange={(e) => {
+                  pickWordFile(e.target.files);
+                  e.target.value = '';
+                }}
+              />
+
+              {/* Bước 1: Tải đề */}
+              <section className={`ce-step${step1Done ? ' is-done' : ''}`}>
+                <div className="ce-step-marker" aria-hidden="true">
+                  {step1Done ? <UiIcon name="check" size={15} /> : 1}
                 </div>
-              )}
-
-              {uploadError && (
-                <p className="error-text" style={{ marginTop: 8 }}>
-                  ⚠️ {uploadError}
-                </p>
-              )}
-
-              {parsedQuestions.length > 0 && (
-                <div style={{ marginTop: 14 }}>
-                  <div
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'space-between',
-                      padding: '10px 14px',
-                      background: 'var(--success-bg)',
-                      color: 'var(--success-text)',
-                      borderRadius: 'var(--radius-md)',
-                      fontSize: 13,
-                      fontWeight: 700,
-                      marginBottom: 12,
-                      flexWrap: 'wrap',
-                      gap: 8,
-                    }}
-                  >
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-                      <span>✓ Đã nhận diện {parsedQuestions.length} câu hỏi kèm công thức toán học!</span>
-                      {totalFormulaCount > 0 && (
-                        <span className="tag-badge" style={{ background: '#dbeafe', color: '#1e40af', border: '1px solid #93c5fd' }}>
-                          📐 {totalFormulaCount} ảnh công thức
-                        </span>
-                      )}
-                    </div>
-
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
-                      {totalFormulaCount > 0 && (
-                        <button
-                          type="button"
-                          className="btn sm secondary"
-                          style={{ fontSize: 12, fontWeight: 600 }}
-                          onClick={selectAllFormulasInExam}
-                        >
-                          ⚡ Chọn tất cả ({totalFormulaCount})
-                        </button>
-                      )}
-
-                      {selectedFormulaKeys.length > 0 && (
-                        <button
-                          type="button"
-                          className="btn sm secondary"
-                          style={{ fontSize: 12, color: 'var(--danger)' }}
-                          onClick={clearFormulaSelection}
-                        >
-                          ✕ Bỏ chọn
-                        </button>
-                      )}
-                    </div>
+                <div className="ce-step-body">
+                  <div className="ce-step-head">
+                    <h3>Tải đề thi lên</h3>
                   </div>
+                  <p className="ce-step-desc">File Word (.docx) có câu hỏi trắc nghiệm, công thức Toán được giữ nguyên.</p>
 
-                  {totalFormulaCount > 0 && (
-                    <div
-                      style={{
-                        padding: '8px 12px',
-                        background: '#eef2ff',
-                        border: '1px solid #c7d2fe',
-                        borderRadius: 8,
-                        color: '#4338ca',
-                        fontSize: 12.5,
-                        fontWeight: 500,
-                        marginBottom: 10,
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'space-between',
-                        flexWrap: 'wrap',
-                        gap: 6,
-                      }}
-                    >
-                      <span>💡 Bấm vào bất kỳ công thức nào bên dưới để chọn / bỏ chọn. Đã chọn <strong>{selectedFormulaKeys.length}</strong> công thức.</span>
-                      {selectedFormulaKeys.length > 0 && (
-                        <span style={{ fontSize: 12, fontWeight: 700, color: '#4f46e5' }}>
-                          (Xem thanh công cụ phía dưới màn hình để đổi cỡ hàng loạt)
+                  {uploadingWord ? (
+                    <div className="ce-progress" role="status" aria-live="polite">
+                      <div className="ce-progress-row">
+                        <span className="spinner" />
+                        <span className="ce-progress-label">Đang xử lí {wordFile ? `“${wordFile.name}”` : 'file'}…</span>
+                        <span className="ce-progress-pct">{Math.round(uploadProgress)}%</span>
+                      </div>
+                      <div className="ce-progress-track">
+                        <div className="ce-progress-fill" style={{ width: `${uploadProgress}%` }} />
+                      </div>
+                      <p className="ce-help">Đề có nhiều công thức sẽ mất thêm thời gian để dựng ảnh công thức.</p>
+                    </div>
+                  ) : step1Done ? (
+                    <div className="ce-file-row">
+                      <span className="ce-file-icon"><UiIcon name="file" size={20} /></span>
+                      <div className="ce-file-info">
+                        <strong>{wordFile ? wordFile.name : 'File đề thi'}</strong>
+                        <span>
+                          {parsedQuestions.length} câu hỏi
+                          {totalFormulaCount > 0 ? `, ${totalFormulaCount} ảnh công thức` : ''}
                         </span>
-                      )}
+                      </div>
+                      <button type="button" className="btn sm secondary" onClick={() => wordInputRef.current?.click()} disabled={creating}>
+                        Đổi file
+                      </button>
+                    </div>
+                  ) : (
+                    <button
+                      type="button"
+                      className={`ce-dropzone${wordDragActive ? ' is-drag' : ''}`}
+                      onClick={() => wordInputRef.current?.click()}
+                      onDragOver={(e) => { e.preventDefault(); setWordDragActive(true); }}
+                      onDragLeave={() => setWordDragActive(false)}
+                      onDrop={(e) => {
+                        e.preventDefault();
+                        setWordDragActive(false);
+                        pickWordFile(e.dataTransfer.files);
+                      }}
+                      disabled={creating}
+                    >
+                      <span className="ce-dropzone-icon"><UiIcon name="upload" size={22} /></span>
+                      <span className="ce-dropzone-title">Kéo thả file Word vào đây</span>
+                      <span className="ce-dropzone-sub">hoặc <span className="ce-dropzone-link">chọn file từ máy</span></span>
+                    </button>
+                  )}
+
+                  {uploadError && (
+                    <div className="ce-alert is-danger" role="alert">
+                      <UiIcon name="alert" size={17} />
+                      <span>{uploadError} Kiểm tra lại file rồi tải lên lần nữa.</span>
                     </div>
                   )}
 
-                  <div style={{ maxHeight: 460, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 12, paddingRight: 4 }}>
-                    {(() => {
-                      let currentTopicName = null;
-                      let qNumInTopic = 0;
-
-                      return parsedQuestions.map((q, idx) => {
-                        const isLong = isLongOptionQuestion(q.options);
-                        const topicName = q.tags?.[0] || q.topic || 'Kiến thức chung';
-                        const isNewTopic = topicName !== currentTopicName;
-                        if (isNewTopic) {
-                          currentTopicName = topicName;
-                          qNumInTopic = 1;
-                        } else {
-                          qNumInTopic += 1;
-                        }
-                        const displayQNum = q.qNum || qNumInTopic;
-
-                        return (
-                          <React.Fragment key={q.tempId || idx}>
-                            {isNewTopic && (
-                              <div
-                                style={{
-                                  marginTop: idx > 0 ? 14 : 0,
-                                  marginBottom: 4,
-                                  padding: '9px 14px',
-                                  background: 'var(--ink)',
-                                  color: '#fff',
-                                  borderRadius: 'var(--radius-md)',
-                                  display: 'flex',
-                                  alignItems: 'center',
-                                  justifyContent: 'space-between',
-                                  boxShadow: '0 2px 5px rgba(0,0,0,0.08)',
-                                  flexWrap: 'wrap',
-                                  gap: 8,
-                                }}
-                              >
-                                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                                  <span style={{ fontSize: 16 }}>📚</span>
-                                  <strong style={{ fontSize: 13.5, letterSpacing: '0.02em', color: '#f8fafc' }}>
-                                    CHỦ ĐỀ: {topicName.toUpperCase()}
-                                  </strong>
-                                </div>
-                                <button
-                                  type="button"
-                                  className="btn sm"
-                                  style={{
-                                    background: 'rgba(255, 255, 255, 0.15)',
-                                    color: '#fff',
-                                    border: '1px solid rgba(255,255,255,0.25)',
-                                    fontSize: 11.5,
-                                    padding: '3px 10px',
-                                    borderRadius: 20,
-                                  }}
-                                  onClick={() => selectAllFormulasInTopic(topicName)}
-                                >
-                                  📐 Chọn CT chủ đề này
-                                </button>
-                              </div>
-                            )}
-
-                            <div
-                              style={{
-                                padding: '14px 16px',
-                                background: '#ffffff',
-                                borderRadius: 'var(--radius-md)',
-                                border: '1px solid var(--border-color)',
-                                boxShadow: '0 1px 3px rgba(0,0,0,0.02)',
-                              }}
-                            >
-                              {/* Header câu hỏi: Số câu theo chủ đề, Chủ đề & Chọn đáp án đúng */}
-                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10, flexWrap: 'wrap', gap: 8 }}>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-                                  <strong style={{ fontSize: 14.5, color: 'var(--primary)', fontWeight: 800 }}>
-                                    Câu {displayQNum}:
-                                  </strong>
-                              <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                                <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>Chủ đề:</span>
-                                <input
-                                  type="text"
-                                  aria-label={`Chủ đề của câu ${displayQNum}`}
-                                  value={q.tags[0] || ''}
-                                  onChange={(e) => updateParsedQuestionTag(idx, e.target.value)}
-                                  placeholder="Nhập tên chủ đề…"
-                                  spellCheck={false}
-                                  style={{
-                                    padding: '3px 8px',
-                                    fontSize: 12,
-                                    fontWeight: 600,
-                                    width: 'auto',
-                                    minWidth: 160,
-                                    height: 28,
-                                  }}
-                                />
-                              </div>
-
-                              <button
-                                type="button"
-                                className="btn sm secondary"
-                                style={{ fontSize: 11, padding: '2px 6px', height: 24 }}
-                                title="Chọn toàn bộ công thức trong câu này"
-                                onClick={() => selectAllFormulasInQuestion(idx)}
-                              >
-                                📐 Chọn CT câu này
-                              </button>
-                            </div>
-
-                            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                              <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-main)' }}>Đáp án đúng:</span>
-                              <select
-                                value={q.correctAnswer || 'A'}
-                                onChange={(e) => updateParsedQuestionAnswer(idx, e.target.value)}
-                                style={{
-                                  padding: '3px 10px',
-                                  fontSize: 13,
-                                  fontWeight: 800,
-                                  width: 'auto',
-                                  height: 30,
-                                  color: 'var(--success-text)',
-                                  borderColor: 'var(--success-border)',
-                                  background: 'var(--success-bg)',
-                                  borderRadius: 6,
-                                  cursor: 'pointer',
-                                }}
-                              >
-                                {['A', 'B', 'C', 'D'].map((key) => (
-                                  <option key={key} value={key}>
-                                    Phương án {key}
-                                  </option>
-                                ))}
-                              </select>
-                            </div>
-                          </div>
-
-                          {/* Nội dung đề bài */}
-                          <div
-                            className="question-content formula-editable"
-                            data-formula-container="true"
-                            data-preview-idx={idx}
-                            data-field="content"
-                            data-option-key="none"
-                            style={{ fontSize: 13.5, lineHeight: 1.6, marginBottom: 8 }}
-                            dangerouslySetInnerHTML={{ __html: renderMath(q.content) }}
-                            onClick={(e) => handlePreviewContentClick(e, idx, 'content', null)}
-                          />
-
-                          {/* 4 Phương án */}
-                          <div
-                            style={
-                              isLong
-                                ? { display: 'flex', flexDirection: 'column', gap: 6 }
-                                : { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: 6 }
-                            }
-                          >
-                            {q.options.map((opt) => {
-                              const isCorrect = opt.key === q.correctAnswer;
-                              return (
-                                <div
-                                  key={opt.key}
-                                  className={`option-row ${isCorrect ? 'correct' : ''}`}
-                                  style={{
-                                    margin: 0,
-                                    padding: '6px 10px',
-                                    fontSize: 13,
-                                    background: isCorrect ? 'var(--success-bg)' : '#f8fafc',
-                                    border: isCorrect ? '1.5px solid var(--success-border)' : '1px solid #e2e8f0',
-                                    borderRadius: 6,
-                                  }}
-                                >
-                                  <strong style={{ minWidth: 20 }}>{opt.key}.</strong>
-                                  <span
-                                    className="formula-editable"
-                                    data-formula-container="true"
-                                    data-preview-idx={idx}
-                                    data-field="option"
-                                    data-option-key={opt.key}
-                                    style={{ flex: 1 }}
-                                    dangerouslySetInnerHTML={{ __html: renderMath(opt.text) }}
-                                    onClick={(e) => handlePreviewContentClick(e, idx, 'option', opt.key)}
-                                  />
-                                  {isCorrect && (
-                                    <span style={{ marginLeft: 'auto', fontSize: 12, fontWeight: 700, color: 'var(--success-text)' }}>
-                                      ✓ Đúng
-                                    </span>
-                                  )}
-                                </div>
-                              );
-                            })}
-                          </div>
-
-                          {/* Cảnh báo nếu có */}
-                          {q.warnings && q.warnings.length > 0 && (
-                            <div style={{ marginTop: 6, fontSize: 11, color: 'var(--warning-text)' }}>
-                              ⚠️ {q.warnings.join(' | ')}
-                            </div>
+                  {step1Done && !uploadingWord && (
+                    <div className="ce-review">
+                      <div className="ce-review-bar">
+                        <div>
+                          <strong>Kiểm tra câu hỏi</strong>
+                          <span>
+                            {totalFormulaCount > 0
+                              ? `Bấm vào công thức để chọn và chỉnh cỡ. Đã chọn ${selectedFormulaKeys.length} công thức.`
+                              : 'Sửa chủ đề và đáp án đúng nếu cần.'}
+                          </span>
+                        </div>
+                        <div className="ce-review-actions">
+                          {totalFormulaCount > 0 && (
+                            <button type="button" className="btn sm secondary" onClick={selectAllFormulasInExam}>
+                              Chọn tất cả công thức ({totalFormulaCount})
+                            </button>
+                          )}
+                          {selectedFormulaKeys.length > 0 && (
+                            <button type="button" className="btn sm secondary" onClick={clearFormulaSelection}>
+                              Bỏ chọn
+                            </button>
                           )}
                         </div>
-                          </React.Fragment>
-                        );
-                      });
-                    })()}
-                  </div>
-                </div>
-              )}
+                      </div>
 
-            </div>
+                      <div className="ce-question-list">
+                        {(() => {
+                          let currentTopicName = null;
+                          let qNumInTopic = 0;
 
-            <div className="form-group">
-              <label htmlFor="exam-title">Tên đề thi <span style={{ color: 'var(--danger)' }}>*</span></label>
-              <input
-                id="exam-title"
-                type="text"
-                placeholder="Đề ôn tập số 1…"
-                value={newExam.title}
-                onChange={(e) => setNewExam({ ...newExam, title: e.target.value })}
-                autoComplete="off"
-                required
-              />
-            </div>
+                          return parsedQuestions.map((q, idx) => {
+                            const isLong = isLongOptionQuestion(q.options);
+                            const topicName = q.tags?.[0] || q.topic || 'Kiến thức chung';
+                            const isNewTopic = topicName !== currentTopicName;
+                            if (isNewTopic) {
+                              currentTopicName = topicName;
+                              qNumInTopic = 1;
+                            } else {
+                              qNumInTopic += 1;
+                            }
+                            const displayQNum = q.qNum || qNumInTopic;
 
-            <div className="form-row">
-              <div className="form-group">
-                <label htmlFor="exam-duration">Thời gian làm bài (phút) <span style={{ color: 'var(--danger)' }}>*</span></label>
-                <input
-                  id="exam-duration"
-                  type="number"
-                  inputMode="numeric"
-                  min={1}
-                  max={180}
-                  value={newExam.durationMinutes}
-                  onChange={(e) => setNewExam({ ...newExam, durationMinutes: Number(e.target.value) })}
-                  required
-                />
-              </div>
-              <div className="form-group">
-                <label htmlFor="exam-description">Mô tả ngắn</label>
-                <input
-                  id="exam-description"
-                  type="text"
-                  placeholder="Đề gồm 10 câu trắc nghiệm…"
-                  value={newExam.description}
-                  onChange={(e) => setNewExam({ ...newExam, description: e.target.value })}
-                  autoComplete="off"
-                />
-              </div>
-            </div>
+                            return (
+                              <React.Fragment key={q.tempId || idx}>
+                                {isNewTopic && (
+                                  <div className="ce-topic">
+                                    <span className="ce-topic-name">{topicName}</span>
+                                    {totalFormulaCount > 0 && (
+                                      <button type="button" className="ce-text-btn" onClick={() => selectAllFormulasInTopic(topicName)}>
+                                        Chọn công thức của chủ đề
+                                      </button>
+                                    )}
+                                  </div>
+                                )}
 
-            <div className="form-group">
-              <label htmlFor="exam-answer-key">📄 File đáp án chi tiết</label>
-              <input
-                id="exam-answer-key"
-                type="file"
-                accept=".pdf,image/*,.doc,.docx"
-                onChange={(e) => setCreateAnswerKeyFile(e.target.files[0] || null)}
-              />
-              <p style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 4 }}>
-                {createAnswerKeyFile
-                  ? `Đã chọn: ${createAnswerKeyFile.name}`
-                  : 'Học sinh sẽ xem/tải/quét QR file này ngay sau khi nộp bài. Có thể bỏ qua và thêm sau ở danh sách đề thi.'}
-              </p>
+                                <div className="ce-question">
+                                  <div className="ce-question-head">
+                                    <span className="ce-qnum">Câu {displayQNum}</span>
+                                    <label className="ce-inline-field">
+                                      <span>Chủ đề</span>
+                                      <input
+                                        type="text"
+                                        value={q.tags[0] || ''}
+                                        onChange={(e) => updateParsedQuestionTag(idx, e.target.value)}
+                                        placeholder="Nhập tên chủ đề…"
+                                        spellCheck={false}
+                                      />
+                                    </label>
+                                    {countFormulaImgs(q.content) + (q.options || []).reduce((sum, o) => sum + countFormulaImgs(o.text), 0) > 0 && (
+                                      <button
+                                        type="button"
+                                        className="ce-text-btn"
+                                        title="Chọn toàn bộ công thức trong câu này"
+                                        onClick={() => selectAllFormulasInQuestion(idx)}
+                                      >
+                                        Chọn công thức
+                                      </button>
+                                    )}
+                                    <label className="ce-inline-field ce-answer-field">
+                                      <span>Đáp án đúng</span>
+                                      <select value={q.correctAnswer || 'A'} onChange={(e) => updateParsedQuestionAnswer(idx, e.target.value)}>
+                                        {['A', 'B', 'C', 'D'].map((key) => (
+                                          <option key={key} value={key}>{key}</option>
+                                        ))}
+                                      </select>
+                                    </label>
+                                  </div>
 
-              {createAnswerKeyFile && checkingCoverage && (
-                <p style={{ fontSize: 12.5, color: 'var(--text-muted)', marginTop: 8 }}>
-                  ⏳ Đang so khớp đáp án chi tiết với đề thi...
-                </p>
-              )}
+                                  <div
+                                    className="question-content formula-editable"
+                                    data-formula-container="true"
+                                    data-preview-idx={idx}
+                                    data-field="content"
+                                    data-option-key="none"
+                                    dangerouslySetInnerHTML={{ __html: renderMath(q.content) }}
+                                    onClick={(e) => handlePreviewContentClick(e, idx, 'content', null)}
+                                  />
 
-              {createAnswerKeyFile && !checkingCoverage && answerKeyCoverage && (
-                answerKeyCoverage.supported === false ? (
-                  <p style={{ fontSize: 12.5, color: 'var(--text-muted)', marginTop: 8 }}>
-                    ℹ️ {answerKeyCoverage.message}
-                  </p>
-                ) : answerKeyCoverage.isComplete ? (
-                  <div
-                    style={{
-                      marginTop: 8, padding: '8px 12px', background: '#f0fdf4', border: '1.5px solid #bbf7d0',
-                      borderRadius: 'var(--radius-sm)', color: '#166534', fontSize: 12.5,
-                    }}
-                  >
-                    ✓ Đáp án chi tiết có đủ lời giải cho toàn bộ {answerKeyCoverage.totalQuestions} câu.
-                  </div>
-                ) : (
-                  <div
-                    style={{
-                      marginTop: 8, padding: '10px 14px', background: '#fef2f2', border: '1.5px solid #fecaca',
-                      borderRadius: 'var(--radius-sm)', color: '#991b1b', fontSize: 12.5,
-                    }}
-                  >
-                    <div>
-                      ⚠️ Đáp án chi tiết THIẾU lời giải cho <strong>{answerKeyCoverage.missingNumbers.length}/{answerKeyCoverage.totalQuestions}</strong> câu
-                      (thiếu Câu: {answerKeyCoverage.missingNumbers.join(', ')}).
+                                  <div className={`ce-options${isLong ? ' is-stacked' : ''}`}>
+                                    {q.options.map((opt) => {
+                                      const isCorrect = opt.key === q.correctAnswer;
+                                      return (
+                                        <div key={opt.key} className={`option-row ${isCorrect ? 'correct' : ''}`}>
+                                          <strong className="ce-option-key">{opt.key}.</strong>
+                                          <span
+                                            className="formula-editable"
+                                            data-formula-container="true"
+                                            data-preview-idx={idx}
+                                            data-field="option"
+                                            data-option-key={opt.key}
+                                            style={{ flex: 1 }}
+                                            dangerouslySetInnerHTML={{ __html: renderMath(opt.text) }}
+                                            onClick={(e) => handlePreviewContentClick(e, idx, 'option', opt.key)}
+                                          />
+                                          {isCorrect && (
+                                            <span className="ce-correct-mark" aria-label="Đáp án đúng">
+                                              <UiIcon name="check" size={15} />
+                                            </span>
+                                          )}
+                                        </div>
+                                      );
+                                    })}
+                                  </div>
+
+                                  {q.warnings && q.warnings.length > 0 && (
+                                    <div className="ce-question-warning">{q.warnings.join(' ')}</div>
+                                  )}
+                                </div>
+                              </React.Fragment>
+                            );
+                          });
+                        })()}
+                      </div>
                     </div>
-                    <label style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 8, fontWeight: 600, cursor: 'pointer' }}>
-                      <input
-                        type="checkbox"
-                        checked={forceCreateDespiteMissing}
-                        onChange={(e) => setForceCreateDespiteMissing(e.target.checked)}
-                        style={{ width: 'auto' }}
-                      />
-                      Tôi đã kiểm tra, vẫn tạo đề và giao ngay
-                    </label>
+                  )}
+                </div>
+              </section>
+
+              {/* Bước 2: Thông tin đề */}
+              <section className={`ce-step${step2Done ? ' is-done' : ''}`}>
+                <div className="ce-step-marker" aria-hidden="true">
+                  {step2Done ? <UiIcon name="check" size={15} /> : 2}
+                </div>
+                <div className="ce-step-body">
+                  <div className="ce-step-head">
+                    <h3>Thông tin đề thi</h3>
                   </div>
-                )
-              )}
-            </div>
+                  <p className="ce-step-desc">Tên đề được gợi ý từ tên file, bạn có thể sửa lại.</p>
 
-            {/* GIAO ĐỀ CHO HỌC SINH / LỚP HỌC */}
-            <div
-              style={{
-                marginTop: 16,
-                padding: 16,
-                background: '#ffffff',
-                border: '1.5px solid var(--border-color)',
-                borderRadius: 'var(--radius-md)',
-              }}
-            >
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12, flexWrap: 'wrap', gap: 8 }}>
-                <div>
-                  <strong style={{ fontSize: 14, color: 'var(--text-main)' }}>
-                    👥 Giao đề cho học sinh
-                  </strong>
-                  <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 2 }}>
-                    Upload thành công: <strong style={{ color: 'var(--primary)' }}>{createAssignedStudents.length}/{students.length} học sinh</strong>
+                  <div className="form-group">
+                    <label htmlFor="exam-title">Tên đề thi <span className="ce-required">*</span></label>
+                    <input
+                      id="exam-title"
+                      type="text"
+                      placeholder="VD: Đề ôn tập số 1"
+                      value={newExam.title}
+                      onChange={(e) => setNewExam({ ...newExam, title: e.target.value })}
+                      autoComplete="off"
+                      required
+                    />
                   </div>
-                </div>
-                <button
-                  type="button"
-                  className="btn sm secondary"
-                  onClick={toggleAllInCreate}
-                >
-                  {createAssignedStudents.length === students.length ? 'Bỏ chọn tất cả' : 'Chọn tất cả học sinh'}
-                </button>
-              </div>
 
-              {/* Chọn nhanh theo lớp */}
-              {distinctClasses.length > 0 && (
-                <div style={{ marginBottom: 12, display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-                  <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-muted)' }}>⚡ CHỌN THEO LỚP:</span>
-                  {distinctClasses.map((cls) => {
-                    const classStudentIds = students.filter((s) => s.className === cls).map((s) => s.id);
-                    const isActive = activeQuickSelect.type === 'class' && activeQuickSelect.key === cls;
-                    return (
-                      <button
-                        key={cls}
-                        type="button"
-                        onClick={() => toggleClassInCreate(cls)}
-                        className={`btn sm ${isActive ? '' : 'secondary'}`}
-                        style={{ padding: '4px 10px', fontSize: 12 }}
-                      >
-                        🏫 Lớp {cls} ({classStudentIds.length}) {isActive ? '✓' : ''}
-                      </button>
-                    );
-                  })}
-                </div>
-              )}
-
-              {/* Chọn nhanh theo nhóm học sinh (tạo trong mục Quản lý học sinh) */}
-              {groups.length > 0 && (
-                <div style={{ marginBottom: 12, display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-                  <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-muted)' }}>⚡ CHỌN THEO NHÓM:</span>
-                  {groups.map((g) => {
-                    const isActive = activeQuickSelect.type === 'group' && activeQuickSelect.key === g.id;
-                    return (
-                      <button
-                        key={g.id}
-                        type="button"
-                        onClick={() => toggleGroupInCreate(g)}
-                        className={`btn sm ${isActive ? '' : 'secondary'}`}
-                        style={{ padding: '4px 10px', fontSize: 12 }}
-                      >
-                        🗂️ {g.name} ({g.studentIds.length}) {isActive ? '✓' : ''}
-                      </button>
-                    );
-                  })}
-                </div>
-              )}
-
-              {/* Bộ lọc học sinh */}
-              <div style={{ display: 'flex', gap: 8, marginBottom: 10, flexWrap: 'wrap' }}>
-                <input
-                  type="text"
-                  placeholder="Tìm theo tên học sinh, email…"
-                  aria-label="Tìm học sinh theo tên hoặc email"
-                  value={createAssignSearch}
-                  onChange={(e) => setCreateAssignSearch(e.target.value)}
-                  spellCheck={false}
-                  style={{ flex: 1, minWidth: 180, fontSize: 13, padding: '6px 10px' }}
-                />
-                <select
-                  value={createAssignClassFilter}
-                  onChange={(e) => setCreateAssignClassFilter(e.target.value)}
-                  style={{ width: 'auto', fontSize: 13, padding: '6px 10px' }}
-                >
-                  <option value="all">Tất cả lớp ({students.length})</option>
-                  {distinctClasses.map((cls) => (
-                    <option key={cls} value={cls}>Lớp {cls}</option>
-                  ))}
-                  <option value="unassigned">Chưa phân lớp</option>
-                </select>
-              </div>
-
-              {/* Danh sách học sinh */}
-              <div style={{ maxHeight: 200, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 6 }}>
-                {filteredCreateStudents.map((st) => {
-                  const isChecked = createAssignedStudents.includes(st.id);
-                  return (
-                    <div
-                      key={st.id}
-                      onClick={() => toggleStudentInCreate(st.id)}
-                      style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'space-between',
-                        padding: '8px 12px',
-                        borderRadius: 'var(--radius-sm)',
-                        border: isChecked ? '1.5px solid var(--primary)' : '1px solid var(--border-light)',
-                        background: isChecked ? 'var(--primary-light, #eff6ff)' : '#ffffff',
-                        cursor: 'pointer',
-                      }}
-                    >
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                  <div className="ce-field-row">
+                    <div className="form-group">
+                      <label htmlFor="exam-duration">Thời gian làm bài <span className="ce-required">*</span></label>
+                      <div className="ce-input-suffix">
                         <input
-                          type="checkbox"
-                          checked={isChecked}
-                          onChange={() => { }}
-                          style={{ width: 16, height: 16, cursor: 'pointer' }}
+                          id="exam-duration"
+                          type="number"
+                          inputMode="numeric"
+                          min={1}
+                          max={180}
+                          value={newExam.durationMinutes}
+                          onChange={(e) => setNewExam({ ...newExam, durationMinutes: Number(e.target.value) })}
+                          required
                         />
+                        <span>phút</span>
+                      </div>
+                    </div>
+                    <div className="form-group">
+                      <label htmlFor="exam-description">Mô tả ngắn</label>
+                      <input
+                        id="exam-description"
+                        type="text"
+                        placeholder="VD: Đề gồm 25 câu trắc nghiệm"
+                        value={newExam.description}
+                        onChange={(e) => setNewExam({ ...newExam, description: e.target.value })}
+                        autoComplete="off"
+                      />
+                    </div>
+                  </div>
+                </div>
+              </section>
+
+              {/* Bước 3: Đáp án chi tiết (không bắt buộc) */}
+              <section className={`ce-step${createAnswerKeyFile ? ' is-done' : ''}`}>
+                <div className="ce-step-marker" aria-hidden="true">
+                  {createAnswerKeyFile ? <UiIcon name="check" size={15} /> : 3}
+                </div>
+                <div className="ce-step-body">
+                  <div className="ce-step-head">
+                    <h3>Đáp án chi tiết</h3>
+                    <span className="ce-optional">Không bắt buộc</span>
+                  </div>
+                  <p className="ce-step-desc">
+                    Học sinh xem, tải hoặc quét QR file này sau khi nộp bài. Có thể thêm sau.
+                  </p>
+
+                  <input
+                    ref={createAnswerKeyInputRef}
+                    id="exam-answer-key"
+                    type="file"
+                    accept=".pdf,image/*,.doc,.docx"
+                    className="visually-hidden"
+                    tabIndex={-1}
+                    onChange={(e) => {
+                      setCreateAnswerKeyFile(e.target.files[0] || null);
+                      e.target.value = '';
+                    }}
+                  />
+                  {createAnswerKeyFile ? (
+                    <div className="ce-file-row">
+                      <span className="ce-file-icon"><UiIcon name="file" size={20} /></span>
+                      <div className="ce-file-info">
+                        <strong>{createAnswerKeyFile.name}</strong>
+                        <span>{checkingCoverage ? 'Đang so khớp với đề thi…' : 'PDF, ảnh hoặc Word'}</span>
+                      </div>
+                      <button type="button" className="btn sm secondary" onClick={() => createAnswerKeyInputRef.current?.click()}>
+                        Đổi file
+                      </button>
+                      <button
+                        type="button"
+                        className="ce-icon-btn"
+                        onClick={() => setCreateAnswerKeyFile(null)}
+                        aria-label="Bỏ file đáp án chi tiết"
+                      >
+                        <UiIcon name="close" size={16} />
+                      </button>
+                    </div>
+                  ) : (
+                    <button type="button" className="btn secondary" onClick={() => createAnswerKeyInputRef.current?.click()}>
+                      <UiIcon name="upload" size={16} />
+                      Chọn file đáp án
+                    </button>
+                  )}
+
+                  {createAnswerKeyFile && !checkingCoverage && answerKeyCoverage && (
+                    answerKeyCoverage.supported === false ? (
+                      <p className="ce-help">{answerKeyCoverage.message}</p>
+                    ) : answerKeyCoverage.isComplete ? (
+                      <div className="ce-alert is-success">
+                        <UiIcon name="check" size={17} />
+                        <span>Có đủ lời giải cho toàn bộ {answerKeyCoverage.totalQuestions} câu.</span>
+                      </div>
+                    ) : (
+                      <div className="ce-alert is-danger">
+                        <UiIcon name="alert" size={17} />
                         <div>
-                          <strong style={{ fontSize: 13, color: 'var(--text-main)' }}>{st.name}</strong>
+                          <div>
+                            Thiếu lời giải cho <strong>{answerKeyCoverage.missingNumbers.length}/{answerKeyCoverage.totalQuestions}</strong> câu
+                            (Câu {answerKeyCoverage.missingNumbers.join(', ')}).
+                          </div>
+                          <label className="ce-checkbox">
+                            <input
+                              type="checkbox"
+                              checked={forceCreateDespiteMissing}
+                              onChange={(e) => setForceCreateDespiteMissing(e.target.checked)}
+                            />
+                            Tôi đã kiểm tra, vẫn tạo đề và giao ngay
+                          </label>
                         </div>
                       </div>
-                      <span className="tag-badge" style={{ margin: 0, fontSize: 11 }}>
-                        {st.className ? `Lớp ${st.className}` : 'Chưa phân lớp'}
-                      </span>
-                    </div>
-                  );
-                })}
-              </div>
-
-              {/* Thông báo trạng thái giao học sinh */}
-              {createAssignedStudents.length === 0 ? (
-                <div
-                  style={{
-                    marginTop: 10,
-                    padding: '10px 14px',
-                    background: '#fffbeb',
-                    border: '1.5px solid #fde68a',
-                    borderRadius: 'var(--radius-sm)',
-                    color: '#92400e',
-                    fontSize: 13,
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 10,
-                  }}
-                >
-                  <span style={{ fontSize: 18, lineHeight: 1 }}>⚠️</span>
-                  <div>
-                    <strong style={{ color: '#b45309' }}>Chưa chọn học sinh nhận đề:</strong> Vui lòng tick chọn ít nhất một học sinh trong danh sách trên để Tạo đề.
-                  </div>
+                    )
+                  )}
                 </div>
-              ) : (
-                <div
-                  style={{
-                    marginTop: 10,
-                    padding: '8px 14px',
-                    background: '#f0fdf4',
-                    border: '1.5px solid #bbf7d0',
-                    borderRadius: 'var(--radius-sm)',
-                    color: '#166534',
-                    fontSize: 13,
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 8,
-                  }}
-                >
-                  <span style={{ fontSize: 16 }}>✓</span>
-                  <span>
-                    Sẵn sàng giao đề ngay cho <strong>{createAssignedStudents.length} học sinh</strong> sau khi bấm Tạo đề.
-                  </span>
+              </section>
+
+              {/* Bước 4: Giao cho học sinh */}
+              <section className={`ce-step${step4Done ? ' is-done' : ''}`}>
+                <div className="ce-step-marker" aria-hidden="true">
+                  {step4Done ? <UiIcon name="check" size={15} /> : 4}
+                </div>
+                <div className="ce-step-body">
+                  <div className="ce-step-head">
+                    <h3>Giao cho học sinh</h3>
+                    <span className="ce-count">
+                      Đã chọn <strong>{createAssignedStudents.length}</strong>/{students.length}
+                    </span>
+                  </div>
+                  <p className="ce-step-desc">Đề được giao ngay cho các học sinh đã chọn sau khi bấm Tạo và giao đề.</p>
+
+                  {students.length === 0 ? (
+                    <div className="ce-empty">
+                      Chưa có học sinh nào. Thêm học sinh ở mục <Link to="/teacher">Quản lý học sinh</Link> trước khi giao đề.
+                    </div>
+                  ) : (
+                    <>
+                      <div className="ce-quick">
+                        <button
+                          type="button"
+                          className={`ce-chip${allStudentsSelected ? ' is-active' : ''}`}
+                          aria-pressed={allStudentsSelected}
+                          onClick={toggleAllInCreate}
+                        >
+                          Tất cả học sinh <span className="ce-chip-count">{students.length}</span>
+                        </button>
+                        {distinctClasses.map((cls) => {
+                          const classCount = students.filter((st) => st.className === cls).length;
+                          const isActive = activeQuickSelect.type === 'class' && activeQuickSelect.key === cls;
+                          return (
+                            <button
+                              key={cls}
+                              type="button"
+                              className={`ce-chip${isActive ? ' is-active' : ''}`}
+                              aria-pressed={isActive}
+                              onClick={() => toggleClassInCreate(cls)}
+                            >
+                              Lớp {cls} <span className="ce-chip-count">{classCount}</span>
+                            </button>
+                          );
+                        })}
+                        {groups.map((g) => {
+                          const isActive = activeQuickSelect.type === 'group' && activeQuickSelect.key === g.id;
+                          return (
+                            <button
+                              key={g.id}
+                              type="button"
+                              className={`ce-chip is-group${isActive ? ' is-active' : ''}`}
+                              aria-pressed={isActive}
+                              onClick={() => toggleGroupInCreate(g)}
+                            >
+                              Nhóm {g.name} <span className="ce-chip-count">{g.studentIds.length}</span>
+                            </button>
+                          );
+                        })}
+                      </div>
+
+                      <div className="ce-filter-row">
+                        <input
+                          type="search"
+                          placeholder="Tìm theo tên hoặc email"
+                          aria-label="Tìm học sinh theo tên hoặc email"
+                          value={createAssignSearch}
+                          onChange={(e) => setCreateAssignSearch(e.target.value)}
+                          spellCheck={false}
+                        />
+                        <select
+                          aria-label="Lọc theo lớp"
+                          value={createAssignClassFilter}
+                          onChange={(e) => setCreateAssignClassFilter(e.target.value)}
+                        >
+                          <option value="all">Tất cả lớp ({students.length})</option>
+                          {distinctClasses.map((cls) => (
+                            <option key={cls} value={cls}>Lớp {cls}</option>
+                          ))}
+                          <option value="unassigned">Chưa phân lớp</option>
+                        </select>
+                      </div>
+
+                      {filteredCreateStudents.length === 0 ? (
+                        <div className="ce-empty">Không có học sinh nào khớp với bộ lọc.</div>
+                      ) : (
+                        <div className="ce-student-grid">
+                          {filteredCreateStudents.map((st) => {
+                            const isChecked = createAssignedStudents.includes(st.id);
+                            return (
+                              <label key={st.id} className={`ce-student${isChecked ? ' is-checked' : ''}`}>
+                                <input type="checkbox" checked={isChecked} onChange={() => toggleStudentInCreate(st.id)} />
+                                <span className="ce-student-name">{st.name}</span>
+                                <span className="ce-student-class">{st.className ? `Lớp ${st.className}` : 'Chưa phân lớp'}</span>
+                              </label>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </>
+                  )}
+                </div>
+              </section>
+
+              {createError && (
+                <div className="ce-alert is-danger" role="alert" aria-live="polite">
+                  <UiIcon name="alert" size={17} />
+                  <span>{createError}</span>
                 </div>
               )}
-            </div>
 
-            {createError && (
-              <p className="error-text" role="alert" aria-live="polite">
-                <span aria-hidden="true">⚠️</span> {createError}
-              </p>
-            )}
-
-            {createAssignedStudents.length > 0 && parsedQuestions.length === 0 && (
-              <p style={{ fontSize: 12.5, color: 'var(--text-muted)', marginTop: 10 }}>
-                ⬆️ Tải lên file Word đề thi ở trên và đợi tách câu hỏi thành công để mở nút tạo đề (không cho tạo đề rỗng chưa có câu hỏi).
-              </p>
-            )}
-
-            <div style={{ display: 'flex', gap: 10, marginTop: 14, alignItems: 'center', flexWrap: 'wrap' }}>
-              {createAssignedStudents.length > 0 && parsedQuestions.length > 0 ? (
-                <button
-                  className="btn"
-                  type="submit"
-                  disabled={
-                    creating ||
-                    uploadingWord ||
-                    (createAnswerKeyFile && answerKeyCoverage?.supported && !answerKeyCoverage.isComplete && !forceCreateDespiteMissing)
-                  }
-                  style={{ background: 'linear-gradient(135deg, #10b981, #059669)', fontSize: 14, fontWeight: 700 }}
-                >
-                  {creating
-                    ? 'Đang tạo & giao đề…'
-                    : `🚀 Tạo bài tập ➔`}
-                </button>
-              ) : null}
-              <button
-                type="button"
-                className="btn secondary"
-                onClick={() => {
-                  setShowCreateForm(false);
-                  setWordFile(null);
-                  setParsedQuestions([]);
-                  setCreateAssignedStudents([]);
-                }}
-              >
-                Huỷ
-              </button>
-            </div>
-          </form>
-        </div>
-      )}
+              <div className="ce-footer">
+                <p className={`ce-footer-status${missing.length === 0 ? ' is-ready' : ''}`}>
+                  {missing.length === 0
+                    ? `Sẵn sàng giao cho ${createAssignedStudents.length} học sinh.`
+                    : `Còn thiếu: ${missing.join(', ')}.`}
+                </p>
+                <div className="ce-footer-actions">
+                  <button type="button" className="btn secondary" onClick={closeCreateForm}>
+                    Huỷ
+                  </button>
+                  <button className="btn" type="submit" disabled={!canSubmit}>
+                    {creating ? 'Đang tạo và giao đề…' : 'Tạo và giao đề'}
+                  </button>
+                </div>
+              </div>
+            </form>
+          </div>
+        );
+      })()}
 
       {/* Danh sách đề thi */}
       <div className="card">
-        <div className="card-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12 }}>
-          <h2 style={{ margin: 0 }}>Danh sách đề thi ({filteredExams.length})</h2>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0 }}>
-            <div className="search-input-wrapper" style={{ width: 220, margin: 0 }}>
-              <span className="search-icon">🔍</span>
+        <div className="card-header">
+          <div className="card-title-row">
+            <h2>Danh sách đề thi</h2>
+            <span className="count-badge">{filteredExams.length}</span>
+          </div>
+          <div className="toolbar">
+            <div className="segmented" role="group" aria-label="Lọc theo trạng thái">
+              {[
+                { key: 'all', label: 'Tất cả', count: exams.length },
+                { key: 'assigned', label: 'Đang giao', count: assignedCount },
+                { key: 'draft', label: 'Bản nháp', count: draftCount },
+              ].map((f) => (
+                <button
+                  key={f.key}
+                  type="button"
+                  className={`segmented-btn${statusFilter === f.key ? ' is-active' : ''}`}
+                  aria-pressed={statusFilter === f.key}
+                  onClick={() => setStatusFilter(f.key)}
+                >
+                  {f.label} <span className="segmented-count">{f.count}</span>
+                </button>
+              ))}
+            </div>
+            <div className="search-field">
+              <UiIcon name="search" size={16} />
               <input
-                type="text"
-                placeholder="Tìm kiếm đề…"
+                type="search"
+                placeholder="Tìm đề thi"
                 aria-label="Tìm đề thi theo tên"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 spellCheck={false}
-                style={{ padding: '8px 12px 8px 32px', height: 38 }}
+                style={{ width: 220 }}
               />
             </div>
-
-            <select
-              style={{ width: 'auto', minWidth: 140, padding: '8px 12px', height: 38, margin: 0 }}
-              value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value)}
-            >
-              <option value="all">Tất cả ({exams.length})</option>
-              <option value="assigned">Đang phát hành ({assignedCount})</option>
-              <option value="draft">Bản nháp ({draftCount})</option>
-            </select>
           </div>
         </div>
 
         {loading ? (
           <div className="empty-state">
-            <div className="empty-state-icon">⏳</div>
-            <div className="empty-state-title">Đang tải danh sách bài tập…</div>
+            <div className="spinner" style={{ margin: '0 auto 12px' }} />
+            <div className="empty-state-title">Đang tải danh sách đề thi…</div>
           </div>
         ) : filteredExams.length === 0 ? (
           <div className="empty-state">
-            <div className="empty-state-icon">📁</div>
-            <div className="empty-state-title">Không tìm thấy đề thi</div>
-            {!showCreateForm && (
-              <button className="btn sm" style={{ marginTop: 10 }} onClick={() => setShowCreateForm(true)}>
-                + Tạo đề thi đầu tiên
-              </button>
+            <div className="empty-state-icon is-svg"><UiIcon name="book" size={22} /></div>
+            {exams.length === 0 ? (
+              <>
+                <div className="empty-state-title">Chưa có đề thi nào</div>
+                <p className="empty-state-desc">Tải file Word đề thi lên để tạo đề đầu tiên và giao cho học sinh.</p>
+                {!showCreateForm && (
+                  <button className="btn" onClick={() => setShowCreateForm(true)}>
+                    <UiIcon name="plus" size={17} />
+                    Tạo đề thi mới
+                  </button>
+                )}
+              </>
+            ) : (
+              <>
+                <div className="empty-state-title">Không có đề thi khớp bộ lọc</div>
+                <p className="empty-state-desc">Thử đổi từ khoá tìm kiếm hoặc chọn trạng thái khác.</p>
+              </>
             )}
           </div>
         ) : (
           <div className="table-responsive">
-            <table>
+            <table className="exam-table">
               <thead>
                 <tr>
-                  <th style={{ minWidth: 160 }}>Tên đề thi</th>
-                  <th className="nowrap" style={{ width: 100 }}>Trạng thái</th>
-                  <th className="nowrap" style={{ minWidth: 200 }}>Học sinh & Tiến độ nộp bài</th>
-                  <th className="nowrap" style={{ textAlign: 'right' }}>Thao tác</th>
+                  <th>Đề thi</th>
+                  <th>Trạng thái</th>
+                  <th>Bài nộp</th>
+                  <th style={{ textAlign: 'right' }}>Thao tác</th>
                 </tr>
               </thead>
               <tbody>
@@ -1597,8 +1493,11 @@ export default function TeacherExamsPage() {
                   const isExpanded = expandedExamIds.has(exam.id);
                   const aiChildren = aiChildrenByParent[exam.id] || [];
                   const isAiFolderExpanded = expandedAiFolderIds.has(exam.id);
+                  const submittedPercent = assignedStudentIds.length > 0
+                    ? Math.round((submittedCount / assignedStudentIds.length) * 100)
+                    : 0;
 
-                  // Tính điểm trung bình của các học sinh đã nộp (lấy đợt mới nhất)
+                  // Điểm trung bình của các học sinh đã nộp (lấy lần làm mới nhất)
                   let avgScore = null;
                   if (submittedCount > 0) {
                     let totalScore = 0;
@@ -1607,107 +1506,76 @@ export default function TeacherExamsPage() {
                       const latest = stSubs[stSubs.length - 1];
                       totalScore += latest?.score || 0;
                     });
-                    avgScore = (totalScore / submittedCount).toFixed(1);
+                    avgScore = totalScore / submittedCount;
                   }
 
                   return (
                     <React.Fragment key={exam.id}>
                       <tr>
-                        <td style={{ verticalAlign: 'middle', minWidth: 160 }}>
-                          <div style={{ fontWeight: 700, color: 'var(--text-main)', fontSize: 15 }}>
-                            <Link to={`/teacher/exams/${exam.id}`}>{exam.title}</Link>
-                          </div>
-                          {exam.description && (
-                            <div style={{ fontSize: 13, color: 'var(--text-muted)', marginTop: 2 }}>
-                              {exam.description}
-                            </div>
-                          )}
-                          <div style={{ display: 'flex', alignItems: 'center', gap: 12, fontSize: 12, color: 'var(--text-muted)', marginTop: 4 }}>
-                            <span>📝 {exam.questionsCount ?? (exam.questions?.length || 0)} câu hỏi</span>
-                            <span>⏱️ {exam.durationMinutes} phút</span>
+                        <td className="exam-cell">
+                          <Link className="exam-title" to={`/teacher/exams/${exam.id}`}>{exam.title}</Link>
+                          {exam.description && <div className="exam-desc">{exam.description}</div>}
+                          <div className="meta-row" style={{ marginTop: 6 }}>
+                            <span><UiIcon name="list" size={14} />{exam.questionsCount ?? (exam.questions?.length || 0)} câu hỏi</span>
+                            <span><UiIcon name="clock" size={14} />{exam.durationMinutes} phút</span>
+                            {exam.answerKeyFile && <span><UiIcon name="file" size={14} />Có đáp án chi tiết</span>}
                           </div>
                           {aiChildren.length > 0 && (
                             <button
                               type="button"
+                              className="ai-toggle"
                               onClick={() => toggleAiFolder(exam.id)}
-                              style={{
-                                marginTop: 6,
-                                display: 'inline-flex',
-                                alignItems: 'center',
-                                gap: 5,
-                                fontSize: 12,
-                                fontWeight: 700,
-                                color: 'var(--ai, #7c3aed)',
-                                background: 'var(--ai-bg, #f3ecff)',
-                                border: '1px solid var(--ai-line, #ddcbfb)',
-                                borderRadius: 20,
-                                padding: '3px 10px',
-                                cursor: 'pointer',
-                              }}
+                              aria-expanded={isAiFolderExpanded}
                             >
-                              📂 {aiChildren.length} bài tập AI sinh thêm {isAiFolderExpanded ? '▲' : '▼'}
+                              <UiIcon name="sparkles" size={14} />
+                              {aiChildren.length} bài tập AI sinh thêm
+                              <UiIcon name={isAiFolderExpanded ? 'chevron-up' : 'chevron-down'} size={14} />
                             </button>
                           )}
                         </td>
-                        <td className="nowrap" style={{ verticalAlign: 'middle' }}>
+                        <td className="nowrap">
                           <span className={`status-pill ${exam.status}`}>
-                            {exam.status === 'assigned' ? '✓ Đang giao' : '○ Bản nháp'}
+                            <span className="status-dot" />
+                            {exam.status === 'assigned' ? 'Đang giao' : 'Bản nháp'}
                           </span>
                         </td>
-                        <td style={{ verticalAlign: 'middle', minWidth: 200 }}>
+                        <td>
                           {assignedStudentIds.length === 0 ? (
-                            <span className="tag-badge" style={{ margin: 0, color: 'var(--text-muted)' }}>
-                              Chưa giao cho học sinh nào
-                            </span>
+                            <span className="text-muted-cell">Chưa giao cho học sinh</span>
                           ) : (
-                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, flexWrap: 'wrap' }}>
-                              <div>
-                                <div style={{ fontWeight: 700, fontSize: 13, color: submittedCount > 0 ? 'var(--text-main)' : 'var(--text-muted)' }}>
-                                  {submittedCount > 0 ? `✅ Đã nộp: ${submittedCount}/${assignedStudentIds.length} HS` : `⏳ 0/${assignedStudentIds.length} HS đã nộp`}
-                                </div>
+                            <div className="progress-cell">
+                              <div className="progress-cell-top">
+                                <span><b>{submittedCount}</b>/{assignedStudentIds.length} đã nộp</span>
+                                {avgScore !== null && (
+                                  <span className={`score-text is-${scoreLevel(avgScore)}`}>TB {avgScore.toFixed(1)}</span>
+                                )}
+                              </div>
+                              <div className="score-bar is-thin" aria-hidden="true">
+                                <span className="is-primary" style={{ width: `${submittedPercent}%` }} />
                               </div>
                               <button
                                 type="button"
-                                className={`btn sm ${isExpanded ? '' : 'secondary'}`}
+                                className="text-btn"
                                 onClick={() => toggleExpandExam(exam.id)}
-                                style={{
-                                  padding: '5px 12px',
-                                  fontSize: 12,
-                                  borderRadius: 20,
-                                  fontWeight: 600,
-                                  whiteSpace: 'nowrap',
-                                  display: 'inline-flex',
-                                  alignItems: 'center',
-                                  gap: 4,
-                                }}
+                                aria-expanded={isExpanded}
                               >
-                                👥 {isExpanded ? 'Thu gọn ▲' : `Xem chi tiết (${assignedStudentIds.length}) ▼`}
+                                {isExpanded ? 'Thu gọn' : 'Xem kết quả từng học sinh'}
+                                <UiIcon name={isExpanded ? 'chevron-up' : 'chevron-down'} size={14} />
                               </button>
                             </div>
                           )}
                         </td>
-                        <td className="nowrap" style={{ textAlign: 'right', verticalAlign: 'middle' }}>
-                          <div className="action-buttons" style={{ justifyContent: 'flex-end', gap: 5 }}>
+                        <td>
+                          <div className="row-actions">
                             {exam.status === 'assigned' ? (
-                              <Link
-                                to={`/teacher/exams/${exam.id}`}
-                                className="btn sm secondary"
-                                style={{ whiteSpace: 'nowrap', display: 'inline-flex', alignItems: 'center', gap: 5 }}
-                              >
-                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                  <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
-                                  <circle cx="12" cy="12" r="3"></circle>
-                                </svg>
-                                <span>Xem đề</span>
+                              <Link to={`/teacher/exams/${exam.id}`} className="btn sm secondary">
+                                <UiIcon name="eye" size={15} />
+                                Xem đề
                               </Link>
                             ) : (
-                              <Link
-                                to={`/teacher/exams/${exam.id}`}
-                                className="btn sm"
-                                style={{ whiteSpace: 'nowrap', display: 'inline-flex', alignItems: 'center', gap: 5 }}
-                              >
-                                <span>Soạn câu hỏi</span>
-                                <span>➔</span>
+                              <Link to={`/teacher/exams/${exam.id}`} className="btn sm">
+                                <UiIcon name="edit" size={15} />
+                                Soạn câu hỏi
                               </Link>
                             )}
 
@@ -1716,357 +1584,143 @@ export default function TeacherExamsPage() {
                               ref={(el) => { answerKeyInputRefs.current[exam.id] = el; }}
                               type="file"
                               accept=".pdf,image/*,.doc,.docx"
-                              style={{ display: 'none' }}
-                              onChange={(e) => handleAnswerKeyFileSelected(exam.id, e.target.files[0])}
+                              className="visually-hidden"
+                              tabIndex={-1}
+                              onChange={(e) => {
+                                handleAnswerKeyFileSelected(exam.id, e.target.files[0]);
+                                e.target.value = '';
+                              }}
                             />
                             <button
                               type="button"
                               className="btn sm secondary"
                               onClick={() => handlePickAnswerKeyFile(exam.id)}
                               disabled={uploadingAnswerKeyExamId === exam.id}
-                              title={exam.answerKeyFile ? 'Đã có đáp án chi tiết - bấm để thay file khác' : 'Tải lên file đáp án chi tiết (PDF/ảnh) cho học sinh xem sau khi nộp bài'}
-                              style={{ whiteSpace: 'nowrap' }}
+                              title={exam.answerKeyFile ? 'Thay file đáp án chi tiết khác' : 'Tải lên file đáp án chi tiết cho học sinh xem sau khi nộp bài'}
                             >
+                              <UiIcon name="file" size={15} />
                               {uploadingAnswerKeyExamId === exam.id
-                                ? '⏳...'
-                                : exam.answerKeyFile
-                                  ? '📄 Đáp án ✓'
-                                  : '📄 Đáp án'}
+                                ? 'Đang tải…'
+                                : exam.answerKeyFile ? 'Đổi đáp án' : 'Thêm đáp án'}
                             </button>
                             {exam.answerKeyFile && (
                               <button
                                 type="button"
-                                className="btn sm secondary"
+                                className="icon-btn"
                                 onClick={() => handleRemoveAnswerKey(exam.id)}
                                 disabled={uploadingAnswerKeyExamId === exam.id}
+                                aria-label="Gỡ file đáp án chi tiết"
                                 title="Gỡ file đáp án chi tiết"
-                                style={{ whiteSpace: 'nowrap', color: 'var(--text-muted)' }}
                               >
-                                ✕ Gỡ đáp án
+                                <UiIcon name="close" size={15} />
                               </button>
                             )}
-
-                            {exam.status === 'assigned' ? (
+                            {exam.status !== 'assigned' && (
                               <button
                                 type="button"
-                                className="btn sm outline-danger"
-                                onClick={() => handleDeleteExam(exam)}
-                                title="Xoá đề thi"
-                                style={{ whiteSpace: 'nowrap' }}
+                                className="icon-btn"
+                                onClick={() => startEditExam(exam)}
+                                aria-label="Sửa thông tin đề thi"
+                                title="Sửa thông tin đề thi"
                               >
-                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                  <polyline points="3 6 5 6 21 6"></polyline>
-                                  <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
-                                  <line x1="10" y1="11" x2="10" y2="17"></line>
-                                  <line x1="14" y1="11" x2="14" y2="17"></line>
-                                </svg>
-                                <span>Xoá</span>
+                                <UiIcon name="edit" size={15} />
                               </button>
-                            ) : (
-                              <>
-                                <button
-                                  type="button"
-                                  className="btn sm secondary"
-                                  onClick={() => startEditExam(exam)}
-                                  title="Sửa thông tin đề thi"
-                                  style={{ whiteSpace: 'nowrap', display: 'inline-flex', alignItems: 'center', gap: 5 }}
-                                >
-                                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
-                                    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
-                                  </svg>
-                                  <span>Sửa</span>
-                                </button>
-                                <button
-                                  type="button"
-                                  className="btn sm outline-danger"
-                                  onClick={() => handleDeleteExam(exam)}
-                                  title="Xoá đề thi"
-                                  style={{ whiteSpace: 'nowrap' }}
-                                >
-                                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                    <polyline points="3 6 5 6 21 6"></polyline>
-                                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
-                                    <line x1="10" y1="11" x2="10" y2="17"></line>
-                                    <line x1="14" y1="11" x2="14" y2="17"></line>
-                                  </svg>
-                                  <span>Xoá</span>
-                                </button>
-                              </>
                             )}
+                            <button
+                              type="button"
+                              className="icon-btn is-danger"
+                              onClick={() => handleDeleteExam(exam)}
+                              aria-label="Xoá đề thi"
+                              title="Xoá đề thi"
+                            >
+                              <UiIcon name="trash" size={15} />
+                            </button>
                           </div>
                         </td>
                       </tr>
 
-                      {/* Expandable Accordion Sub-Row */}
+                      {/* Kết quả từng học sinh */}
                       {isExpanded && assignedStudentIds.length > 0 && (
-                        <tr style={{ background: '#f8fafc' }}>
-                          <td colSpan={4} style={{ padding: '16px 20px', borderTop: 'none', borderBottom: '2px solid var(--border)' }}>
-                            <div
-                              style={{
-                                background: '#ffffff',
-                                border: '1px solid #e2e8f0',
-                                borderRadius: 10,
-                                padding: '14px 18px',
-                                boxShadow: '0 2px 6px rgba(0,0,0,0.03)',
-                              }}
-                            >
-                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12, paddingBottom: 8, borderBottom: '1px dashed #e2e8f0' }}>
-                                <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--primary)' }}>
-                                  📋 Bảng kết quả & Đánh giá AI của từng học sinh: "{exam.title}"
-                                </span>
-                                <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>
-                                  Đã nộp: <strong>{submittedCount}/{assignedStudentIds.length}</strong> học sinh
-                                </span>
+                        <tr className="exam-subrow">
+                          <td colSpan={4}>
+                            <div className="result-panel">
+                              <div className="result-panel-head">
+                                <strong>Kết quả từng học sinh</strong>
+                                <span>Đã nộp {submittedCount}/{assignedStudentIds.length}</span>
                               </div>
-
-                              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                              <ul className="result-list">
                                 {assignedStudentIds.map((stId) => {
                                   const stObj = students.find((s) => s.id === stId);
                                   const studentName = stObj ? stObj.name : stId;
                                   const className = stObj?.className ? `Lớp ${stObj.className}` : null;
-                                  const initial = studentName.trim().charAt(0).toUpperCase();
+                                  const initial = String(studentName).trim().charAt(0).toUpperCase();
                                   const studentSubs = (submissions || [])
                                     .filter((s) => s.examId === exam.id && s.studentId === stId)
                                     .sort((a, b) => (a.attempt || 1) - (b.attempt || 1));
 
-                                  if (studentSubs.length > 0) {
-                                    const latestSub = studentSubs[studentSubs.length - 1];
-                                    const firstSub = studentSubs[0];
-                                    const attemptsCount = studentSubs.length;
-                                    const scoreDiff = (latestSub.score - firstSub.score).toFixed(1);
-
+                                  if (studentSubs.length === 0) {
                                     return (
-                                      <div
-                                        key={stId}
-                                        style={{
-                                          display: 'flex',
-                                          alignItems: 'center',
-                                          justifyContent: 'flex-start',
-                                          padding: '10px 16px',
-                                          borderRadius: 10,
-                                          background: '#ffffff',
-                                          border: '1px solid #e2e8f0',
-                                          boxShadow: '0 1px 3px rgba(0,0,0,0.03)',
-                                          flexWrap: 'wrap',
-                                          gap: 14,
-                                        }}
-                                      >
-                                        {/* 1. Student Info - width CỐ ĐỊNH (không chỉ minWidth) để cột điểm ở
-                                            giữa luôn thẳng hàng nhau giữa các dòng học sinh, không bị lệch theo
-                                            độ dài tên từng học sinh */}
-                                        <div style={{ display: 'flex', alignItems: 'center', gap: 10, width: 260, flexShrink: 0 }}>
-                                          <div
-                                            style={{
-                                              width: 32,
-                                              height: 32,
-                                              borderRadius: '50%',
-                                              background: 'linear-gradient(135deg, #4f46e5, #7c3aed)',
-                                              color: '#fff',
-                                              display: 'flex',
-                                              alignItems: 'center',
-                                              justifyContent: 'center',
-                                              fontWeight: 800,
-                                              fontSize: 13,
-                                              flexShrink: 0,
-                                              boxShadow: '0 2px 5px rgba(79,70,229,0.2)',
-                                            }}
-                                          >
-                                            {initial}
-                                          </div>
-                                          <div style={{ minWidth: 0 }}>
-                                            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                                              <strong
-                                                title={studentName}
-                                                style={{
-                                                  color: '#0f172a',
-                                                  fontSize: 13.5,
-                                                  whiteSpace: 'nowrap',
-                                                  overflow: 'hidden',
-                                                  textOverflow: 'ellipsis',
-                                                  maxWidth: 170,
-                                                }}
-                                              >
-                                                {studentName}
-                                              </strong>
-                                              {className && (
-                                                <span style={{ fontSize: 10.5, background: '#ede9fe', color: '#6d28d9', padding: '1px 6px', borderRadius: 6, fontWeight: 700, whiteSpace: 'nowrap', flexShrink: 0 }}>
-                                                  {className}
-                                                </span>
-                                              )}
-                                            </div>
-                                            <div style={{ fontSize: 11.5, color: '#64748b', marginTop: 2, whiteSpace: 'nowrap' }}>
-                                              🕒 {latestSub.submittedAt ? new Date(latestSub.submittedAt).toLocaleString('vi-VN') : '---'}
-                                            </div>
+                                      <li key={stId} className="result-row is-pending">
+                                        <div className="result-student">
+                                          <span className="avatar is-muted" aria-hidden="true">{initial}</span>
+                                          <div className="result-name">
+                                            {studentName}
+                                            {className && <span className="class-badge">{className}</span>}
                                           </div>
                                         </div>
-
-                                        {/* 2. Middle: Scorecard Progress */}
-                                        <div style={{ display: 'flex', alignItems: 'center' }}>
-                                          {attemptsCount > 1 ? (
-                                            <div
-                                              style={{
-                                                display: 'inline-flex',
-                                                alignItems: 'center',
-                                                gap: 8,
-                                                background: '#f8fafc',
-                                                border: '1px solid #e2e8f0',
-                                                borderRadius: 20,
-                                                padding: '5px 14px',
-                                              }}
-                                            >
-                                              <span style={{ fontSize: 11, fontWeight: 700, background: '#ede9fe', color: '#6d28d9', padding: '2px 8px', borderRadius: 10 }}>
-                                                {attemptsCount} lần làm
-                                              </span>
-                                              <span style={{ fontSize: 12.5, fontWeight: 600, color: '#64748b' }}>
-                                                L1: <strong style={{ color: '#334155' }}>{firstSub.score}đ</strong>
-                                              </span>
-                                              <span style={{ fontSize: 11, color: '#94a3b8' }}>➔</span>
-                                              <span style={{ fontSize: 12.5, fontWeight: 700, color: latestSub.score >= 5 ? '#16a34a' : '#dc2626' }}>
-                                                L{attemptsCount}: <strong style={{ fontSize: 13.5 }}>{latestSub.score}đ</strong>
-                                              </span>
-                                              {parseFloat(scoreDiff) > 0 ? (
-                                                <span
-                                                  style={{
-                                                    fontSize: 11.5,
-                                                    fontWeight: 800,
-                                                    color: '#15803d',
-                                                    background: '#dcfce7',
-                                                    border: '1px solid #bbf7d0',
-                                                    padding: '2px 8px',
-                                                    borderRadius: 12,
-                                                    display: 'inline-flex',
-                                                    alignItems: 'center',
-                                                    gap: 3,
-                                                  }}
-                                                >
-                                                  🚀 +{scoreDiff}đ
-                                                </span>
-                                              ) : parseFloat(scoreDiff) < 0 ? (
-                                                <span
-                                                  style={{
-                                                    fontSize: 11.5,
-                                                    fontWeight: 700,
-                                                    color: '#b91c1c',
-                                                    background: '#fee2e2',
-                                                    border: '1px solid #fecaca',
-                                                    padding: '2px 8px',
-                                                    borderRadius: 12,
-                                                  }}
-                                                >
-                                                  📉 {scoreDiff}đ
-                                                </span>
-                                              ) : (
-                                                <span
-                                                  style={{
-                                                    fontSize: 11.5,
-                                                    fontWeight: 600,
-                                                    color: '#64748b',
-                                                    background: '#f1f5f9',
-                                                    padding: '2px 8px',
-                                                    borderRadius: 12,
-                                                  }}
-                                                >
-                                                  = Giữ nguyên
-                                                </span>
-                                              )}
-                                            </div>
-                                          ) : (
-                                            <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
-                                              <span
-                                                style={{
-                                                  fontWeight: 800,
-                                                  fontSize: 13,
-                                                  padding: '4px 14px',
-                                                  borderRadius: 20,
-                                                  background: latestSub.score >= 5 ? '#dcfce7' : '#fee2e2',
-                                                  color: latestSub.score >= 5 ? '#15803d' : '#b91c1c',
-                                                  border: `1px solid ${latestSub.score >= 5 ? '#bbf7d0' : '#fecaca'}`,
-                                                }}
-                                              >
-                                                {latestSub.score} / 10 điểm
-                                              </span>
-                                              <span style={{ fontSize: 11.5, fontWeight: 600, background: '#f1f5f9', color: '#64748b', padding: '3px 9px', borderRadius: 10 }}>
-                                                1 lần làm
-                                              </span>
-                                            </div>
-                                          )}
-                                        </div>
-
-                                        {/* 3. Right: Action button - đẩy về mép phải, gần bên trái là tên/điểm */}
-                                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', marginLeft: 'auto' }}>
-                                          <Link
-                                            to={`/teacher/exams/${exam.id}/submissions/${latestSub.id || latestSub.submissionId}`}
-                                            className="btn sm"
-                                            style={{
-                                              padding: '7px 16px',
-                                              fontSize: 12.5,
-                                              fontWeight: 700,
-                                              borderRadius: 8,
-                                              whiteSpace: 'nowrap',
-                                              display: 'inline-flex',
-                                              alignItems: 'center',
-                                              gap: 5,
-                                              background: 'var(--primary)',
-                                              color: '#fff',
-                                              boxShadow: '0 2px 6px rgba(138,97,31,0.25)',
-                                            }}
-                                          >
-                                            ✨ Xem bài & AI ➔
-                                          </Link>
-                                        </div>
-                                      </div>
+                                        <span className="result-pending">Chưa nộp bài</span>
+                                      </li>
                                     );
                                   }
 
+                                  const latestSub = studentSubs[studentSubs.length - 1];
+                                  const firstSub = studentSubs[0];
+                                  const attemptsCount = studentSubs.length;
                                   return (
-                                    <div
-                                      key={stId}
-                                      style={{
-                                        display: 'flex',
-                                        alignItems: 'center',
-                                        justifyContent: 'space-between',
-                                        padding: '8px 14px',
-                                        borderRadius: 8,
-                                        background: '#f8fafc',
-                                        border: '1px solid #f1f5f9',
-                                        color: 'var(--text-muted)',
-                                        fontSize: 13,
-                                      }}
-                                    >
-                                      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                                        <div
-                                          style={{
-                                            width: 32,
-                                            height: 32,
-                                            borderRadius: '50%',
-                                            background: '#cbd5e1',
-                                            color: '#ffffff',
-                                            display: 'flex',
-                                            alignItems: 'center',
-                                            justifyContent: 'center',
-                                            fontWeight: 700,
-                                            fontSize: 13,
-                                          }}
-                                        >
-                                          {initial}
-                                        </div>
-                                        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                                          <span style={{ fontWeight: 600, color: 'var(--text-main)' }}>{studentName}</span>
-                                          {className && (
-                                            <span style={{ fontSize: 11, background: '#e2e8f0', padding: '1px 6px', borderRadius: 4 }}>
-                                              {className}
-                                            </span>
-                                          )}
+                                    <li key={stId} className="result-row">
+                                      <div className="result-student">
+                                        <span className="avatar" aria-hidden="true">{initial}</span>
+                                        <div style={{ minWidth: 0 }}>
+                                          <div className="result-name">
+                                            <span title={studentName}>{studentName}</span>
+                                            {className && <span className="class-badge">{className}</span>}
+                                          </div>
+                                          <div className="result-time">
+                                            Nộp lúc {latestSub.submittedAt ? new Date(latestSub.submittedAt).toLocaleString('vi-VN') : '—'}
+                                          </div>
                                         </div>
                                       </div>
-                                      <span style={{ fontSize: 12, fontStyle: 'italic', color: 'var(--text-muted)' }}>
-                                        ⏳ Chưa nộp bài
-                                      </span>
-                                    </div>
+                                      <div className="result-score">
+                                        {attemptsCount > 1 ? (
+                                          <>
+                                            <span>Lần 1 <b>{formatScore(firstSub.score)}</b></span>
+                                            <UiIcon name="arrow-right" size={14} />
+                                            <span>
+                                              Lần {attemptsCount}{' '}
+                                              <b className={`score-text is-${scoreLevel(latestSub.score)}`}>{formatScore(latestSub.score)}</b>
+                                            </span>
+                                            <ScoreTrend diff={(latestSub.score || 0) - (firstSub.score || 0)} />
+                                          </>
+                                        ) : (
+                                          <>
+                                            <span className={`score-pill is-${scoreLevel(latestSub.score)}`}>
+                                              {formatScore(latestSub.score)}<small>/10</small>
+                                            </span>
+                                            <span className="result-attempts">1 lần làm</span>
+                                          </>
+                                        )}
+                                      </div>
+                                      <Link
+                                        to={`/teacher/exams/${exam.id}/submissions/${latestSub.id || latestSub.submissionId}`}
+                                        className="btn sm"
+                                      >
+                                        <UiIcon name="sparkles" size={15} />
+                                        Xem bài và AI
+                                      </Link>
+                                    </li>
                                   );
                                 })}
-                              </div>
+                              </ul>
                             </div>
                           </td>
                         </tr>
@@ -2074,57 +1728,49 @@ export default function TeacherExamsPage() {
 
                       {/* Thư mục con: các đề AI tự sinh thêm dựa trên đề này */}
                       {isAiFolderExpanded && aiChildren.length > 0 && (
-                        <tr style={{ background: 'var(--ai-bg, #f3ecff)' }}>
-                          <td colSpan={4} style={{ padding: '12px 20px 16px', borderTop: 'none', borderBottom: '2px solid var(--border)' }}>
-                            <div style={{ fontSize: 12.5, fontWeight: 700, color: 'var(--ai, #7c3aed)', marginBottom: 8 }}>
-                              📂 Bài tập AI sinh thêm từ đề "{exam.title}"
-                            </div>
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                              {aiChildren.map((child) => {
-                                const childAssigned = child.assignedTo || [];
-                                const childStudent = students.find((s) => childAssigned.includes(s.id));
-                                return (
-                                  <div
-                                    key={child.id}
-                                    style={{
-                                      display: 'flex',
-                                      alignItems: 'center',
-                                      justifyContent: 'space-between',
-                                      gap: 12,
-                                      flexWrap: 'wrap',
-                                      background: '#ffffff',
-                                      border: '1px solid var(--ai-line, #ddcbfb)',
-                                      borderRadius: 8,
-                                      padding: '10px 14px',
-                                    }}
-                                  >
-                                    <div style={{ minWidth: 200 }}>
-                                      <Link to={`/teacher/exams/${child.id}`} style={{ fontWeight: 600, fontSize: 13.5 }}>
-                                        {child.title}
-                                      </Link>
-                                      <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 2 }}>
-                                        👤 {childStudent ? childStudent.name : 'Học sinh'} · 📝 {child.questionsCount ?? 0} câu
+                        <tr className="exam-subrow">
+                          <td colSpan={4}>
+                            <div className="result-panel is-ai">
+                              <div className="result-panel-head">
+                                <strong><UiIcon name="sparkles" size={15} />Bài tập AI sinh thêm từ đề này</strong>
+                                <span>{aiChildren.length} đề</span>
+                              </div>
+                              <ul className="result-list">
+                                {aiChildren.map((child) => {
+                                  const childAssigned = child.assignedTo || [];
+                                  const childStudent = students.find((s) => childAssigned.includes(s.id));
+                                  return (
+                                    <li key={child.id} className="result-row">
+                                      <div style={{ minWidth: 0, flex: 1 }}>
+                                        <Link className="exam-title is-sm" to={`/teacher/exams/${child.id}`}>{child.title}</Link>
+                                        <div className="meta-row" style={{ marginTop: 4 }}>
+                                          <span><UiIcon name="user" size={14} />{childStudent ? childStudent.name : 'Học sinh'}</span>
+                                          <span><UiIcon name="list" size={14} />{child.questionsCount ?? 0} câu</span>
+                                        </div>
                                       </div>
-                                    </div>
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                                       <span className={`status-pill ${child.status}`}>
-                                        {child.status === 'assigned' ? '✓ Đang giao' : '○ Bản nháp'}
+                                        <span className="status-dot" />
+                                        {child.status === 'assigned' ? 'Đang giao' : 'Bản nháp'}
                                       </span>
-                                      <Link to={`/teacher/exams/${child.id}`} className="btn sm secondary" style={{ whiteSpace: 'nowrap' }}>
-                                        Xem đề
-                                      </Link>
-                                      <button
-                                        type="button"
-                                        className="btn sm outline-danger"
-                                        onClick={() => handleDeleteExam(child)}
-                                        title="Xoá đề này"
-                                      >
-                                        Xoá
-                                      </button>
-                                    </div>
-                                  </div>
-                                );
-                              })}
+                                      <div className="row-actions">
+                                        <Link to={`/teacher/exams/${child.id}`} className="btn sm secondary">
+                                          <UiIcon name="eye" size={15} />
+                                          Xem đề
+                                        </Link>
+                                        <button
+                                          type="button"
+                                          className="icon-btn is-danger"
+                                          onClick={() => handleDeleteExam(child)}
+                                          aria-label="Xoá đề này"
+                                          title="Xoá đề này"
+                                        >
+                                          <UiIcon name="trash" size={15} />
+                                        </button>
+                                      </div>
+                                    </li>
+                                  );
+                                })}
+                              </ul>
                             </div>
                           </td>
                         </tr>
@@ -2161,13 +1807,8 @@ export default function TeacherExamsPage() {
           >
             <div className="card-header">
               <h2>Sửa thông tin đề thi</h2>
-              <button
-                type="button"
-                aria-label="Đóng"
-                style={{ background: 'none', border: 'none', fontSize: 20, cursor: 'pointer', color: 'var(--text-muted)' }}
-                onClick={() => setEditingExam(null)}
-              >
-                ✕
+              <button type="button" className="ce-close" aria-label="Đóng" onClick={() => setEditingExam(null)}>
+                <UiIcon name="close" size={18} />
               </button>
             </div>
 
@@ -2206,7 +1847,7 @@ export default function TeacherExamsPage() {
                     onChange={(e) => setEditForm({ ...editForm, status: e.target.value })}
                   >
                     <option value="draft">Bản nháp</option>
-                    <option value="assigned">Đang phát hành</option>
+                    <option value="assigned">Đang giao</option>
                   </select>
                 </div>
               </div>
@@ -2224,7 +1865,7 @@ export default function TeacherExamsPage() {
 
               {editError && (
                 <p className="error-text" role="alert" aria-live="polite">
-                  <span aria-hidden="true">⚠️</span> {editError}
+                  {editError}
                 </p>
               )}
 
