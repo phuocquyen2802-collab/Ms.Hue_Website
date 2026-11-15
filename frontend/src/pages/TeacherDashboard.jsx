@@ -42,7 +42,6 @@ export default function TeacherDashboard() {
   // gửi cho lớp - xem utils/studentAccountsExport.js
   const { user } = useAuth();
   const [createdAccounts, setCreatedAccounts] = useState(() => loadCreatedAccounts(user?.id));
-  const [exportClass, setExportClass] = useState('all');
   const [exporting, setExporting] = useState(false);
   const [exportError, setExportError] = useState('');
   const [addSuccess, setAddSuccess] = useState('');
@@ -230,20 +229,18 @@ export default function TeacherDashboard() {
     return s.className === classFilter;
   });
 
-  // Xuất file Excel các tài khoản vừa tạo (theo lớp)
-  const createdClasses = Array.from(new Set(createdAccounts.map((a) => a.className || ''))).sort();
-  const effectiveExportClass = createdClasses.includes(exportClass) ? exportClass : 'all';
-  const accountsToExport = effectiveExportClass === 'all'
+  // Tài khoản vừa tạo (có mật khẩu): xuất theo đúng bộ lọc lớp đang chọn
+  const createdById = new Map(createdAccounts.map((a) => [a.id, a]));
+  const accountsToExport = classFilter === 'all'
     ? createdAccounts
-    : createdAccounts.filter((a) => (a.className || '') === effectiveExportClass);
+    : createdAccounts.filter((a) => (a.className || '') === classFilter);
 
   async function handleExport() {
     setExportError('');
     setExporting(true);
     try {
-      const fileClass = effectiveExportClass !== 'all'
-        ? effectiveExportClass
-        : createdClasses.length === 1 ? createdClasses[0] : '';
+      const classes = Array.from(new Set(accountsToExport.map((a) => a.className || '')));
+      const fileClass = classFilter !== 'all' ? classFilter : classes.length === 1 ? classes[0] : '';
       await exportAccountsToXlsx(accountsToExport, fileClass);
     } catch (err) {
       console.error(err);
@@ -254,9 +251,8 @@ export default function TeacherDashboard() {
   }
 
   function handleClearCreated() {
-    if (!window.confirm('Xoá danh sách tài khoản vừa tạo? Sau khi xoá sẽ không xem lại được mật khẩu.')) return;
+    if (!window.confirm('Bỏ mật khẩu tạm của các tài khoản vừa tạo? Sau đó sẽ không xem hay xuất lại được mật khẩu.')) return;
     updateCreatedAccounts(() => []);
-    setExportClass('all');
   }
 
   return (
@@ -301,82 +297,6 @@ export default function TeacherDashboard() {
         </div>
       </div>
 
-      {/* Tài khoản vừa tạo - xuất file Excel gửi cho lớp */}
-      {createdAccounts.length > 0 && (
-        <div className="card created-accounts">
-          <div className="card-header">
-            <div className="card-title-group">
-              <div className="card-title-row">
-                <UiIcon name="file" size={18} className="title-icon" />
-                <h2>Tài khoản vừa tạo</h2>
-                <span className="count-badge">{createdAccounts.length}</span>
-              </div>
-              <p className="card-hint">
-                Tải file Excel để gửi cho lớp. Mật khẩu chỉ được giữ ở đây đến khi bạn xoá danh sách, đăng xuất hoặc đóng tab này.
-              </p>
-            </div>
-            <div className="toolbar">
-              {createdClasses.length > 1 && (
-                <select
-                  aria-label="Chọn lớp để xuất file"
-                  value={effectiveExportClass}
-                  onChange={(e) => setExportClass(e.target.value)}
-                >
-                  <option value="all">Tất cả lớp ({createdAccounts.length})</option>
-                  {createdClasses.map((cls) => (
-                    <option key={cls || 'none'} value={cls}>
-                      {cls ? `Lớp ${cls}` : 'Chưa phân lớp'} ({createdAccounts.filter((a) => (a.className || '') === cls).length})
-                    </option>
-                  ))}
-                </select>
-              )}
-              <button className="btn sm" onClick={handleExport} disabled={exporting || accountsToExport.length === 0}>
-                {exporting ? (
-                  <><span className="spinner is-on-primary" /> Đang tạo file…</>
-                ) : (
-                  <><UiIcon name="download" size={15} /> Tải file Excel</>
-                )}
-              </button>
-              <button className="btn sm secondary" onClick={handleClearCreated}>
-                Xoá danh sách
-              </button>
-            </div>
-          </div>
-
-          {exportError && (
-            <div className="notice is-danger" style={{ marginBottom: 12 }}>
-              <UiIcon name="alert" size={18} />
-              <div className="notice-body">{exportError}</div>
-            </div>
-          )}
-
-          <div className="table-responsive">
-            <table>
-              <thead>
-                <tr>
-                  <th style={{ width: 56 }}>STT</th>
-                  <th>Họ và tên</th>
-                  <th style={{ width: 120 }}>Lớp</th>
-                  <th>Tài khoản / Email</th>
-                  <th style={{ width: 160 }}>Mật khẩu</th>
-                </tr>
-              </thead>
-              <tbody>
-                {accountsToExport.map((a, idx) => (
-                  <tr key={a.id || idx}>
-                    <td className="text-muted-cell">{idx + 1}</td>
-                    <td>{a.name}</td>
-                    <td>{a.className ? <span className="class-badge">{a.className}</span> : <span className="text-muted-cell">—</span>}</td>
-                    <td>{a.email}</td>
-                    <td><span className="credential">{a.password}</span></td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      )}
-
       {/* Danh sách học sinh */}
       <div className="card">
         <div className="card-header">
@@ -405,6 +325,39 @@ export default function TeacherDashboard() {
             </div>
           </div>
         </div>
+
+        {createdAccounts.length > 0 && (
+          <div className="export-bar">
+            <span className="export-bar-icon" aria-hidden="true"><UiIcon name="file" size={18} /></span>
+            <div className="export-bar-text">
+              <strong>
+                {accountsToExport.length > 0
+                  ? `${accountsToExport.length} tài khoản vừa tạo${classFilter !== 'all' ? ` của lớp ${classFilter}` : ''} có sẵn mật khẩu`
+                  : `Lớp ${classFilter} chưa có tài khoản nào vừa tạo`}
+              </strong>
+              <span>Tải file Excel để gửi cho lớp. Mật khẩu chỉ hiện đến khi bạn đăng xuất hoặc đóng tab này.</span>
+            </div>
+            <div className="export-bar-actions">
+              <button className="btn sm" onClick={handleExport} disabled={exporting || accountsToExport.length === 0}>
+                {exporting ? (
+                  <><span className="spinner is-on-primary" /> Đang tạo file…</>
+                ) : (
+                  <><UiIcon name="download" size={15} /> Tải file Excel</>
+                )}
+              </button>
+              <button type="button" className="text-btn is-muted" onClick={handleClearCreated}>
+                Bỏ mật khẩu tạm
+              </button>
+            </div>
+          </div>
+        )}
+
+        {exportError && (
+          <div className="notice is-danger" style={{ marginBottom: 12 }}>
+            <UiIcon name="alert" size={18} />
+            <div className="notice-body">{exportError}</div>
+          </div>
+        )}
 
         {loading ? (
           <div className="empty-state">
@@ -477,8 +430,9 @@ export default function TeacherDashboard() {
                     );
                   }
 
+                  const created = createdById.get(s.id);
                   return (
-                    <tr key={s.id}>
+                    <tr key={s.id} className={created ? 'is-new' : undefined}>
                       <td>
                         <Link
                           to={`/teacher/analytics?studentId=${s.id}`}
@@ -492,7 +446,15 @@ export default function TeacherDashboard() {
                       <td>
                         <span className="class-badge">{s.className ? `Lớp ${s.className}` : 'Chưa phân lớp'}</span>
                       </td>
-                      <td className="text-muted-cell">{s.email}</td>
+                      <td>
+                        <span className="account-name">{s.email}</span>
+                        {created && (
+                          <div className="new-credential">
+                            <span className="new-pill">Mới</span>
+                            Mật khẩu <span className="credential">{created.password}</span>
+                          </div>
+                        )}
+                      </td>
                       <td>
                         <div className="row-actions">
                           <button
