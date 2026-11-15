@@ -2,6 +2,13 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import api from '../services/api';
 import UiIcon from '../components/UiIcon';
+import { useAuth } from '../context/AuthContext';
+import {
+  loadCreatedAccounts,
+  saveCreatedAccounts,
+  exportAccountsToXlsx,
+  generatePassword,
+} from '../utils/studentAccountsExport';
 
 const EMPTY_STUDENT_FORM = { name: '', email: '', password: '', className: '' };
 
@@ -31,6 +38,29 @@ export default function TeacherDashboard() {
   const [editForm, setEditForm] = useState({ name: '', email: '', className: '', password: '' });
   const [savingEdit, setSavingEdit] = useState(false);
 
+  // Tài khoản vừa tạo (kèm mật khẩu giáo viên vừa nhập) để xuất file Excel
+  // gửi cho lớp - xem utils/studentAccountsExport.js
+  const { user } = useAuth();
+  const [createdAccounts, setCreatedAccounts] = useState(() => loadCreatedAccounts(user?.id));
+  const [exportClass, setExportClass] = useState('all');
+  const [exporting, setExporting] = useState(false);
+  const [exportError, setExportError] = useState('');
+  const [addSuccess, setAddSuccess] = useState('');
+
+  function updateCreatedAccounts(updater) {
+    setCreatedAccounts((prev) => {
+      const next = updater(prev);
+      saveCreatedAccounts(user?.id, next);
+      return next;
+    });
+  }
+
+  function openAddModal() {
+    setAddError('');
+    setAddSuccess('');
+    setShowAddModal(true);
+  }
+
   async function loadData() {
     setLoading(true);
     try {
@@ -53,12 +83,38 @@ export default function TeacherDashboard() {
 
   async function handleAddStudent(e) {
     e.preventDefault();
+    // Nút "Lưu và thêm tiếp" giữ modal mở và giữ nguyên lớp
+    const keepOpen = e.nativeEvent?.submitter?.dataset?.action === 'continue';
     setAddError('');
+    setAddSuccess('');
     setAdding(true);
     try {
-      await api.post('/teacher/students', newStudent);
-      setNewStudent(EMPTY_STUDENT_FORM);
-      setShowAddModal(false);
+      const payload = {
+        ...newStudent,
+        name: newStudent.name.trim(),
+        email: newStudent.email.trim(),
+        className: newStudent.className.trim(),
+      };
+      const { data } = await api.post('/teacher/students', payload);
+      updateCreatedAccounts((prev) => [
+        ...prev,
+        {
+          id: data.id,
+          name: data.name,
+          email: data.email,
+          className: data.className || '',
+          password: payload.password,
+          createdAt: new Date().toISOString(),
+        },
+      ]);
+      if (keepOpen) {
+        setNewStudent({ ...EMPTY_STUDENT_FORM, className: payload.className });
+        setAddSuccess(`Đã tạo tài khoản cho ${data.name}. Nhập học sinh tiếp theo.`);
+        setTimeout(() => document.getElementById('add-student-name')?.focus(), 0);
+      } else {
+        setNewStudent(EMPTY_STUDENT_FORM);
+        setShowAddModal(false);
+      }
       loadData();
     } catch (err) {
       setAddError(err.response?.data?.message || 'Tạo tài khoản thất bại');
@@ -75,6 +131,9 @@ export default function TeacherDashboard() {
   async function handleSaveEdit(studentId) {
     try {
       await api.put(`/teacher/students/${studentId}`, editForm);
+      updateCreatedAccounts((prev) =>
+        prev.map((a) => (a.id === studentId ? { ...a, name: editForm.name, className: editForm.className || '' } : a))
+      );
       setEditingId(null);
       loadData();
     } catch (err) {
@@ -86,6 +145,7 @@ export default function TeacherDashboard() {
     if (!window.confirm(`Xoá tài khoản học sinh "${student.name}"?`)) return;
     try {
       await api.delete(`/teacher/students/${student.id}`);
+      updateCreatedAccounts((prev) => prev.filter((a) => a.id !== student.id));
       loadData();
     } catch (err) {
       alert(err.response?.data?.message || 'Lỗi xoá tài khoản');
@@ -170,6 +230,35 @@ export default function TeacherDashboard() {
     return s.className === classFilter;
   });
 
+  // Xuất file Excel các tài khoản vừa tạo (theo lớp)
+  const createdClasses = Array.from(new Set(createdAccounts.map((a) => a.className || ''))).sort();
+  const effectiveExportClass = createdClasses.includes(exportClass) ? exportClass : 'all';
+  const accountsToExport = effectiveExportClass === 'all'
+    ? createdAccounts
+    : createdAccounts.filter((a) => (a.className || '') === effectiveExportClass);
+
+  async function handleExport() {
+    setExportError('');
+    setExporting(true);
+    try {
+      const fileClass = effectiveExportClass !== 'all'
+        ? effectiveExportClass
+        : createdClasses.length === 1 ? createdClasses[0] : '';
+      await exportAccountsToXlsx(accountsToExport, fileClass);
+    } catch (err) {
+      console.error(err);
+      setExportError('Không tạo được file Excel. Hãy thử lại hoặc dùng trình duyệt khác.');
+    } finally {
+      setExporting(false);
+    }
+  }
+
+  function handleClearCreated() {
+    if (!window.confirm('Xoá danh sách tài khoản vừa tạo? Sau khi xoá sẽ không xem lại được mật khẩu.')) return;
+    updateCreatedAccounts(() => []);
+    setExportClass('all');
+  }
+
   return (
     <div className="container">
       <div className="page-header">
@@ -178,7 +267,7 @@ export default function TeacherDashboard() {
           <p className="page-subtitle">Tài khoản học sinh, lớp học và nhóm để giao bài nhanh</p>
         </div>
         <div className="header-actions">
-          <button className="btn" onClick={() => setShowAddModal(true)}>
+          <button className="btn" onClick={openAddModal}>
             <UiIcon name="plus" size={17} />
             Thêm học sinh
           </button>
@@ -211,6 +300,82 @@ export default function TeacherDashboard() {
           <div className="metric-icon-box slate"><UiIcon name="folder" size={20} /></div>
         </div>
       </div>
+
+      {/* Tài khoản vừa tạo - xuất file Excel gửi cho lớp */}
+      {createdAccounts.length > 0 && (
+        <div className="card created-accounts">
+          <div className="card-header">
+            <div className="card-title-group">
+              <div className="card-title-row">
+                <UiIcon name="file" size={18} className="title-icon" />
+                <h2>Tài khoản vừa tạo</h2>
+                <span className="count-badge">{createdAccounts.length}</span>
+              </div>
+              <p className="card-hint">
+                Tải file Excel để gửi cho lớp. Mật khẩu chỉ được giữ ở đây đến khi bạn xoá danh sách, đăng xuất hoặc đóng tab này.
+              </p>
+            </div>
+            <div className="toolbar">
+              {createdClasses.length > 1 && (
+                <select
+                  aria-label="Chọn lớp để xuất file"
+                  value={effectiveExportClass}
+                  onChange={(e) => setExportClass(e.target.value)}
+                >
+                  <option value="all">Tất cả lớp ({createdAccounts.length})</option>
+                  {createdClasses.map((cls) => (
+                    <option key={cls || 'none'} value={cls}>
+                      {cls ? `Lớp ${cls}` : 'Chưa phân lớp'} ({createdAccounts.filter((a) => (a.className || '') === cls).length})
+                    </option>
+                  ))}
+                </select>
+              )}
+              <button className="btn sm" onClick={handleExport} disabled={exporting || accountsToExport.length === 0}>
+                {exporting ? (
+                  <><span className="spinner is-on-primary" /> Đang tạo file…</>
+                ) : (
+                  <><UiIcon name="download" size={15} /> Tải file Excel</>
+                )}
+              </button>
+              <button className="btn sm secondary" onClick={handleClearCreated}>
+                Xoá danh sách
+              </button>
+            </div>
+          </div>
+
+          {exportError && (
+            <div className="notice is-danger" style={{ marginBottom: 12 }}>
+              <UiIcon name="alert" size={18} />
+              <div className="notice-body">{exportError}</div>
+            </div>
+          )}
+
+          <div className="table-responsive">
+            <table>
+              <thead>
+                <tr>
+                  <th style={{ width: 56 }}>STT</th>
+                  <th>Họ và tên</th>
+                  <th style={{ width: 120 }}>Lớp</th>
+                  <th>Tài khoản / Email</th>
+                  <th style={{ width: 160 }}>Mật khẩu</th>
+                </tr>
+              </thead>
+              <tbody>
+                {accountsToExport.map((a, idx) => (
+                  <tr key={a.id || idx}>
+                    <td className="text-muted-cell">{idx + 1}</td>
+                    <td>{a.name}</td>
+                    <td>{a.className ? <span className="class-badge">{a.className}</span> : <span className="text-muted-cell">—</span>}</td>
+                    <td>{a.email}</td>
+                    <td><span className="credential">{a.password}</span></td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
 
       {/* Danh sách học sinh */}
       <div className="card">
@@ -253,7 +418,7 @@ export default function TeacherDashboard() {
               <>
                 <div className="empty-state-title">Chưa có học sinh nào</div>
                 <p className="empty-state-desc">Tạo tài khoản cho học sinh để giao bài và theo dõi kết quả học tập.</p>
-                <button className="btn" onClick={() => setShowAddModal(true)}>
+                <button className="btn" onClick={openAddModal}>
                   <UiIcon name="plus" size={17} />
                   Thêm học sinh
                 </button>
@@ -562,11 +727,11 @@ export default function TeacherDashboard() {
                   <label htmlFor="add-student-email">Email / Tên đăng nhập <span style={{ color: 'var(--danger)' }}>*</span></label>
                   <input
                     id="add-student-email"
-                    type="email"
-                    placeholder="an.nguyen@email.com…"
+                    type="text"
+                    placeholder="an.nguyen hoặc an@email.com"
                     value={newStudent.email}
                     onChange={(e) => setNewStudent({ ...newStudent, email: e.target.value })}
-                    autoComplete="email"
+                    autoComplete="off"
                     spellCheck={false}
                     required
                   />
@@ -586,17 +751,28 @@ export default function TeacherDashboard() {
               </div>
 
               <div className="form-group">
-                <label htmlFor="add-student-password">Mật khẩu <span style={{ color: 'var(--danger)' }}>*</span></label>
+                <div className="label-row">
+                  <label htmlFor="add-student-password">Mật khẩu <span style={{ color: 'var(--danger)' }}>*</span></label>
+                  <button
+                    type="button"
+                    className="text-btn"
+                    onClick={() => setNewStudent({ ...newStudent, password: generatePassword() })}
+                  >
+                    Tạo ngẫu nhiên
+                  </button>
+                </div>
                 <input
                   id="add-student-password"
-                  type="password"
-                  placeholder="Tối thiểu 6 ký tự…"
+                  type="text"
+                  placeholder="Tối thiểu 6 ký tự"
                   value={newStudent.password}
                   onChange={(e) => setNewStudent({ ...newStudent, password: e.target.value })}
-                  autoComplete="new-password"
+                  autoComplete="off"
+                  spellCheck={false}
                   minLength={6}
                   required
                 />
+                <p className="field-hint">Mật khẩu sẽ có trong file Excel ở mục "Tài khoản vừa tạo".</p>
               </div>
 
               {addError && (
@@ -604,10 +780,19 @@ export default function TeacherDashboard() {
                   {addError}
                 </p>
               )}
+              {addSuccess && (
+                <div className="notice is-success" role="status" aria-live="polite">
+                  <UiIcon name="check" size={18} />
+                  <div className="notice-body">{addSuccess}</div>
+                </div>
+              )}
 
-              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10, marginTop: 14 }}>
+              <div className="modal-actions">
                 <button type="button" className="btn secondary" onClick={() => setShowAddModal(false)}>
-                  Huỷ
+                  {addSuccess ? 'Xong' : 'Huỷ'}
+                </button>
+                <button className="btn secondary" type="submit" data-action="continue" disabled={adding}>
+                  Lưu và thêm tiếp
                 </button>
                 <button className="btn" type="submit" disabled={adding}>
                   {adding ? 'Đang tạo…' : 'Thêm học sinh'}

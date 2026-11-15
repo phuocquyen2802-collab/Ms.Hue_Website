@@ -1,5 +1,6 @@
 import { createContext, useContext, useState } from 'react';
 import api from '../services/api';
+import { clearAllCreatedAccounts } from '../utils/studentAccountsExport';
 
 const AuthContext = createContext(null);
 
@@ -31,6 +32,9 @@ export function AuthProvider({ children }) {
     }
     localStorage.removeItem('token');
     localStorage.removeItem('user');
+    // Xoá mật khẩu tạm của các tài khoản học sinh vừa tạo (xem
+    // utils/studentAccountsExport.js) - không để lại cho người dùng sau.
+    clearAllCreatedAccounts();
     setUser(null);
   }
 
