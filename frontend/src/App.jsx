@@ -21,6 +21,8 @@ import StudentHistoryDetailPage from './pages/StudentHistoryDetailPage';
 import SettingsPage from './pages/SettingsPage';
 import AnnouncementsPage from './pages/AnnouncementsPage';
 import AiAssistantPage from './pages/AiAssistantPage';
+import TeacherQuestionBanksPage from './pages/TeacherQuestionBanksPage';
+import StudentGamesPage from './pages/StudentGamesPage';
 
 export default function App() {
   return (
@@ -108,6 +110,15 @@ export default function App() {
         }
       />
 
+      <Route
+        path="/teacher/question-banks"
+        element={
+          <ProtectedRoute role="teacher">
+            <TeacherQuestionBanksPage />
+          </ProtectedRoute>
+        }
+      />
+
       {/* Student Routes */}
       <Route
         path="/student"
@@ -162,6 +173,15 @@ export default function App() {
         element={
           <ProtectedRoute role="student">
             <AiAssistantPage />
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/student/games"
+        element={
+          <ProtectedRoute role="student">
+            <StudentGamesPage />
           </ProtectedRoute>
         }
       />

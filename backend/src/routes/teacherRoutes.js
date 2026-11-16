@@ -1,4 +1,5 @@
 const express = require('express');
+const multer = require('multer');
 const { verifyToken, requireRole } = require('../middleware/auth');
 const { listStudents, getStudentStats, getClassWeakTopics, listAllSubmissions } = require('../controllers/statsController');
 const {
@@ -12,6 +13,9 @@ const {
 } = require('../controllers/generatedExerciseController');
 const { createStudent, updateStudent, deleteStudent } = require('../controllers/studentAccountController');
 const { listGroups, createGroup, updateGroup, deleteGroup } = require('../controllers/studentGroupController');
+const {
+  listBanks, createBank, renameBank, deleteBank, getBankQuestions,
+} = require('../controllers/questionBankController');
 
 const router = express.Router();
 
@@ -37,5 +41,13 @@ router.put('/generated-exercises/:id', updateGeneratedExercise);
 router.put('/generated-exercises/:id/approve', approveGeneratedExercise);
 router.put('/generated-exercises/:id/reject', rejectGeneratedExercise);
 router.delete('/generated-exercises/:id', deleteGeneratedExercise);
+
+// Ngân hàng đề cho trò chơi của học sinh (mỗi file Word = 1 chủ đề)
+const bankUpload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 20 * 1024 * 1024 } });
+router.get('/question-banks', listBanks);
+router.post('/question-banks', bankUpload.single('file'), createBank);
+router.put('/question-banks/:bankId', renameBank);
+router.delete('/question-banks/:bankId', deleteBank);
+router.get('/question-banks/:bankId/questions', getBankQuestions);
 
 module.exports = router;

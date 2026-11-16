@@ -69,6 +69,21 @@ const ICONS = {
       <path d="M8.3 18.5H16a3.3 3.3 0 0 0 0-6.6H8a3.3 3.3 0 0 1 0-6.6h7.7" />
     </>
   ),
+  bank: (
+    <>
+      <path d="M4 7.5 12 4l8 3.5-8 3.5Z" />
+      <path d="M4 12l8 3.5 8-3.5" />
+      <path d="M4 16.5 12 20l8-3.5" />
+    </>
+  ),
+  game: (
+    <>
+      <rect x="2.5" y="7" width="19" height="11" rx="5.5" />
+      <path d="M7.5 10.5v4M5.5 12.5h4" />
+      <circle cx="15.5" cy="11.5" r="1" fill="currentColor" />
+      <circle cx="18" cy="13.8" r="1" fill="currentColor" />
+    </>
+  ),
   settings: (
     <>
       <path d="M4 7h9M17 7h3M4 12h3M11 12h9M4 17h11M19 17h1" />
@@ -112,6 +127,7 @@ const TEACHER_MENU = [
   { to: '/teacher/exams', icon: 'exams', label: 'Quản lý bài tập' },
   { to: '/teacher/analytics', icon: 'analytics', label: 'Giám sát chất lượng' },
   { to: '/teacher/score-stats', icon: 'scores', label: 'Thống kê điểm số' },
+  { to: '/teacher/question-banks', icon: 'bank', label: 'Ngân hàng đề' },
   { to: '/teacher/ai-assistant', icon: 'ai', label: 'Trợ lý AI Gemini' },
 ];
 
@@ -120,6 +136,7 @@ const STUDENT_MENU = [
   { to: '/student', icon: 'practice', label: 'Luyện đề', end: true },
   { to: '/student/weak-topics', icon: 'results', label: 'Kết quả của tôi' },
   { to: '/student/roadmaps', icon: 'roadmap', label: 'Lộ trình ôn tập' },
+  { to: '/student/games', icon: 'game', label: 'Trò chơi' },
   { to: '/student/ai-assistant', icon: 'ai', label: 'Trợ lý AI - Chatbot' },
 ];
 
