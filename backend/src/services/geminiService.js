@@ -44,7 +44,7 @@ function buildPrompt(studentName, weakTags = [], wrongQuestions = []) {
         const diagramLine = q.diagram
           ? `\n- Hình minh hoạ gốc (dữ liệu CHÍNH XÁC, dùng làm mẫu để vẽ hình tương tự): ${JSON.stringify(q.diagram)}`
           : '';
-        return `[Câu sai ${idx + 1}] (Chuyên đề: ${(q.tags || []).join(', ') || 'Toán 12'})
+        return `[Câu sai ${idx + 1}] (Chuyên đề: ${(q.tags || []).join(', ') || 'Toán 11'})
 - Đề bài gốc: ${cleanContent}
 - 4 đáp án gốc:
 ${optionsText}
@@ -63,7 +63,7 @@ ${list}\n`;
 
   const wantQuestionAnalyses = wrongQuestions && wrongQuestions.length > 0;
 
-  return `Bạn là một giáo viên Toán lớp 12 chuyên luyện thi THPT Quốc gia tại Việt Nam. Bạn đang phân tích bài làm của học sinh "${studentName}" để:
+  return `Bạn là một giáo viên Toán lớp 11 tại Việt Nam, dạy theo chương trình Giáo dục phổ thông 2018. Lý thuyết, công thức, cách giải và bài tập tương tự bám sát phạm vi kiến thức Toán 11; chỉ dùng kiến thức lớp trên khi chính câu hỏi học sinh làm sai thuộc phần đó. Bạn đang phân tích bài làm của học sinh "${studentName}" để:
 1. Viết một Lộ trình ôn tập tự học chi tiết, chuẩn mực, công thức Toán học chuẩn LaTeX 100%.
 2. ${wantQuestionAnalyses ? 'Phân tích RIÊNG TỪNG CÂU học sinh đã làm sai (xem "questionAnalyses" trong cấu trúc JSON bên dưới): chỉ ra LỖ HỔNG KIẾN THỨC cụ thể đứng sau lỗi sai đó (thiếu/nhầm kiến thức nền nào khiến học sinh chọn sai đáp án đã chọn) và CÁCH KHẮC PHỤC lỗ hổng đó (nên ôn lại phần lý thuyết/dạng bài nào, luyện tập theo hướng nào) - KHÔNG giải lại chi tiết từng bước của câu hỏi (lời giải chi tiết đầy đủ đã có sẵn trong file đáp án riêng giáo viên phát cho học sinh).' : ''}
 3. Phân loại và sinh ra BỘ BÀI TẬP TRẮC NGHIỆM TƯƠNG TỰ THEO TỪNG CHUYÊN ĐỀ (mỗi câu học sinh làm sai hoặc mỗi chủ đề yếu sinh đúng ${exerciseCountPerQuestion} câu tương tự cùng dạng) với ĐỀ BÀI ĐẦY ĐỦ CÔNG THỨC / PHƯƠNG TRÌNH TOÁN, TUYỆT ĐỐI KHÔNG CỤT ĐỀ.
@@ -279,7 +279,7 @@ function normalizeMathText(text) {
   // QUAN TRỌNG: đôi khi Gemini không dùng lệnh LaTeX \neq mà lại chèn thẳng
   // 1 ký tự unicode "trông giống" dấu khác (≠, ⊟ boxminus, ≢, ∄...) do lỗi
   // sinh token - các ký tự này gần như KHÔNG BAO GIỜ có nghĩa hợp lệ nào
-  // khác trong ngữ cảnh Toán 12, nên thay thế THẲNG về \neq trước, áp dụng
+  // khác trong ngữ cảnh Toán THPT, nên thay thế THẲNG về \neq trước, áp dụng
   // rộng (không chỉ riêng khuôn mẫu "a > 0, a ≠ 1") để chặn lỗi dạng này ở
   // mọi vị trí xuất hiện.
   res = res.replace(/[≠⊟≢∄]/g, ' \\neq ');
@@ -437,10 +437,10 @@ function buildChatContents(messages, userContext) {
   const roleName = userContext.role === 'teacher' ? 'Thầy/Cô giáo' : 'Học sinh';
   const userName = userContext.name || 'Người dùng';
 
-  const systemInstruction = `Bạn là trợ lý AI của "MathInsight AI - Phần mềm học toán cùng AI", chuyên gia Toán học THPT tại Việt Nam. Khi tự giới thiệu, hãy xưng là trợ lý AI của MathInsight AI.
+  const systemInstruction = `Bạn là trợ lý AI của "MathInsight AI - Phần mềm học toán cùng AI", chuyên gia Toán lớp 11 tại Việt Nam (chương trình Giáo dục phổ thông 2018). Khi tự giới thiệu, hãy xưng là trợ lý AI của MathInsight AI.
 Bạn đang trò chuyện và hỗ trợ trực tiếp cho ${roleName} "${userName}".
 Nhiệm vụ của bạn:
-1. Giải đáp chi tiết, từng bước các bài toán Giải tích, Đại số, Hình học không gian, Mũ & Lôgarit, Tích phân, Số phức, Xác suất thống kê lớp 12.
+1. Giải đáp chi tiết, từng bước các bài toán Toán 11: hàm số lượng giác và phương trình lượng giác; dãy số, cấp số cộng, cấp số nhân; giới hạn của dãy số, giới hạn của hàm số, hàm số liên tục; hàm số mũ và hàm số lôgarit, phương trình và bất phương trình mũ, lôgarit; đạo hàm (định nghĩa, quy tắc tính, đạo hàm cấp hai); đường thẳng và mặt phẳng, quan hệ song song, quan hệ vuông góc trong không gian, góc và khoảng cách; thống kê với mẫu số liệu ghép nhóm; xác suất (biến cố hợp, biến cố giao, biến cố độc lập, công thức cộng và nhân xác suất). Trình bày theo cách học sinh lớp 11 đã được học, không dùng kiến thức lớp 12 (tích phân, số phức...) để giải. Nếu được hỏi kiến thức lớp khác vẫn hỗ trợ, nhưng ưu tiên chương trình Toán 11.
 2. Giải thích phương pháp giải, chứng minh công thức, lưu ý các bẫy trắc nghiệm hay gặp và chia sẻ mẹo bấm máy tính Casio (fx-580VNX, fx-880BTG).
 3. Soạn câu hỏi trắc nghiệm, bài tập tự luyện tương tự theo yêu cầu.
 4. Trả lời thân thiện, sư phạm, rõ ràng, gãy gọn.
