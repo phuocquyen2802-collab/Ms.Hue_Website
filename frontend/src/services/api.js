@@ -12,6 +12,9 @@ const api = axios.create({
   timeout: 90000,
 });
 
+// Lý do phiên đăng nhập bị kết thúc, trang đăng nhập đọc để hiện thông báo.
+export const LOGOUT_REASON_KEY = 'mi-logout-reason';
+
 // Tự động đính kèm JWT token (nếu đã đăng nhập) vào mọi request
 api.interceptors.request.use((config) => {
   const token = localStorage.getItem('token');
@@ -21,7 +24,10 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
-// Nếu token hết hạn/không hợp lệ ở các trang được bảo vệ, tự động đăng xuất và quay về trang giới thiệu
+// Nếu token hết hạn/không hợp lệ ở các trang được bảo vệ, tự động đăng xuất và quay về trang giới thiệu.
+// Tài khoản bị giáo viên xoá (máy chủ trả mã ACCOUNT_DELETED): đăng xuất
+// ngay, về trang đăng nhập và báo lý do. Trang có tín hiệu "đang online" gửi
+// lên mỗi 15 giây (ChatWidget) nên kể cả đang ngồi yên cũng bị đăng xuất sớm.
 api.interceptors.response.use(
   (response) => response,
   (error) => {
@@ -29,7 +35,16 @@ api.interceptors.response.use(
     if (error.response && error.response.status === 401 && !isLoginRequest) {
       localStorage.removeItem('token');
       localStorage.removeItem('user');
-      if (window.location.pathname !== '/' && window.location.pathname !== '/login') {
+      if (error.response.data?.code === 'ACCOUNT_DELETED') {
+        try {
+          sessionStorage.setItem(LOGOUT_REASON_KEY, 'deleted');
+        } catch {
+          // Không lưu được lý do thì vẫn đăng xuất, chỉ thiếu dòng thông báo.
+        }
+        // Trang làm bài đang chặn rời trang (beforeunload) - cho phép đi luôn.
+        window.__miForceNavigation = true;
+        if (window.location.pathname !== '/login') window.location.replace('/login');
+      } else if (window.location.pathname !== '/' && window.location.pathname !== '/login') {
         window.location.href = '/';
       }
     }

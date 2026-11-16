@@ -300,7 +300,8 @@ export default function ExamPage() {
       if (!document.fullscreenElement) leave('fullscreen-exit');
     };
     const onBeforeUnload = (e) => {
-      if (finishingRef.current) return;
+      // __miForceNavigation: tài khoản vừa bị xoá, đang tự đăng xuất (services/api.js).
+      if (finishingRef.current || window.__miForceNavigation) return;
       e.preventDefault();
       e.returnValue = '';
     };

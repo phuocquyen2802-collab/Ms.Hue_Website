@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import api from '../services/api';
+import api, { LOGOUT_REASON_KEY } from '../services/api';
 import AuthLayout, { AuthAlert, PasswordField } from '../components/AuthLayout';
 import { usePreferences } from '../context/PreferencesContext';
 import { LOGIN_TEXT } from '../i18n/publicText';
@@ -24,6 +24,14 @@ export default function LoginPage() {
 
   const [mode, setMode] = useState(() => (new URLSearchParams(location.search).has('forgot') ? 'forgot' : 'login'));
   const [resetDone] = useState(() => Boolean(location.state?.resetDone));
+  // Bị đăng xuất vì giáo viên đã xoá tài khoản (services/api.js ghi lại lý do).
+  const [accountDeleted] = useState(() => {
+    try {
+      return sessionStorage.getItem(LOGOUT_REASON_KEY) === 'deleted';
+    } catch {
+      return false;
+    }
+  });
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -38,6 +46,11 @@ export default function LoginPage() {
 
   // Bỏ cờ "vừa đổi mật khẩu" khỏi lịch sử để tải lại trang không hiện lại thông báo.
   useEffect(() => {
+    try {
+      sessionStorage.removeItem(LOGOUT_REASON_KEY);
+    } catch {
+      // bỏ qua
+    }
     if (location.state?.resetDone) navigate(location.pathname, { replace: true, state: null });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -197,6 +210,7 @@ export default function LoginPage() {
       </div>
 
       {resetDone && <AuthAlert tone="success">{t.resetDone}</AuthAlert>}
+      {accountDeleted && <AuthAlert>{t.accountDeleted}</AuthAlert>}
 
       <form onSubmit={handleLogin}>
         <div className="form-group">

@@ -1,6 +1,7 @@
 // Middleware xác thực (JWT) và phân quyền theo role.
 
 const jwt = require('jsonwebtoken');
+const dataAccess = require('../models/dataAccess');
 
 // Kiểm tra token JWT gửi kèm header Authorization: Bearer <token>
 function verifyToken(req, res, next) {
@@ -10,13 +11,22 @@ function verifyToken(req, res, next) {
   }
 
   const token = authHeader.split(' ')[1];
+  let payload;
   try {
-    const payload = jwt.verify(token, process.env.JWT_SECRET);
-    req.user = payload; // { id, role, name }
-    next();
+    payload = jwt.verify(token, process.env.JWT_SECRET);
   } catch (err) {
     return res.status(401).json({ message: 'Token không hợp lệ hoặc đã hết hạn' });
   }
+
+  // Token vẫn còn hạn nhưng tài khoản đã bị giáo viên xoá: kết thúc phiên
+  // đăng nhập ngay. Giao diện nhận mã ACCOUNT_DELETED thì tự đăng xuất và
+  // báo lý do (frontend/src/services/api.js).
+  if (!dataAccess.findById('users', payload.id)) {
+    return res.status(401).json({ code: 'ACCOUNT_DELETED', message: 'Tài khoản của bạn đã bị xoá' });
+  }
+
+  req.user = payload; // { id, role, name }
+  return next();
 }
 
 // Chỉ cho phép các role được liệt kê truy cập route,

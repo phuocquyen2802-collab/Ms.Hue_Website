@@ -217,6 +217,7 @@ export const LOGIN_TEXT = {
     attemptsLeft: (n) => `Còn ${n} lần thử trước khi tài khoản bị tạm khoá.`,
     forgotLink: 'Quên mật khẩu?',
     resetDone: 'Đã đổi mật khẩu. Hãy đăng nhập bằng mật khẩu mới.',
+    accountDeleted: 'Tài khoản của bạn đã bị giáo viên xoá nên đã tự đăng xuất. Liên hệ giáo viên nếu cần hỗ trợ.',
     backToLogin: 'Quay lại đăng nhập',
     // Khôi phục mật khẩu qua email
     forgotTitle: 'Khôi phục mật khẩu',
@@ -282,6 +283,7 @@ export const LOGIN_TEXT = {
     attemptsLeft: (n) => (n === 1 ? '1 attempt left before the account is locked for a while.' : `${n} attempts left before the account is locked for a while.`),
     forgotLink: 'Forgot password?',
     resetDone: 'Password changed. Log in with your new password.',
+    accountDeleted: 'Your account was deleted by your teacher, so you have been signed out. Contact your teacher if you need help.',
     backToLogin: 'Back to log in',
     forgotTitle: 'Reset your password',
     forgotSubtitle: 'Enter your username and the email (Gmail) registered to your account. We will send a password reset link to that email.',
