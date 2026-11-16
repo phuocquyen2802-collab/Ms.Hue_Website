@@ -7,7 +7,7 @@ const { chatWithGemini } = require('../services/geminiService');
 // Trao đổi trực tiếp với Gemini AI về các chủ đề Toán học
 router.post('/chat', verifyToken, async (req, res) => {
   try {
-    const { messages = [] } = req.body;
+    const { messages = [], lang } = req.body;
     if (!Array.isArray(messages) || messages.length === 0) {
       return res.status(400).json({ message: 'Danh sách tin nhắn không hợp lệ' });
     }
@@ -16,6 +16,8 @@ router.post('/chat', verifyToken, async (req, res) => {
       name: req.user.name,
       role: req.user.role,
       className: req.user.className,
+      // Người dùng đang xem giao diện tiếng Anh thì AI trả lời bằng tiếng Anh.
+      lang: lang === 'en' ? 'en' : 'vi',
     };
 
     const reply = await chatWithGemini(messages, userContext);

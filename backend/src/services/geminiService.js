@@ -428,6 +428,11 @@ QUY TẮC CÔNG THỨC VÀ BỐ CỤC BẮT BUỘC:
 - TUYỆT ĐỐI KHÔNG dùng backtick (\`...\`) cho công thức toán.
 - TRÌNH BÀY GỌN GÀNG, ĐẸP MẮT: KHÔNG dùng các đường kẻ rác (---, ___), KHÔNG lạm dụng các dấu thăng (####, ###), KHÔNG để các ký tự markdown thừa (như ** đứng một mình). Dùng gạch đầu dòng rõ ràng (- hoặc •) và số thứ tự (1., 2., Bước 1:, Bước 2:).`;
 
+  // Người dùng đang xem giao diện tiếng Anh: yêu cầu AI trả lời bằng tiếng Anh.
+  const languageRule = userContext.lang === 'en'
+    ? '\n\nNGÔN NGỮ: Người dùng đang dùng giao diện tiếng Anh. LUÔN trả lời hoàn toàn bằng tiếng Anh (English), kể cả khi câu hỏi viết bằng tiếng Việt; dùng thuật ngữ Toán tiếng Anh chuẩn (Step 1, Step 2, ...).'
+    : '';
+
   // Chuyển đổi lịch sử chat sang định dạng Gemini
   const contents = [];
   
@@ -437,7 +442,7 @@ QUY TẮC CÔNG THỨC VÀ BỐ CỤC BẮT BUỘC:
     const role = m.role === 'assistant' || m.role === 'model' ? 'model' : 'user';
     let text = m.content || '';
     if (isFirst && role === 'user') {
-      text = `[CHỈ DẪN HỆ THỐNG]: ${systemInstruction}\n\n[CÂU HỎI TỪ ${roleName.toUpperCase()} ${userName.toUpperCase()}]: ${text}`;
+      text = `[CHỈ DẪN HỆ THỐNG]: ${systemInstruction}${languageRule}\n\n[CÂU HỎI TỪ ${roleName.toUpperCase()} ${userName.toUpperCase()}]: ${text}`;
       isFirst = false;
     }
     contents.push({
@@ -449,7 +454,7 @@ QUY TẮC CÔNG THỨC VÀ BỐ CỤC BẮT BUỘC:
   if (contents.length === 0) {
     contents.push({
       role: 'user',
-      parts: [{ text: systemInstruction + '\n\nXin chào Trợ lý AI!' }],
+      parts: [{ text: systemInstruction + languageRule + '\n\nXin chào Trợ lý AI!' }],
     });
   }
 

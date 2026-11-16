@@ -7697,10 +7697,51 @@ form .notice + .modal-actions,
   outline-offset: 1px;
 }
 
+.sidebar-prefs {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.sidebar-lang {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 5px 6px 5px 12px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--ink-2);
+}
+
 @media (max-width: 900px) {
+  .sidebar-prefs {
+    flex-direction: row;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .sidebar-lang {
+    padding: 0;
+  }
+
+  .sidebar-lang-label {
+    display: none;
+  }
+
   .theme-switch.sidebar-theme {
     width: auto;
     padding: 0;
+  }
+
+  .sidebar-brand-copy {
+    overflow: hidden;
+  }
+}
+
+/* Điện thoại: thanh trên cùng chỉ giữ logo để đủ chỗ cho các công tắc. */
+@media (max-width: 560px) {
+  .sidebar-brand-copy {
+    display: none;
   }
 
   .theme-switch.sidebar-theme:hover {

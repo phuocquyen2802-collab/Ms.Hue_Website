@@ -5,10 +5,22 @@ import { renderMath } from '../utils/mathRender';
 import BrandMark from '../components/BrandMark';
 import UiIcon from '../components/UiIcon';
 import { APP_NAME, APP_TITLE } from '../config/brand';
+import { usePreferences } from '../context/PreferencesContext';
 
-function greetingMessage(user) {
+// Lời chào đầu đoạn chat theo ngôn ngữ đang chọn (nội dung chat hiển thị bằng
+// HTML nên không được lớp dịch giao diện tự dịch).
+function greetingMessage(user, lang = 'vi') {
+  if (lang === 'en') {
+    return {
+      role: 'assistant',
+      greeting: true,
+      content: `Hello ${user?.name ? `**${user.name}**` : 'there'}! I am the **AI assistant of ${APP_NAME}**. I can help you:\n- Solve problems step by step\n- Summarise theory\n- Share Casio calculator tips\n- Write tests and practice questions\n\nType your question below to get started.`,
+      timestamp: new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }),
+    };
+  }
   return {
     role: 'assistant',
+    greeting: true,
     content: `Xin chào ${user?.name ? `**${user.name}**` : 'bạn'}! Tôi là **trợ lý AI của ${APP_TITLE}**. Tôi có thể giúp bạn:\n- Giải chi tiết từng bước\n- Tóm tắt lý thuyết\n- Mẹo bấm máy tính Casio\n- Soạn đề và câu hỏi luyện tập\n\nNhập câu hỏi bên dưới để bắt đầu.`,
     timestamp: new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }),
   };
@@ -43,7 +55,8 @@ function buildConversationTitle(messages) {
 
 export default function AiAssistantPage() {
   const { user } = useAuth();
-  const [messages, setMessages] = useState([greetingMessage(user)]);
+  const { lang } = usePreferences();
+  const [messages, setMessages] = useState(() => [greetingMessage(user, lang)]);
   const [inputText, setInputText] = useState('');
   const [loading, setLoading] = useState(false);
   const [copiedIndex, setCopiedIndex] = useState(null);
@@ -58,6 +71,12 @@ export default function AiAssistantPage() {
     if (user?.id) setHistory(loadHistory(user.id));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.id]);
+
+  // Đổi ngôn ngữ khi đoạn chat mới chỉ có lời chào: thay lời chào theo ngôn ngữ mới.
+  useEffect(() => {
+    setMessages((prev) => (prev.length === 1 && prev[0].greeting ? [greetingMessage(user, lang)] : prev));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [lang]);
 
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -90,7 +109,7 @@ export default function AiAssistantPage() {
   }, [messages]);
 
   function handleNewChat() {
-    setMessages([greetingMessage(user)]);
+    setMessages([greetingMessage(user, lang)]);
     setActiveConversationId(null);
     setShowHistory(false);
   }
@@ -136,7 +155,7 @@ export default function AiAssistantPage() {
         content: m.content,
       }));
 
-      const res = await api.post('/ai/chat', { messages: apiMessages });
+      const res = await api.post('/ai/chat', { messages: apiMessages, lang });
 
       if (res.data && res.data.reply) {
         setMessages((prev) => [

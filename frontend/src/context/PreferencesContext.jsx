@@ -1,9 +1,11 @@
-import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
+import { createContext, useCallback, useContext, useEffect, useLayoutEffect, useMemo, useState } from 'react';
+import { setUiLanguage } from '../i18n/domTranslator';
 
 // Tuỳ chọn hiển thị của người xem, lưu trong trình duyệt:
 // - theme: 'light' | 'dark' (chế độ tối), gắn vào <html data-theme="...">.
 //   index.html đọc sẵn giá trị đã lưu trước khi React chạy để không bị nháy sáng.
-// - lang: 'vi' | 'en' (ngôn ngữ trang giới thiệu và trang đăng nhập).
+// - lang: 'vi' | 'en'. Trang giới thiệu và trang đăng nhập tự đổi chữ theo
+//   lang; các trang bên trong được dịch bởi i18n/domTranslator.js.
 
 const THEME_KEY = 'mi-theme';
 const LANG_KEY = 'mi-lang';
@@ -51,6 +53,12 @@ export function PreferencesProvider({ children }) {
     const meta = document.querySelector('meta[name="theme-color"]');
     if (meta) meta.setAttribute('content', THEME_COLOR[theme]);
   }, [theme]);
+
+  // useLayoutEffect: dịch xong trước khi trình duyệt vẽ, không nháy chữ Việt.
+  useLayoutEffect(() => {
+    document.documentElement.lang = lang;
+    setUiLanguage(lang);
+  }, [lang]);
 
   const setTheme = useCallback((next) => {
     setThemeState(next);
