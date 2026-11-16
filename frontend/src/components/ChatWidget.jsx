@@ -358,7 +358,7 @@ export default function ChatWidget() {
   });
 
   return (
-    <div className="no-print" style={{ position: 'fixed', bottom: 20, right: 20, zIndex: 199, fontFamily: 'inherit', display: 'flex', alignItems: 'flex-end', gap: 14 }}>
+    <div className="no-print exam-hide" style={{ position: 'fixed', bottom: 20, right: 20, zIndex: 199, fontFamily: 'inherit', display: 'flex', alignItems: 'flex-end', gap: 14 }}>
       {/* 1. POPUP HỘI THOẠI TRÒ CHUYỆN */}
       {activePartner && (
         <div

@@ -4,6 +4,7 @@ import api from '../services/api';
 import { renderMath } from '../utils/mathRender';
 import QuestionDiagram from '../components/QuestionDiagram';
 import UiIcon, { scoreLevel, formatScore } from '../components/UiIcon';
+import { formatDuration, AUTO_SUBMIT_TEXT } from '../utils/examTime';
 
 export default function ResultPage() {
   const { submissionId } = useParams();
@@ -56,6 +57,14 @@ export default function ResultPage() {
                 <UiIcon name="clock" size={14} />
                 {submission.submittedAt ? new Date(submission.submittedAt).toLocaleString('vi-VN') : '—'}
               </span>
+              {submission.timeSpentSeconds != null && (
+                <span>
+                  <UiIcon name="history" size={14} /> Làm trong {formatDuration(submission.timeSpentSeconds)}
+                </span>
+              )}
+              {submission.violationCount > 0 && (
+                <span className="score-pill is-ok">Rời màn hình {submission.violationCount} lần</span>
+              )}
             </div>
           </div>
 
@@ -78,6 +87,13 @@ export default function ResultPage() {
             </div>
           </dl>
         </div>
+
+        {AUTO_SUBMIT_TEXT[submission.submitReason] && (
+          <div className="notice is-warning">
+            <UiIcon name={submission.submitReason === 'timeout' ? 'clock' : 'alert'} size={18} />
+            <div className="notice-body">{AUTO_SUBMIT_TEXT[submission.submitReason]}.</div>
+          </div>
+        )}
 
         <div className="result-verdict">
           <span className={`score-pill is-${level}`}>{levelText}</span>

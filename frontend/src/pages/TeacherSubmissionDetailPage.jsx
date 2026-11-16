@@ -5,6 +5,7 @@ import { renderMath } from '../utils/mathRender';
 import RoadmapSteps, { RoadmapSummary } from '../components/RoadmapSteps';
 import UiIcon, { scoreLevel, formatScore, ScoreTrend } from '../components/UiIcon';
 import QuestionDiagram from '../components/QuestionDiagram';
+import { formatDuration, AUTO_SUBMIT_TEXT } from '../utils/examTime';
 
 export default function TeacherSubmissionDetailPage() {
   const { examId, submissionId } = useParams();
@@ -299,6 +300,19 @@ export default function TeacherSubmissionDetailPage() {
                 <span>
                   <UiIcon name="clock" size={14} /> {new Date(submission.submittedAt).toLocaleString('vi-VN')}
                 </span>
+                {submission.timeSpentSeconds != null && (
+                  <span>
+                    <UiIcon name="history" size={14} /> Làm trong {formatDuration(submission.timeSpentSeconds)}
+                  </span>
+                )}
+                {submission.violationCount > 0 && (
+                  <span className="score-pill is-ok">Rời màn hình {submission.violationCount} lần</span>
+                )}
+                {AUTO_SUBMIT_TEXT[submission.submitReason] && (
+                  <span className="score-pill is-low">
+                    {submission.submitReason === 'timeout' ? 'Tự nộp do hết giờ' : 'Tự nộp do rời màn hình'}
+                  </span>
+                )}
               </div>
             </div>
           </div>

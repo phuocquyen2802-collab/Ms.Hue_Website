@@ -1282,11 +1282,9 @@ tbody tr:hover {
    ========================================================================== */
 
 .exam-question-nav {
-  position: fixed;
-  top: 96px;
-  right: 24px;
-  width: 216px;
-  max-height: calc(100vh - 120px);
+  position: sticky;
+  top: 92px;
+  max-height: calc(100vh - 112px);
   overflow-y: auto;
   background: var(--bg-card);
   border: 1px solid var(--border-color);
@@ -1304,8 +1302,6 @@ tbody tr:hover {
 }
 
 .exam-question-nav-body {
-  max-height: calc(100vh - 260px);
-  overflow-y: auto;
   margin-bottom: 4px;
 }
 
@@ -1387,10 +1383,9 @@ tbody tr:hover {
   border: 1px solid var(--line-strong);
 }
 
-/* Chỉ hiện trên màn hình đủ rộng để không đè lên nội dung đề thi (vốn căn
-   giữa với max-width 860px) - dưới ngưỡng này ẩn đi, học sinh vẫn theo dõi
-   tiến độ qua thanh progress bar sẵn có phía trên. */
-@media (max-width: 1300px) {
+/* Màn hình hẹp: ẩn bảng điều hướng, học sinh theo dõi tiến độ qua thanh
+   trên cùng. */
+@media (max-width: 1023px) {
   .exam-question-nav {
     display: none;
   }
@@ -5722,56 +5717,460 @@ button.btn.btn-lg {
 }
 
 /* Trang làm bài */
-.exam-page {
-  max-width: 880px;
-}
 
-.exam-head {
+/* Màn hình "Bắt đầu làm bài" */
+.exam-intro {
+  max-width: 760px;
+  margin: 0 auto;
+  padding: 30px 32px;
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 22px;
 }
 
-.exam-head-top {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  flex-wrap: wrap;
-  gap: 12px;
-}
-
-.exam-head-desc {
-  font-size: 13.5px;
-  color: var(--text-muted);
-}
-
-.exam-time {
+.exam-intro-eyebrow {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  padding: 6px 14px;
-  border: 1px solid var(--primary-border);
-  border-radius: 999px;
-  background: var(--primary-light);
-  font-size: 13.5px;
+  font-size: 12.5px;
   font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
   color: var(--primary-strong);
-  white-space: nowrap;
 }
 
-.exam-progress-row {
-  display: flex;
-  justify-content: space-between;
-  margin-bottom: 6px;
+.exam-intro-title {
+  margin: 6px 0 0;
+  font-size: 26px;
+  font-weight: 700;
+  line-height: 1.25;
+  color: var(--ink);
+  text-wrap: balance;
+}
+
+.exam-intro-desc {
+  margin-top: 6px;
+  font-size: 14px;
+  color: var(--text-muted);
+}
+
+.exam-facts {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+  gap: 12px;
+  margin: 0;
+}
+
+.exam-facts > div {
+  padding: 14px 16px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  background: var(--bg-subtle);
+}
+
+.exam-facts dt {
+  font-size: 12.5px;
+  color: var(--text-muted);
+}
+
+.exam-facts dd {
+  margin: 2px 0 0;
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+}
+
+.exam-facts dd small {
+  margin-left: 4px;
   font-size: 13px;
   font-weight: 500;
   color: var(--text-muted);
 }
 
-.exam-progress-count {
+.exam-rules h2 {
+  margin: 0 0 12px;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.exam-rules ul {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.exam-rules li {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.exam-rule-icon {
+  width: 34px;
+  height: 34px;
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  border-radius: 10px;
+  background: var(--primary-light);
+  color: var(--primary-strong);
+}
+
+.exam-rule-icon.is-warn {
+  background: var(--warning-bg);
+  color: var(--warning-text);
+}
+
+.exam-rules b {
+  display: block;
+  font-size: 14px;
   font-weight: 600;
   color: var(--ink);
+}
+
+.exam-rules li span:not(.exam-rule-icon) {
+  display: block;
+  margin-top: 2px;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--text-muted);
+}
+
+.exam-intro-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 14px;
+  padding-top: 18px;
+  border-top: 1px solid var(--line);
+}
+
+.exam-intro-hint {
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+/* Đang làm bài: phủ toàn bộ cửa sổ, ẩn menu, chuông và khung chat */
+body.exam-lock {
+  overflow: hidden;
+}
+
+body.exam-lock .sidebar,
+body.exam-lock .exam-hide {
+  display: none !important;
+}
+
+.exam-stage {
+  position: fixed;
+  inset: 0;
+  z-index: 900;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  background: var(--canvas);
+}
+
+.exam-bar {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  border-bottom: 1px solid var(--line);
+  background: rgba(255, 255, 255, 0.94);
+  backdrop-filter: blur(8px);
+}
+
+.exam-bar-inner {
+  max-width: 1160px;
+  margin: 0 auto;
+  padding: 12px 24px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.exam-bar-main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.exam-bar-title {
+  overflow: hidden;
+  font-size: 15.5px;
+  font-weight: 700;
+  color: var(--ink);
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.exam-bar-progress {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 12.5px;
+  font-weight: 500;
+  color: var(--text-muted);
   font-variant-numeric: tabular-nums;
+}
+
+.exam-bar-progress .score-bar {
+  flex: 1;
+  max-width: 260px;
+}
+
+.exam-save {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--text-muted);
+}
+
+.exam-save.is-saved {
+  color: var(--success);
+}
+
+.exam-save.is-error {
+  color: var(--danger);
+}
+
+.exam-bar-side {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-shrink: 0;
+}
+
+.exam-strikes {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 10px;
+  border: 1px solid var(--warning-border);
+  border-radius: 999px;
+  background: var(--warning-bg);
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--warning-text);
+  font-variant-numeric: tabular-nums;
+}
+
+.exam-clock {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-width: 108px;
+  padding: 7px 14px;
+  border: 1px solid var(--primary-border);
+  border-radius: 999px;
+  background: var(--primary-light);
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--primary-strong);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.02em;
+}
+
+.exam-clock.is-warn {
+  border-color: var(--warning-border);
+  background: var(--warning-bg);
+  color: var(--warning-text);
+}
+
+.exam-clock.is-danger {
+  border-color: var(--danger-border);
+  background: var(--danger-bg);
+  color: var(--danger);
+  animation: exam-clock-pulse 1s ease-in-out infinite;
+}
+
+@keyframes exam-clock-pulse {
+  50% {
+    box-shadow: 0 0 0 5px rgba(217, 54, 54, 0.14);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .exam-clock.is-danger {
+    animation: none;
+  }
+}
+
+.exam-body {
+  max-width: 1160px;
+  margin: 0 auto;
+  padding: 24px 24px 64px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 232px;
+  align-items: start;
+  gap: 24px;
+}
+
+.exam-main {
+  min-width: 0;
+}
+
+.exam-resume {
+  margin-bottom: 16px;
+}
+
+.exam-resume .icon-btn {
+  margin-left: auto;
+  flex-shrink: 0;
+}
+
+.option-row.is-choice:has(input:disabled) {
+  cursor: default;
+}
+
+.modal-icon.is-primary {
+  background: var(--primary-light);
+  color: var(--primary-strong);
+}
+
+/* Cảnh báo rời màn hình / bài đang tự nộp */
+.exam-guard {
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  background: rgba(15, 23, 42, 0.72);
+  backdrop-filter: blur(10px);
+}
+
+.exam-guard-card {
+  width: 100%;
+  max-width: 440px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: 28px 28px 24px;
+  border-radius: 18px;
+  background: #ffffff;
+  box-shadow: var(--shadow-lg);
+  text-align: center;
+}
+
+.exam-guard-icon {
+  width: 56px;
+  height: 56px;
+  display: grid;
+  place-items: center;
+  border-radius: 16px;
+  background: var(--warning-bg);
+  color: var(--warning);
+}
+
+.exam-guard-icon.is-danger {
+  background: var(--danger-bg);
+  color: var(--danger);
+}
+
+.exam-guard-icon.is-time {
+  background: var(--primary-light);
+  color: var(--primary-strong);
+}
+
+.exam-guard-card h2 {
+  margin: 0;
+  font-size: 19px;
+  font-weight: 700;
+  color: var(--ink);
+  text-wrap: balance;
+}
+
+.exam-guard-card p {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.55;
+  color: var(--text-muted);
+}
+
+.exam-guard-strikes {
+  display: flex;
+  gap: 6px;
+  margin-top: 4px;
+}
+
+.exam-guard-strikes i {
+  width: 32px;
+  height: 6px;
+  border-radius: 999px;
+  background: var(--line);
+}
+
+.exam-guard-strikes i.is-on {
+  background: var(--warning);
+}
+
+.exam-guard-count,
+.exam-guard-time {
+  font-size: 13.5px;
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.exam-guard-count b,
+.exam-guard-time b {
+  color: var(--ink);
+}
+
+.exam-guard-card .btn {
+  width: 100%;
+  margin-top: 6px;
+}
+
+@media (max-width: 1023px) {
+  .exam-body {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 640px) {
+  .exam-intro {
+    padding: 22px 18px;
+  }
+
+  .exam-intro-title {
+    font-size: 22px;
+  }
+
+  .exam-intro-actions .btn {
+    width: 100%;
+  }
+
+  .exam-bar-inner {
+    padding: 10px 16px;
+    gap: 10px;
+  }
+
+  .exam-bar-progress .score-bar,
+  .exam-save {
+    display: none;
+  }
+
+  .exam-bar-side {
+    gap: 8px;
+  }
+
+  .exam-clock {
+    min-width: 0;
+    padding: 6px 10px;
+    font-size: 16px;
+  }
+
+  .exam-body {
+    padding: 16px 16px 48px;
+  }
 }
 
 .exam-questions {
@@ -5779,7 +6178,7 @@ button.btn.btn-lg {
 }
 
 .exam-question {
-  scroll-margin-top: 20px;
+  scroll-margin-top: 92px;
 }
 
 .exam-question.is-answered {
@@ -5835,13 +6234,6 @@ button.btn.btn-lg {
   text-align: left;
 }
 
-/* Bảng "Danh sách câu hỏi" cố định bên phải (rộng 216px, cách mép 24px)
-   chỉ hiện từ 1301px - chừa chỗ để không đè lên nội dung đề. */
-@media (min-width: 1301px) {
-  .exam-page {
-    margin-right: 256px;
-  }
-}
 
 /* ==========================================================================
    Trang giới thiệu (LandingPage) - hiện ở "/" khi chưa đăng nhập

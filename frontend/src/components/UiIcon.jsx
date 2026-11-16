@@ -173,6 +173,13 @@ const PATHS = {
       <path d="M12 8v4.5l3 2" />
     </>
   ),
+  expand: <path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5" />,
+  mouse: (
+    <>
+      <rect x="6.5" y="3" width="11" height="18" rx="5.5" />
+      <path d="M12 7v3" />
+    </>
+  ),
   route: (
     <>
       <circle cx="6" cy="18.5" r="2.3" />

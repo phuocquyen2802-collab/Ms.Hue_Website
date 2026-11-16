@@ -3,6 +3,8 @@ const { verifyToken, requireRole } = require('../middleware/auth');
 const {
   listAssignedExams,
   getExamToDo,
+  startExam,
+  updateExamSession,
   submitExam,
   listMySubmissions,
   getSubmissionDetail,
@@ -18,6 +20,8 @@ router.use(verifyToken, requireRole('student'));
 
 router.get('/exams', listAssignedExams);
 router.get('/exams/:examId', getExamToDo);
+router.post('/exams/:examId/start', startExam);
+router.patch('/exams/:examId/session', updateExamSession);
 router.post('/exams/:examId/submit', submitExam);
 
 router.get('/submissions', listMySubmissions);
