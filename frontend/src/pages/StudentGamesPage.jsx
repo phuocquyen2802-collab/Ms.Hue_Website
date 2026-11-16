@@ -67,6 +67,8 @@ export default function StudentGamesPage() {
   const [bankId, setBankId] = useState(null);
   const [characterId, setCharacterId] = useState(loadCharacter);
   const [count, setCount] = useState(10);
+  // Báo khi đổi sang chủ đề ít câu hơn số câu đang chọn (tự chuyển sang "Tất cả").
+  const [countNote, setCountNote] = useState('');
 
   const [phase, setPhase] = useState('pick'); // pick | play | result
   const [starting, setStarting] = useState(false);
@@ -94,7 +96,10 @@ export default function StudentGamesPage() {
     setStarting(true);
     setStartError('');
     try {
-      const { data } = await api.post(`/student/games/${targetBankId}/start`, { count });
+      const bank = banks.find((b) => b.id === targetBankId);
+      // Phòng hờ: số câu vượt quá chủ đề thì chơi tất cả.
+      const safeCount = bank && count > bank.questionCount ? 0 : count;
+      const { data } = await api.post(`/student/games/${targetBankId}/start`, { count: safeCount });
       setGame(data);
       setIndex(0);
       setAnswers([]);
@@ -283,6 +288,19 @@ export default function StudentGamesPage() {
 
   // ---------- Chọn chủ đề & nhân vật ----------
   const selectedBank = banks.find((b) => b.id === bankId);
+  // Số câu vượt quá số câu của chủ đề đang chọn thì không cho chọn.
+  const tooMany = (n) => Boolean(selectedBank) && n > 0 && n > selectedBank.questionCount;
+  const blockedCounts = COUNT_OPTIONS.filter(tooMany);
+
+  function chooseBank(bank) {
+    setBankId(bank.id);
+    if (count > 0 && count > bank.questionCount) {
+      setCount(0);
+      setCountNote(`Chủ đề "${bank.title}" chỉ có ${bank.questionCount} câu nên đã chuyển sang chơi tất cả ${bank.questionCount} câu.`);
+    } else {
+      setCountNote('');
+    }
+  }
 
   return (
     <div className="container game-page">
@@ -315,7 +333,7 @@ export default function StudentGamesPage() {
                 type="button"
                 className={`game-topic${b.id === bankId ? ' is-selected' : ''}`}
                 aria-pressed={b.id === bankId}
-                onClick={() => setBankId(b.id)}
+                onClick={() => chooseBank(b)}
               >
                 <span className="game-topic-icon" aria-hidden="true"><UiIcon name="book" size={18} /></span>
                 <span className="game-topic-title">{b.title}</span>
@@ -348,21 +366,33 @@ export default function StudentGamesPage() {
       </div>
 
       <div className="card game-start">
-        <div className="game-count">
-          <span className="game-count-label"><span className="game-step">3</span> Số câu hỏi</span>
-          <div className="segmented" role="group" aria-label="Số câu hỏi">
-            {COUNT_OPTIONS.map((n) => (
-              <button
-                key={n}
-                type="button"
-                className={`segmented-btn${count === n ? ' is-active' : ''}`}
-                aria-pressed={count === n}
-                onClick={() => setCount(n)}
-              >
-                {n === 0 ? `Tất cả${selectedBank ? ` (${selectedBank.questionCount})` : ''}` : `${n} câu`}
-              </button>
-            ))}
+        <div className="game-count-wrap">
+          <div className="game-count">
+            <span className="game-count-label"><span className="game-step">3</span> Số câu hỏi</span>
+            <div className="segmented" role="group" aria-label="Số câu hỏi">
+              {COUNT_OPTIONS.map((n) => (
+                <button
+                  key={n}
+                  type="button"
+                  className={`segmented-btn${count === n ? ' is-active' : ''}`}
+                  aria-pressed={count === n}
+                  disabled={tooMany(n)}
+                  title={tooMany(n) ? `Chủ đề này chỉ có ${selectedBank.questionCount} câu` : undefined}
+                  onClick={() => { setCount(n); setCountNote(''); }}
+                >
+                  {n === 0 ? `Tất cả${selectedBank ? ` (${selectedBank.questionCount})` : ''}` : `${n} câu`}
+                </button>
+              ))}
+            </div>
           </div>
+          {(countNote || blockedCounts.length > 0) && (
+            <p className="game-count-hint" role="status" aria-live="polite">
+              <UiIcon name="alert" size={15} />
+              <span>
+                {countNote || `Chủ đề "${selectedBank.title}" chỉ có ${selectedBank.questionCount} câu nên không chọn được ${blockedCounts.join(' và ')} câu.`}
+              </span>
+            </p>
+          )}
         </div>
         {startError && <div className="notice is-danger"><UiIcon name="alert" size={18} /><div className="notice-body">{startError}</div></div>}
         <button type="button" className="btn btn-lg" disabled={!bankId || starting} onClick={() => startGame()}>

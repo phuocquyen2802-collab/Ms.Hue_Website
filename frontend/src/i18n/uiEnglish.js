@@ -1139,6 +1139,9 @@ export const PATTERNS = [
   [/^Đổi tên (.+)$/, 'Rename $1'],
   [/^Xoá ngân hàng đề "(.*)"\? Học sinh sẽ không chơi được chủ đề này nữa\.$/, 'Delete the question bank "$1"? Students will no longer be able to play this topic.'],
   [/^Đã đi (\d+)\/(\d+) bước$/, '$1/$2 steps covered'],
+  [/^Chủ đề "(.*)" chỉ có (\d+) câu nên đã chuyển sang chơi tất cả (\d+) câu\.$/, 'The topic "$1" only has $2 questions, so the game will use all $3.'],
+  [/^Chủ đề "(.*)" chỉ có (\d+) câu nên không chọn được (.+) câu\.$/, (m, title, n, list) => `The topic "${title}" only has ${n} questions, so ${list.replace(' và ', ' or ')} questions cannot be chosen.`],
+  [/^Chủ đề này chỉ có (\d+) câu$/, 'This topic only has $1 questions'],
   [/^(\d+) câu$/, (m, n) => plural(n, 'question', 'questions')],
   [/^· bỏ qua (\d+)$/, '· $1 skipped'],
 

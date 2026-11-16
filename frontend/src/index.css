@@ -8388,6 +8388,21 @@ tr.qb-row-new > td {
   color: var(--ink);
 }
 
+.game-count-hint {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  margin-top: 8px;
+  font-size: 13px;
+  line-height: 1.45;
+  color: var(--warning-text);
+}
+
+.game-count-hint svg {
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
 /* Đang chơi */
 .game-bar {
   display: flex;
