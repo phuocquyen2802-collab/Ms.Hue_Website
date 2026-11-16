@@ -2,13 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import api from '../services/api';
 import UiIcon from '../components/UiIcon';
-import { useAuth } from '../context/AuthContext';
-import {
-  loadCreatedAccounts,
-  saveCreatedAccounts,
-  exportAccountsToXlsx,
-  generatePassword,
-} from '../utils/studentAccountsExport';
+import { exportAccountsToXlsx, generatePassword } from '../utils/studentAccountsExport';
 
 const EMPTY_STUDENT_FORM = { name: '', email: '', password: '', className: '' };
 
@@ -38,21 +32,10 @@ export default function TeacherDashboard() {
   const [editForm, setEditForm] = useState({ name: '', email: '', className: '', password: '' });
   const [savingEdit, setSavingEdit] = useState(false);
 
-  // Tài khoản vừa tạo (kèm mật khẩu giáo viên vừa nhập) để xuất file Excel
-  // gửi cho lớp - xem utils/studentAccountsExport.js
-  const { user } = useAuth();
-  const [createdAccounts, setCreatedAccounts] = useState(() => loadCreatedAccounts(user?.id));
+  // Xuất file Excel (Họ tên, Lớp, Tài khoản, Mật khẩu) theo danh sách đang lọc
   const [exporting, setExporting] = useState(false);
-  const [exportError, setExportError] = useState('');
+  const [exportNotice, setExportNotice] = useState(null); // { type, text }
   const [addSuccess, setAddSuccess] = useState('');
-
-  function updateCreatedAccounts(updater) {
-    setCreatedAccounts((prev) => {
-      const next = updater(prev);
-      saveCreatedAccounts(user?.id, next);
-      return next;
-    });
-  }
 
   function openAddModal() {
     setAddError('');
@@ -95,17 +78,6 @@ export default function TeacherDashboard() {
         className: newStudent.className.trim(),
       };
       const { data } = await api.post('/teacher/students', payload);
-      updateCreatedAccounts((prev) => [
-        ...prev,
-        {
-          id: data.id,
-          name: data.name,
-          email: data.email,
-          className: data.className || '',
-          password: payload.password,
-          createdAt: new Date().toISOString(),
-        },
-      ]);
       if (keepOpen) {
         setNewStudent({ ...EMPTY_STUDENT_FORM, className: payload.className });
         setAddSuccess(`Đã tạo tài khoản cho ${data.name}. Nhập học sinh tiếp theo.`);
@@ -124,15 +96,14 @@ export default function TeacherDashboard() {
 
   function startEdit(student) {
     setEditingId(student.id);
-    setEditForm({ name: student.name, className: student.className || '' });
+    setEditForm({ name: student.name, className: student.className || '', password: '' });
   }
 
   async function handleSaveEdit(studentId) {
     try {
-      await api.put(`/teacher/students/${studentId}`, editForm);
-      updateCreatedAccounts((prev) =>
-        prev.map((a) => (a.id === studentId ? { ...a, name: editForm.name, className: editForm.className || '' } : a))
-      );
+      const payload = { name: editForm.name, className: editForm.className };
+      if (editForm.password && editForm.password.trim()) payload.password = editForm.password.trim();
+      await api.put(`/teacher/students/${studentId}`, payload);
       setEditingId(null);
       loadData();
     } catch (err) {
@@ -144,7 +115,6 @@ export default function TeacherDashboard() {
     if (!window.confirm(`Xoá tài khoản học sinh "${student.name}"?`)) return;
     try {
       await api.delete(`/teacher/students/${student.id}`);
-      updateCreatedAccounts((prev) => prev.filter((a) => a.id !== student.id));
       loadData();
     } catch (err) {
       alert(err.response?.data?.message || 'Lỗi xoá tài khoản');
@@ -229,30 +199,33 @@ export default function TeacherDashboard() {
     return s.className === classFilter;
   });
 
-  // Tài khoản vừa tạo (có mật khẩu): xuất theo đúng bộ lọc lớp đang chọn
-  const createdById = new Map(createdAccounts.map((a) => [a.id, a]));
-  const accountsToExport = classFilter === 'all'
-    ? createdAccounts
-    : createdAccounts.filter((a) => (a.className || '') === classFilter);
-
+  // Xuất đúng danh sách đang hiển thị (theo lớp đang lọc và từ khoá tìm kiếm)
   async function handleExport() {
-    setExportError('');
+    setExportNotice(null);
     setExporting(true);
     try {
-      const classes = Array.from(new Set(accountsToExport.map((a) => a.className || '')));
+      const rows = filteredStudents.map((st) => ({
+        name: st.name,
+        className: st.className || '',
+        email: st.email,
+        password: st.password || '',
+      }));
+      const classes = Array.from(new Set(rows.map((r) => r.className)));
       const fileClass = classFilter !== 'all' ? classFilter : classes.length === 1 ? classes[0] : '';
-      await exportAccountsToXlsx(accountsToExport, fileClass);
+      await exportAccountsToXlsx(rows, fileClass);
+      const missing = rows.filter((r) => !r.password).length;
+      if (missing > 0) {
+        setExportNotice({
+          type: 'warning',
+          text: `Đã tải file. ${missing} học sinh chưa có mật khẩu lưu sẵn (tạo trước khi có tính năng này hoặc đã tự đổi) nên ô mật khẩu để trống. Bấm nút sửa để đặt lại mật khẩu cho các em.`,
+        });
+      }
     } catch (err) {
       console.error(err);
-      setExportError('Không tạo được file Excel. Hãy thử lại hoặc dùng trình duyệt khác.');
+      setExportNotice({ type: 'danger', text: 'Không tạo được file Excel. Hãy thử lại hoặc dùng trình duyệt khác.' });
     } finally {
       setExporting(false);
     }
-  }
-
-  function handleClearCreated() {
-    if (!window.confirm('Bỏ mật khẩu tạm của các tài khoản vừa tạo? Sau đó sẽ không xem hay xuất lại được mật khẩu.')) return;
-    updateCreatedAccounts(() => []);
   }
 
   return (
@@ -323,39 +296,24 @@ export default function TeacherDashboard() {
                 style={{ width: 220 }}
               />
             </div>
+            <button
+              type="button"
+              className="btn sm secondary"
+              onClick={handleExport}
+              disabled={exporting || filteredStudents.length === 0}
+              title="Tải danh sách đang hiển thị (họ tên, lớp, tài khoản, mật khẩu) dưới dạng file Excel"
+            >
+              {exporting ? <span className="spinner" /> : <UiIcon name="download" size={15} />}
+              Tải Excel
+            </button>
           </div>
         </div>
 
-        {createdAccounts.length > 0 && (
-          <div className="export-bar">
-            <span className="export-bar-icon" aria-hidden="true"><UiIcon name="file" size={18} /></span>
-            <div className="export-bar-text">
-              <strong>
-                {accountsToExport.length > 0
-                  ? `${accountsToExport.length} tài khoản vừa tạo${classFilter !== 'all' ? ` của lớp ${classFilter}` : ''} có sẵn mật khẩu`
-                  : `Lớp ${classFilter} chưa có tài khoản nào vừa tạo`}
-              </strong>
-              <span>Tải file Excel để gửi cho lớp. Mật khẩu chỉ hiện đến khi bạn đăng xuất hoặc đóng tab này.</span>
-            </div>
-            <div className="export-bar-actions">
-              <button className="btn sm" onClick={handleExport} disabled={exporting || accountsToExport.length === 0}>
-                {exporting ? (
-                  <><span className="spinner is-on-primary" /> Đang tạo file…</>
-                ) : (
-                  <><UiIcon name="download" size={15} /> Tải file Excel</>
-                )}
-              </button>
-              <button type="button" className="text-btn is-muted" onClick={handleClearCreated}>
-                Bỏ mật khẩu tạm
-              </button>
-            </div>
-          </div>
-        )}
-
-        {exportError && (
-          <div className="notice is-danger" style={{ marginBottom: 12 }}>
+        {exportNotice && (
+          <div className={`notice is-${exportNotice.type}`} style={{ marginBottom: 12 }}>
             <UiIcon name="alert" size={18} />
-            <div className="notice-body">{exportError}</div>
+            <div className="notice-body">{exportNotice.text}</div>
+            <button type="button" className="text-btn is-muted" onClick={() => setExportNotice(null)}>Đóng</button>
           </div>
         )}
 
@@ -389,9 +347,10 @@ export default function TeacherDashboard() {
               <thead>
                 <tr>
                   <th>Họ và tên</th>
-                  <th style={{ width: 150 }}>Lớp</th>
-                  <th style={{ width: 240 }}>Tài khoản</th>
-                  <th style={{ textAlign: 'right', width: 120 }}>Thao tác</th>
+                  <th style={{ width: 130 }}>Lớp</th>
+                  <th>Tài khoản</th>
+                  <th style={{ width: 190 }}>Mật khẩu</th>
+                  <th style={{ textAlign: 'right', width: 110 }}>Thao tác</th>
                 </tr>
               </thead>
               <tbody>
@@ -421,6 +380,27 @@ export default function TeacherDashboard() {
                         </td>
                         <td className="text-muted-cell">{s.email}</td>
                         <td>
+                          <div className="password-edit">
+                            <input
+                              type="text"
+                              aria-label="Mật khẩu mới"
+                              placeholder="Giữ nguyên"
+                              value={editForm.password || ''}
+                              onChange={(e) => setEditForm({ ...editForm, password: e.target.value })}
+                              autoComplete="off"
+                              spellCheck={false}
+                            />
+                            <button
+                              type="button"
+                              className="text-btn"
+                              onClick={() => setEditForm({ ...editForm, password: generatePassword() })}
+                              title="Tạo mật khẩu ngẫu nhiên"
+                            >
+                              Tạo
+                            </button>
+                          </div>
+                        </td>
+                        <td>
                           <div className="row-actions">
                             <button className="btn sm" onClick={() => handleSaveEdit(s.id)}>Lưu</button>
                             <button className="btn sm secondary" onClick={() => setEditingId(null)}>Huỷ</button>
@@ -430,9 +410,8 @@ export default function TeacherDashboard() {
                     );
                   }
 
-                  const created = createdById.get(s.id);
                   return (
-                    <tr key={s.id} className={created ? 'is-new' : undefined}>
+                    <tr key={s.id}>
                       <td>
                         <Link
                           to={`/teacher/analytics?studentId=${s.id}`}
@@ -446,13 +425,19 @@ export default function TeacherDashboard() {
                       <td>
                         <span className="class-badge">{s.className ? `Lớp ${s.className}` : 'Chưa phân lớp'}</span>
                       </td>
+                      <td className="text-muted-cell">{s.email}</td>
                       <td>
-                        <span className="account-name">{s.email}</span>
-                        {created && (
-                          <div className="new-credential">
-                            <span className="new-pill">Mới</span>
-                            Mật khẩu <span className="credential">{created.password}</span>
-                          </div>
+                        {s.password ? (
+                          <span className="credential">{s.password}</span>
+                        ) : (
+                          <span
+                            className="password-missing"
+                            title={s.passwordChangedByStudent
+                              ? 'Học sinh đã tự đổi mật khẩu. Bấm nút sửa để đặt lại nếu học sinh quên.'
+                              : 'Tài khoản tạo trước khi có tính năng lưu mật khẩu. Bấm nút sửa để đặt mật khẩu mới.'}
+                          >
+                            {s.passwordChangedByStudent ? 'Học sinh đã tự đổi' : 'Chưa lưu'}
+                          </span>
                         )}
                       </td>
                       <td>
@@ -734,7 +719,7 @@ export default function TeacherDashboard() {
                   minLength={6}
                   required
                 />
-                <p className="field-hint">Mật khẩu sẽ có trong file Excel ở mục "Tài khoản vừa tạo".</p>
+                <p className="field-hint">Mật khẩu hiện trong danh sách học sinh và trong file Excel.</p>
               </div>
 
               {addError && (

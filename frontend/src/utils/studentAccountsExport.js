@@ -1,47 +1,6 @@
-// Danh sách "Tài khoản vừa tạo" + xuất file Excel để giáo viên gửi cho lớp.
-//
-// Mật khẩu học sinh được lưu trên máy chủ dưới dạng đã mã hoá một chiều
-// (bcrypt), nên KHÔNG thể lấy lại mật khẩu của tài khoản tạo từ trước. Vì
-// vậy mỗi lần giáo viên tạo tài khoản, trình duyệt giữ lại mật khẩu vừa nhập
-// trong sessionStorage (tự xoá khi đóng tab, khi đăng xuất hoặc khi giáo
-// viên bấm "Xoá danh sách") để xuất file một lần cho cả lớp.
-
-const STORAGE_PREFIX = 'createdStudentAccounts:';
-
-function storageKey(teacherId) {
-  return `${STORAGE_PREFIX}${teacherId || 'unknown'}`;
-}
-
-export function loadCreatedAccounts(teacherId) {
-  try {
-    const raw = sessionStorage.getItem(storageKey(teacherId));
-    const list = raw ? JSON.parse(raw) : [];
-    return Array.isArray(list) ? list : [];
-  } catch {
-    return [];
-  }
-}
-
-export function saveCreatedAccounts(teacherId, list) {
-  try {
-    if (list.length === 0) sessionStorage.removeItem(storageKey(teacherId));
-    else sessionStorage.setItem(storageKey(teacherId), JSON.stringify(list));
-  } catch {
-    // Trình duyệt chặn sessionStorage (chế độ riêng tư...) - danh sách vẫn
-    // dùng được trong lúc trang còn mở, chỉ không giữ được khi tải lại.
-  }
-}
-
-// Gọi khi đăng xuất: xoá mọi danh sách mật khẩu tạm còn lưu trong tab.
-export function clearAllCreatedAccounts() {
-  try {
-    Object.keys(sessionStorage)
-      .filter((k) => k.startsWith(STORAGE_PREFIX))
-      .forEach((k) => sessionStorage.removeItem(k));
-  } catch {
-    // bỏ qua
-  }
-}
+// Xuất file Excel danh sách tài khoản học sinh (Họ tên, Lớp, Tài khoản,
+// Mật khẩu) để giáo viên gửi cho lớp. Mật khẩu lấy từ máy chủ (lưu mã hoá
+// hai chiều - xem backend/src/utils/passwordVault.js).
 
 // Mật khẩu ngẫu nhiên 8 ký tự, bỏ các ký tự dễ nhầm (0/O, 1/l/I).
 export function generatePassword(length = 8) {

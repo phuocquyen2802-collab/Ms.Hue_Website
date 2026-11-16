@@ -106,7 +106,15 @@ async function changePassword(req, res) {
   }
 
   const passwordHash = await bcrypt.hash(newPassword, SALT_ROUNDS);
-  dataAccess.updateById('users', user.id, { passwordHash });
+  const changes = { passwordHash };
+  // Học sinh tự đổi mật khẩu: bỏ bản mã hoá mà giáo viên xem được (mật khẩu
+  // cũ không còn đúng, mật khẩu mới là của riêng học sinh). Giáo viên vẫn đặt
+  // lại được nếu học sinh quên - xem studentAccountController.updateStudent.
+  if (user.role === 'student') {
+    changes.passwordEnc = null;
+    changes.passwordChangedByStudent = true;
+  }
+  dataAccess.updateById('users', user.id, changes);
 
   return res.json({ message: 'Đổi mật khẩu thành công' });
 }

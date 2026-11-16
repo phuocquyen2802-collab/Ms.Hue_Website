@@ -1,5 +1,6 @@
 const dataAccess = require('../models/dataAccess');
 const weaknessAnalysisService = require('../services/weaknessAnalysisService');
+const { decryptPassword } = require('../utils/passwordVault');
 
 // [Học sinh] Xem các chủ đề yếu nhất của chính mình (kèm theo dữ liệu của từng đề và lộ trình AI)
 function getMyWeakTopics(req, res) {
@@ -47,10 +48,17 @@ function getMyWeakTopics(req, res) {
 }
 
 // [Giáo viên] Danh sách học sinh (để chọn xem thống kê hoặc giao đề)
+// Chỉ giáo viên gọi được (teacherRoutes dùng requireRole('teacher')). Trả kèm
+// mật khẩu đã giải mã để giáo viên xem và xuất file Excel gửi cho lớp;
+// null nếu tài khoản tạo trước khi có tính năng này hoặc học sinh đã tự đổi.
 function listStudents(req, res) {
   const students = dataAccess
     .findMany('users', { role: 'student' })
-    .map(({ passwordHash, ...rest }) => rest);
+    .map(({ passwordHash, passwordEnc, ...rest }) => ({
+      ...rest,
+      password: rest.passwordChangedByStudent ? null : decryptPassword(passwordEnc),
+      passwordChangedByStudent: Boolean(rest.passwordChangedByStudent),
+    }));
   return res.json(students);
 }
 

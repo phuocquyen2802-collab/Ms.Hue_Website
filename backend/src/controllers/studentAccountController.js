@@ -5,6 +5,7 @@
 const bcrypt = require('bcryptjs');
 const { v4: uuidv4 } = require('uuid');
 const dataAccess = require('../models/dataAccess');
+const { encryptPassword, decryptPassword } = require('../utils/passwordVault');
 
 const SALT_ROUNDS = 10;
 
@@ -30,6 +31,8 @@ async function createStudent(req, res) {
     name,
     email,
     passwordHash,
+    // Bản mã hoá hai chiều để giáo viên xem lại và xuất file Excel (xem utils/passwordVault.js)
+    passwordEnc: encryptPassword(password),
     role: 'student',
     className: className || null,
     createdAt: new Date().toISOString(),
@@ -43,17 +46,19 @@ async function createStudent(req, res) {
     email: student.email,
     role: student.role,
     className: student.className,
+    password: decryptPassword(student.passwordEnc),
   });
 }
 
-// Sửa thông tin học sinh (họ tên, lớp; đổi email nếu email mới chưa dùng)
-function updateStudent(req, res) {
+// Sửa thông tin học sinh (họ tên, lớp; đổi email nếu email mới chưa dùng;
+// đặt lại mật khẩu nếu giáo viên nhập mật khẩu mới)
+async function updateStudent(req, res) {
   const student = dataAccess.findById('users', req.params.studentId);
   if (!student || student.role !== 'student') {
     return res.status(404).json({ message: 'Không tìm thấy học sinh' });
   }
 
-  const { name, className, email } = req.body;
+  const { name, className, email, password } = req.body;
   const changes = {};
 
   if (name) changes.name = name;
@@ -65,6 +70,14 @@ function updateStudent(req, res) {
     }
     changes.email = email;
   }
+  if (password) {
+    if (password.length < 6) {
+      return res.status(400).json({ message: 'Mật khẩu phải có ít nhất 6 ký tự' });
+    }
+    changes.passwordHash = await bcrypt.hash(password, SALT_ROUNDS);
+    changes.passwordEnc = encryptPassword(password);
+    changes.passwordChangedByStudent = false;
+  }
 
   const updated = dataAccess.updateById('users', student.id, changes);
   return res.json({
@@ -73,6 +86,7 @@ function updateStudent(req, res) {
     email: updated.email,
     role: updated.role,
     className: updated.className,
+    password: decryptPassword(updated.passwordEnc),
   });
 }
 

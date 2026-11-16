@@ -6569,95 +6569,34 @@ button.btn.btn-lg {
   color: var(--primary);
 }
 
-/* Tài khoản học sinh vừa tạo (Quản lý học sinh): dòng xuất file Excel
-   ngay trong bảng danh sách + nhãn "Mới" kèm mật khẩu ở từng học sinh. */
-.export-bar {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 10px 14px;
-  margin-bottom: 14px;
-  padding: 12px 14px;
-  border: 1px solid var(--primary-border);
-  border-radius: 10px;
-  background: var(--primary-light);
-}
-
-.export-bar-icon {
-  width: 34px;
-  height: 34px;
-  flex-shrink: 0;
-  display: grid;
-  place-items: center;
-  border-radius: 9px;
-  background: #ffffff;
-  color: var(--primary);
-}
-
-.export-bar-text {
-  flex: 1;
-  min-width: 220px;
-  display: flex;
-  flex-direction: column;
-  gap: 1px;
-}
-
-.export-bar-text strong {
-  font-size: 14px;
-  font-weight: 600;
-  color: var(--primary-strong);
-}
-
-.export-bar-text span {
-  font-size: 12.5px;
-  color: var(--text-muted);
-}
-
-.export-bar-actions {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-tbody tr.is-new {
-  background: #fafbff;
-}
-
-.account-name {
-  color: var(--text-muted);
-}
-
-.new-credential {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 6px;
-  margin-top: 4px;
-  font-size: 12.5px;
-  color: var(--text-muted);
-}
-
-.new-pill {
-  display: inline-flex;
-  align-items: center;
-  height: 18px;
-  padding: 0 7px;
-  border-radius: 999px;
-  background: var(--primary);
-  color: #ffffff;
-  font-size: 11px;
-  font-weight: 600;
-}
-
+/* Cột mật khẩu trong danh sách học sinh (Quản lý học sinh) */
 .credential {
   display: inline-block;
-  padding: 0 7px;
-  border-radius: 6px;
-  background: #ffffff;
+  padding: 1px 8px;
   border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--bg-subtle);
   font-weight: 600;
   letter-spacing: 0.02em;
   color: var(--ink);
+  font-variant-numeric: tabular-nums;
+}
+
+.password-missing {
+  font-size: 12.5px;
+  color: var(--text-light);
+  cursor: help;
+  border-bottom: 1px dotted var(--text-light);
+}
+
+.password-edit {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.password-edit input {
+  min-width: 0;
 }
 
 .label-row {
