@@ -915,6 +915,15 @@ export const EXACT = {
   'Không tìm được câu hỏi nào đủ 4 đáp án và có bảng đáp án trong file này.':
     'No question with 4 options and an answer table entry was found in this file.',
   'Không tìm thấy câu hỏi': 'Question not found',
+  'Tải đề thành công!': 'Upload complete!',
+  'Chưa tải được đề': 'Upload failed',
+  'Đã thêm': 'Added',
+  'chủ đề với': 'topic(s) with',
+  'câu hỏi vào ngân hàng đề. Học sinh có thể chơi ngay trong mục Trò chơi.': 'questions to the question bank. Students can play them right away in Games.',
+  'Một số file chưa tải được:': 'Some files could not be uploaded:',
+  'Không file nào tải lên được:': 'None of the files could be uploaded:',
+  'Tải thêm đề': 'Upload more',
+  'Xem danh sách': 'View list',
 
   // ---- Trò chơi (học sinh) ----
   'Trò chơi': 'Games',
@@ -1127,6 +1136,7 @@ export const PATTERNS = [
   [/^Xoá ngân hàng đề "(.*)"\? Học sinh sẽ không chơi được chủ đề này nữa\.$/, 'Delete the question bank "$1"? Students will no longer be able to play this topic.'],
   [/^Đã đi (\d+)\/(\d+) bước$/, '$1/$2 steps covered'],
   [/^(\d+) câu$/, (m, n) => plural(n, 'question', 'questions')],
+  [/^· bỏ qua (\d+)$/, '· $1 skipped'],
 
   // Bảng tin
   [/^Bỏ tệp (.+)$/, 'Remove file $1'],

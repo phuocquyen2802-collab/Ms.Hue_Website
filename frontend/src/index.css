@@ -8092,6 +8092,143 @@ input.recovery-edit {
   color: var(--text-muted);
 }
 
+/* Hộp thoại kết quả sau khi tải đề lên ngân hàng */
+.modal-panel.qb-summary {
+  max-width: 480px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: 28px 26px 22px;
+  animation: qb-pop 0.25s cubic-bezier(0.34, 1.4, 0.6, 1);
+}
+
+@keyframes qb-pop {
+  from { opacity: 0; transform: scale(0.92); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+.qb-summary-icon {
+  width: 64px;
+  height: 64px;
+  display: grid;
+  place-items: center;
+  margin-bottom: 14px;
+  border-radius: 50%;
+}
+
+.qb-summary-icon.is-success {
+  background: var(--success-bg);
+  color: var(--success);
+  box-shadow: 0 0 0 8px color-mix(in srgb, var(--success) 12%, transparent);
+}
+
+.qb-summary-icon.is-danger {
+  background: var(--danger-bg);
+  color: var(--danger);
+}
+
+.qb-summary h3 {
+  margin: 0 0 6px;
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.qb-summary-text {
+  margin: 0 0 12px;
+  font-size: 14px;
+  line-height: 1.55;
+  color: var(--text-muted);
+}
+
+.qb-summary-list {
+  list-style: none;
+  width: 100%;
+  margin: 0 0 14px;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  text-align: left;
+}
+
+.qb-summary-list li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 12px;
+  border: 1px solid var(--success-border);
+  border-radius: var(--radius-md);
+  background: var(--success-bg);
+  color: var(--success-text);
+}
+
+.qb-summary-list.is-failed li {
+  border-color: var(--danger-border);
+  background: var(--danger-bg);
+  color: var(--danger-text);
+}
+
+.qb-summary-list svg {
+  flex-shrink: 0;
+}
+
+.qb-summary-name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  font-weight: 600;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.qb-summary-meta {
+  flex-shrink: 0;
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+}
+
+.qb-summary-list.is-failed li {
+  flex-wrap: wrap;
+  row-gap: 2px;
+}
+
+.qb-summary-list.is-failed .qb-summary-meta {
+  flex-basis: 100%;
+  padding-left: 24px;
+  font-size: 12.5px;
+}
+
+.qb-summary-actions {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  margin-top: 4px;
+}
+
+.qb-summary-actions .btn {
+  flex: 1;
+}
+
+/* Chủ đề vừa thêm: tô sáng rồi nhạt dần */
+tr.qb-row-new > td {
+  animation: qb-row-flash 5s ease-out;
+}
+
+@keyframes qb-row-flash {
+  0%, 40% { background: var(--success-bg); }
+  100% { background: transparent; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .modal-panel.qb-summary,
+  tr.qb-row-new > td {
+    animation: none;
+  }
+}
+
 @media (max-width: 640px) {
   .qb-upload {
     flex-wrap: wrap;

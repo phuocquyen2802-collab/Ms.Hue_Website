@@ -34,6 +34,16 @@ export default function TeacherQuestionBanksPage() {
   const [editingId, setEditingId] = useState(null);
   const [editTitle, setEditTitle] = useState('');
   const [preview, setPreview] = useState(null); // { bank, questions } | { loading: true }
+  // Kết quả lượt tải gần nhất, hiện thành hộp thoại: { done: [...], failed: [...] }
+  const [summary, setSummary] = useState(null);
+  // Chủ đề vừa thêm được tô sáng vài giây trong danh sách.
+  const [newIds, setNewIds] = useState([]);
+
+  useEffect(() => {
+    if (!newIds.length) return undefined;
+    const timer = setTimeout(() => setNewIds([]), 5000);
+    return () => clearTimeout(timer);
+  }, [newIds]);
 
   async function loadBanks() {
     try {
@@ -74,6 +84,8 @@ export default function TeacherQuestionBanksPage() {
       return;
     }
     setUploading(true);
+    const done = [];
+    const failed = [];
     // Xử lý lần lượt từng file: bóc tách công thức tốn nhiều tài nguyên máy chủ.
     for (const item of pending) {
       updateUpload(item.key, { status: 'uploading', message: '' });
@@ -83,6 +95,7 @@ export default function TeacherQuestionBanksPage() {
         form.append('title', item.title.trim());
         form.append('fileName', item.file.name);
         const { data } = await api.post('/teacher/question-banks', form, { timeout: 300000 });
+        done.push(data);
         updateUpload(item.key, {
           status: 'done',
           message: data.skippedCount
@@ -90,11 +103,23 @@ export default function TeacherQuestionBanksPage() {
             : `Đã nhập ${data.questionCount} câu`,
         });
       } catch (err) {
-        updateUpload(item.key, { status: 'error', message: err.response?.data?.message || 'Tải lên thất bại' });
+        const message = err.response?.data?.message || 'Tải lên thất bại';
+        failed.push({ fileName: item.file.name, message });
+        updateUpload(item.key, { status: 'error', message });
       }
     }
     setUploading(false);
-    loadBanks();
+    await loadBanks();
+    setNewIds(done.map((b) => b.id));
+    setSummary({ done, failed });
+  }
+
+  // Đóng hộp thoại kết quả: bỏ các file đã tải xong khỏi danh sách chờ.
+  function closeSummary({ addMore = false } = {}) {
+    setSummary(null);
+    setUploads((prev) => prev.filter((u) => u.status !== 'done'));
+    if (addMore) fileInputRef.current?.click();
+    else document.getElementById('qb-bank-list')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
 
   async function saveTitle(bank) {
@@ -219,7 +244,7 @@ export default function TeacherQuestionBanksPage() {
         )}
       </div>
 
-      <div className="card">
+      <div className="card" id="qb-bank-list">
         <div className="card-header">
           <div className="card-title-group">
             <h2>
@@ -253,7 +278,7 @@ export default function TeacherQuestionBanksPage() {
               </thead>
               <tbody>
                 {banks.map((b) => (
-                  <tr key={b.id}>
+                  <tr key={b.id} className={newIds.includes(b.id) ? 'qb-row-new' : undefined}>
                     <td>
                       {editingId === b.id ? (
                         <div className="qb-rename">
@@ -308,6 +333,60 @@ export default function TeacherQuestionBanksPage() {
           </div>
         )}
       </div>
+
+      {summary && (
+        <div className="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="qb-summary-title">
+          <div className="modal-panel qb-summary">
+            <div className={`qb-summary-icon ${summary.done.length ? 'is-success' : 'is-danger'}`} aria-hidden="true">
+              <UiIcon name={summary.done.length ? 'check' : 'alert'} size={30} />
+            </div>
+            <h3 id="qb-summary-title">{summary.done.length ? 'Tải đề thành công!' : 'Chưa tải được đề'}</h3>
+            {summary.done.length > 0 && (
+              <>
+                <p className="qb-summary-text">
+                  Đã thêm {summary.done.length} chủ đề với {summary.done.reduce((sum, b) => sum + b.questionCount, 0)} câu hỏi
+                  vào ngân hàng đề. Học sinh có thể chơi ngay trong mục Trò chơi.
+                </p>
+                <ul className="qb-summary-list">
+                  {summary.done.map((b) => (
+                    <li key={b.id}>
+                      <UiIcon name="check" size={16} />
+                      <span className="qb-summary-name">{b.title}</span>
+                      <span className="qb-summary-meta">
+                        {b.questionCount} câu{b.skippedCount > 0 ? ` · bỏ qua ${b.skippedCount}` : ''}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              </>
+            )}
+            {summary.failed.length > 0 && (
+              <>
+                <p className="qb-summary-text">
+                  {summary.done.length ? 'Một số file chưa tải được:' : 'Không file nào tải lên được:'}
+                </p>
+                <ul className="qb-summary-list is-failed">
+                  {summary.failed.map((f) => (
+                    <li key={f.fileName}>
+                      <UiIcon name="alert" size={16} />
+                      <span className="qb-summary-name">{f.fileName}</span>
+                      <span className="qb-summary-meta">{f.message}</span>
+                    </li>
+                  ))}
+                </ul>
+              </>
+            )}
+            <div className="qb-summary-actions">
+              <button type="button" className="btn secondary" onClick={() => closeSummary({ addMore: true })}>
+                <UiIcon name="upload" size={16} /> Tải thêm đề
+              </button>
+              <button type="button" className="btn" onClick={() => closeSummary()} autoFocus>
+                {summary.done.length ? 'Xem danh sách' : 'Đóng'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {preview && (
         <div className="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="qb-preview-title" onClick={() => setPreview(null)}>
