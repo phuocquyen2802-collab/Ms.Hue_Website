@@ -97,6 +97,14 @@ export default function ChatWidget() {
   const fileInputRef = useRef(null);
   const emojiPickerRef = useRef(null);
 
+  // Trên điện thoại khung chat mở toàn màn hình: khoá cuộn trang phía sau
+  // (CSS chỉ áp dụng lớp này ở màn hình hẹp, xem .chat-dock trong index.css).
+  const chatOpen = isPanelExpanded || Boolean(activePartner);
+  useEffect(() => {
+    document.body.classList.toggle('chat-open', chatOpen);
+    return () => document.body.classList.remove('chat-open');
+  }, [chatOpen]);
+
   // 1. Heartbeat: Đánh dấu người dùng đang online định kỳ mỗi 15 giây
   useEffect(() => {
     if (!user) return;
@@ -358,10 +366,14 @@ export default function ChatWidget() {
   });
 
   return (
-    <div className="no-print exam-hide" style={{ position: 'fixed', bottom: 20, right: 20, zIndex: 199, fontFamily: 'inherit', display: 'flex', alignItems: 'flex-end', gap: 14 }}>
+    <div
+      className={`chat-dock no-print exam-hide${chatOpen ? ' is-open' : ''}${activePartner ? ' has-chat' : ''}`}
+      style={{ position: 'fixed', bottom: 20, right: 20, zIndex: 199, fontFamily: 'inherit', display: 'flex', alignItems: 'flex-end', gap: 14 }}
+    >
       {/* 1. POPUP HỘI THOẠI TRÒ CHUYỆN */}
       {activePartner && (
         <div
+          className="chat-window"
           style={{
             width: 380,
             maxWidth: 'calc(100vw - 32px)',
@@ -971,6 +983,7 @@ export default function ChatWidget() {
       {/* 2. CỘT DANH SÁCH HỌC SINH & TRẠNG THÁI ONLINE BÊN PHẢI MÀN HÌNH */}
       {isPanelExpanded ? (
         <div
+          className="chat-panel"
           style={{
             width: 290,
             maxWidth: 'calc(100vw - 40px)',
@@ -1313,6 +1326,8 @@ export default function ChatWidget() {
         /* Floating Button khi thu gọn */
         <button
           type="button"
+          className="chat-launcher"
+          aria-label={user.role === 'teacher' ? 'Mở tin nhắn với học sinh' : 'Mở tin nhắn'}
           onClick={() => setIsPanelExpanded(true)}
           style={{
             height: 48,
@@ -1348,9 +1363,10 @@ export default function ChatWidget() {
               />
             )}
           </div>
-          <span>{user.role === 'teacher' ? 'Học sinh' : 'Tin nhắn'}</span>
+          <span className="chat-launcher-label">{user.role === 'teacher' ? 'Học sinh' : 'Tin nhắn'}</span>
           {onlineCount > 0 && (
             <span
+              className="chat-launcher-online"
               style={{
                 background: 'rgba(255,255,255,0.25)',
                 padding: '2px 7px',

@@ -1,4 +1,5 @@
-import { NavLink, useNavigate } from 'react-router-dom';
+import { useEffect, useState } from 'react';
+import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import BrandMark from './BrandMark';
 import { LanguageSwitch, ThemeSwitch } from './PreferenceSwitches';
@@ -140,11 +141,37 @@ const STUDENT_MENU = [
   { to: '/student/ai-assistant', icon: 'ai', label: 'Trợ lý AI - Chatbot' },
 ];
 
+// Màn hình rộng: sidebar cố định bên trái. Màn hình hẹp (điện thoại, máy
+// tính bảng dọc): thanh trên cùng có nút ☰, bấm vào thì sidebar trượt ra như
+// một ngăn kéo từ bên trái (xem .mobile-topbar / .sidebar.is-open trong CSS).
 export default function Sidebar() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
+  const [menuOpen, setMenuOpen] = useState(false);
+
+  // Chuyển trang thì đóng menu.
+  useEffect(() => {
+    setMenuOpen(false);
+  }, [location.pathname]);
+
+  // Menu đang mở: khoá cuộn trang phía sau, phím Esc để đóng.
+  useEffect(() => {
+    if (!menuOpen) return undefined;
+    document.body.classList.add('menu-open');
+    const onKey = (e) => {
+      if (e.key === 'Escape') setMenuOpen(false);
+    };
+    window.addEventListener('keydown', onKey);
+    return () => {
+      document.body.classList.remove('menu-open');
+      window.removeEventListener('keydown', onKey);
+    };
+  }, [menuOpen]);
 
   if (!user) return null;
+
+  const closeMenu = () => setMenuOpen(false);
 
   const isTeacher = user.role === 'teacher';
   const menu = isTeacher ? TEACHER_MENU : STUDENT_MENU;
@@ -157,13 +184,40 @@ export default function Sidebar() {
   const avatarChar = user.name ? user.name.trim().charAt(0).toUpperCase() : 'U';
 
   return (
-    <aside className="sidebar">
+    <>
+      <header className="mobile-topbar exam-hide no-print">
+        <button
+          type="button"
+          className="mobile-menu-btn"
+          aria-label="Mở menu"
+          aria-expanded={menuOpen}
+          aria-controls="app-sidebar"
+          onClick={() => setMenuOpen(true)}
+        >
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true">
+            <path d="M4 7h16M4 12h16M4 17h16" />
+          </svg>
+        </button>
+        <div className="mobile-topbar-brand">
+          <BrandMark size={30} />
+          <span>{APP_NAME}</span>
+        </div>
+      </header>
+
+      {menuOpen && <div className="sidebar-backdrop" onClick={closeMenu} aria-hidden="true" />}
+
+    <aside id="app-sidebar" className={`sidebar${menuOpen ? ' is-open' : ''}`}>
       <div className="sidebar-brand">
         <BrandMark size={36} className="sidebar-logo" />
         <div className="sidebar-brand-copy">
           <div className="sidebar-brand-text">{APP_NAME}</div>
           <div className="sidebar-brand-sub">{APP_TAGLINE}</div>
         </div>
+        <button type="button" className="sidebar-close" aria-label="Đóng menu" onClick={closeMenu}>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true">
+            <path d="M6 6l12 12M18 6 6 18" />
+          </svg>
+        </button>
       </div>
 
       <nav className="sidebar-nav" aria-label="Điều hướng chính">
@@ -173,6 +227,7 @@ export default function Sidebar() {
             to={item.to}
             end={item.end}
             className={({ isActive }) => `sidebar-link${isActive ? ' active' : ''}`}
+            onClick={closeMenu}
           >
             <Icon name={item.icon} />
             <span>{item.label}</span>
@@ -206,6 +261,7 @@ export default function Sidebar() {
             to="/settings"
             className={({ isActive }) => `sidebar-action${isActive ? ' active' : ''}`}
             title="Cài đặt tài khoản"
+            onClick={closeMenu}
           >
             <Icon name="settings" />
             <span>Cài đặt</span>
@@ -218,5 +274,6 @@ export default function Sidebar() {
         </div>
       </div>
     </aside>
+    </>
   );
 }

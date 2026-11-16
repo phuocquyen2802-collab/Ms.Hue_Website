@@ -267,7 +267,7 @@ export default function NotificationBell() {
     : tabFiltered;
 
   return (
-    <div ref={wrapperRef} className="no-print exam-hide" style={{ position: 'fixed', top: 16, right: 24, zIndex: 200 }}>
+    <div ref={wrapperRef} className="notif-bell no-print exam-hide" style={{ position: 'fixed', top: 16, right: 24, zIndex: 200 }}>
       {/* Bell Button */}
       <button
         type="button"
