@@ -4,7 +4,7 @@ import api from '../services/api';
 import UiIcon from '../components/UiIcon';
 import { exportAccountsToXlsx, generatePassword } from '../utils/studentAccountsExport';
 
-const EMPTY_STUDENT_FORM = { name: '', email: '', password: '', className: '' };
+const EMPTY_STUDENT_FORM = { name: '', email: '', password: '', className: '', recoveryEmail: '' };
 
 export default function TeacherDashboard() {
   const [students, setStudents] = useState([]);
@@ -76,6 +76,7 @@ export default function TeacherDashboard() {
         name: newStudent.name.trim(),
         email: newStudent.email.trim(),
         className: newStudent.className.trim(),
+        recoveryEmail: newStudent.recoveryEmail.trim(),
       };
       const { data } = await api.post('/teacher/students', payload);
       if (keepOpen) {
@@ -96,12 +97,12 @@ export default function TeacherDashboard() {
 
   function startEdit(student) {
     setEditingId(student.id);
-    setEditForm({ name: student.name, className: student.className || '', password: '' });
+    setEditForm({ name: student.name, className: student.className || '', password: '', recoveryEmail: student.recoveryEmail || '' });
   }
 
   async function handleSaveEdit(studentId) {
     try {
-      const payload = { name: editForm.name, className: editForm.className };
+      const payload = { name: editForm.name, className: editForm.className, recoveryEmail: (editForm.recoveryEmail || '').trim() };
       if (editForm.password && editForm.password.trim()) payload.password = editForm.password.trim();
       await api.put(`/teacher/students/${studentId}`, payload);
       setEditingId(null);
@@ -378,7 +379,19 @@ export default function TeacherDashboard() {
                             onChange={(e) => setEditForm({ ...editForm, className: e.target.value })}
                           />
                         </td>
-                        <td className="text-muted-cell">{s.email}</td>
+                        <td className="text-muted-cell">
+                          {s.email}
+                          <input
+                            type="email"
+                            className="recovery-edit"
+                            aria-label="Email khôi phục mật khẩu"
+                            placeholder="Email khôi phục (Gmail)"
+                            value={editForm.recoveryEmail || ''}
+                            onChange={(e) => setEditForm({ ...editForm, recoveryEmail: e.target.value })}
+                            autoComplete="off"
+                            spellCheck={false}
+                          />
+                        </td>
                         <td>
                           <div className="password-edit">
                             <input
@@ -425,7 +438,15 @@ export default function TeacherDashboard() {
                       <td>
                         <span className="class-badge">{s.className ? `Lớp ${s.className}` : 'Chưa phân lớp'}</span>
                       </td>
-                      <td className="text-muted-cell">{s.email}</td>
+                      <td className="text-muted-cell">
+                        {s.email}
+                        {s.recoveryEmail && (
+                          <span className="account-recovery" title="Email khôi phục mật khẩu">
+                            <UiIcon name="mail" size={13} />
+                            <span translate="no">{s.recoveryEmail}</span>
+                          </span>
+                        )}
+                      </td>
                       <td>
                         {s.password ? (
                           <span className="credential">{s.password}</span>
@@ -695,6 +716,23 @@ export default function TeacherDashboard() {
                     spellCheck={false}
                   />
                 </div>
+              </div>
+
+              <div className="form-group">
+                <label htmlFor="add-student-recovery">
+                  Email khôi phục mật khẩu <span className="label-optional">(không bắt buộc)</span>
+                </label>
+                <input
+                  id="add-student-recovery"
+                  type="email"
+                  inputMode="email"
+                  placeholder="an.nguyen@gmail.com"
+                  value={newStudent.recoveryEmail}
+                  onChange={(e) => setNewStudent({ ...newStudent, recoveryEmail: e.target.value })}
+                  autoComplete="off"
+                  spellCheck={false}
+                />
+                <p className="field-hint">Học sinh quên mật khẩu sẽ nhận đường dẫn đặt lại qua email này.</p>
               </div>
 
               <div className="form-group">

@@ -44,6 +44,9 @@ backend/*.log
 # ==========================================
 data/chat_uploads/*
 !data/chat_uploads/.gitkeep
+# Lượt đăng nhập sai và link khôi phục mật khẩu: dữ liệu lúc chạy, không đưa lên GitHub
+data/login_attempts.json
+data/password_resets.json
 temp/
 tmp/
 

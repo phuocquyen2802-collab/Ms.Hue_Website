@@ -2,6 +2,7 @@ import { Routes, Route, Navigate } from 'react-router-dom';
 import ProtectedRoute from './components/ProtectedRoute';
 
 import LoginPage from './pages/LoginPage';
+import ResetPasswordPage from './pages/ResetPasswordPage';
 import LandingPage from './pages/LandingPage';
 import TeacherDashboard from './pages/TeacherDashboard';
 import TeacherExamsPage from './pages/TeacherExamsPage';
@@ -25,6 +26,8 @@ export default function App() {
   return (
     <Routes>
       <Route path="/login" element={<LoginPage />} />
+      {/* Mở từ đường dẫn trong email khôi phục mật khẩu */}
+      <Route path="/reset-password" element={<ResetPasswordPage />} />
       <Route path="/register" element={<Navigate to="/login" replace />} />
 
       {/* "/" luôn là trang giới thiệu (kể cả khi đã đăng nhập - khi đó nút

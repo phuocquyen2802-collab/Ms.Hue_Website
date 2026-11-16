@@ -180,6 +180,12 @@ const PATHS = {
       <path d="M12 7v3" />
     </>
   ),
+  mail: (
+    <>
+      <rect x="3" y="5" width="18" height="14" rx="2.5" />
+      <path d="m3.5 7 8.5 6 8.5-6" />
+    </>
+  ),
   route: (
     <>
       <circle cx="6" cy="18.5" r="2.3" />

@@ -122,6 +122,37 @@ cấp chứng chỉ HTTPS):
 Nếu server đã có sẵn **nginx**, thêm `client_max_body_size 50m;` vào khối
 `server` để tải được file Word/ảnh lớn, và `proxy_pass http://127.0.0.1:8080;`.
 
+## 6b. Gửi email khôi phục mật khẩu (tuỳ chọn)
+
+Khi người dùng quên mật khẩu, hoặc nhập sai mật khẩu 5 lần liên tiếp (tài khoản
+bị tạm khoá 15 phút), trang đăng nhập cho nhập tên đăng nhập + email đã đăng ký.
+Hệ thống gửi đường dẫn đặt lại mật khẩu (dùng 1 lần, hết hạn sau 30 phút) tới
+email đó. Email chỉ được gửi khi khớp với **email khôi phục** của tài khoản:
+giáo viên nhập khi thêm/sửa học sinh, hoặc người dùng tự thêm ở trang Cài đặt
+(tên đăng nhập là email thì dùng luôn email đó).
+
+Cần một dịch vụ gửi mail qua SMTP. Ví dụ với Resend (miễn phí 3.000 email/tháng):
+
+1. Đăng ký tại https://resend.com, vào **Domains → Add Domain**, nhập tên miền
+   của website.
+2. Thêm các bản ghi DNS mà Resend hiển thị (TXT/MX) vào trang quản lý DNS của
+   tên miền, chờ Resend báo **Verified**.
+3. Vào **API Keys → Create API Key**, chép key (bắt đầu bằng `re_`).
+4. Thêm vào `backend/.env` trên server (xem mẫu ở `backend/.env.example`):
+   ```
+   APP_URL=https://ten-mien-cua-ban
+   MAIL_FROM=MathInsight AI <no-reply@ten-mien-cua-ban>
+   SMTP_HOST=smtp.resend.com
+   SMTP_PORT=465
+   SMTP_USER=resend
+   SMTP_PASS=re_xxxxxxxx
+   ```
+5. `docker compose up -d` để nạp cấu hình mới.
+
+Chưa cấu hình SMTP thì màn khôi phục báo "Hệ thống chưa bật gửi email, liên hệ
+giáo viên"; giáo viên vẫn đặt lại mật khẩu cho học sinh ở mục Quản lý học sinh
+(việc này cũng mở khoá tài khoản ngay).
+
 ## 7. Xử lý sự cố
 
 | Hiện tượng | Cách xử lý |

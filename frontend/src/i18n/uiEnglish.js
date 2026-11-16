@@ -486,6 +486,21 @@ export const EXACT = {
   'Tối thiểu 6 ký tự…': 'At least 6 characters…',
   'Nhập lại mật khẩu mới': 'Repeat the new password',
   'Đang cập nhật…': 'Updating…',
+  'Email khôi phục mật khẩu': 'Password recovery email',
+  'Khi quên mật khẩu hoặc nhập sai mật khẩu 5 lần liên tiếp, đường dẫn đặt lại mật khẩu sẽ được gửi tới email này.':
+    'If you forget your password or enter a wrong one 5 times in a row, a reset link is sent to this email.',
+  'Đang nhận link khôi phục qua': 'Reset links are sent to',
+  'Tài khoản chưa có email khôi phục nên không tự lấy lại được mật khẩu khi quên.':
+    'This account has no recovery email, so a forgotten password cannot be reset by email.',
+  'Nhập mật khẩu để xác nhận đúng là bạn đang đổi email.': 'Enter your password to confirm the change.',
+  'Đã lưu email khôi phục.': 'Recovery email saved.',
+  'Đã xoá email khôi phục.': 'Recovery email removed.',
+  'Lưu email khôi phục thất bại': 'Could not save the recovery email',
+  'Lưu email khôi phục': 'Save recovery email',
+  'Email khôi phục (Gmail)': 'Recovery email (Gmail)',
+  '(không bắt buộc)': '(optional)',
+  'Học sinh quên mật khẩu sẽ nhận đường dẫn đặt lại qua email này.': 'Students who forget their password get a reset link at this email.',
+  'ten@gmail.com': 'name@gmail.com',
 
   // ---- Luyện đề (học sinh) ----
   'Làm các đề giáo viên giao, xem kết quả và lộ trình ôn tập của bạn.': 'Take the tests your teacher assigns and see your results and review plans.',
@@ -916,6 +931,9 @@ export const EXACT = {
   'Đề thi này chưa có file đáp án chi tiết': 'This test has no answer key file',
   'Đề thi này không được giao cho bạn': 'This test is not assigned to you',
   'Đổi mật khẩu thành công': 'Password changed',
+  'Email không hợp lệ': 'Invalid email address',
+  'Email khôi phục không hợp lệ': 'Invalid recovery email',
+  'Đã lưu email khôi phục': 'Recovery email saved',
   'Không đọc được file Word:': 'Could not read the Word file:',
   'Không đọc được nội dung file để so khớp:': 'Could not read the file to match it:',
   'Lỗi khi gọi Gemini API:': 'Error calling the Gemini API:',

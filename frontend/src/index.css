@@ -7676,6 +7676,74 @@ form .notice + .modal-actions,
   gap: 8px;
 }
 
+/* Nút quay lại dạng <button> (màn quên mật khẩu) trông giống link */
+button.auth-back {
+  padding: 0;
+  border: 0;
+  background: none;
+  font-family: inherit;
+  cursor: pointer;
+}
+
+/* Khung thông báo trong thẻ đăng nhập / khôi phục mật khẩu */
+.auth-alert {
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+  margin-bottom: 16px;
+  padding: 10px 12px;
+  border: 1px solid var(--danger-border);
+  border-radius: var(--radius-md);
+  background: var(--danger-bg);
+  font-size: 13.5px;
+  font-weight: 500;
+  line-height: 1.5;
+  color: var(--danger-text);
+}
+
+.auth-alert svg {
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+.auth-alert.is-warning {
+  border-color: var(--warning-border);
+  background: var(--warning-bg);
+  color: var(--warning-text);
+}
+
+.auth-alert.is-success {
+  border-color: var(--success-border);
+  background: var(--success-bg);
+  color: var(--success-text);
+}
+
+.auth-status-icon {
+  width: 52px;
+  height: 52px;
+  display: grid;
+  place-items: center;
+  margin-bottom: 16px;
+  border-radius: 16px;
+  background: var(--primary-light);
+  color: var(--primary-strong);
+}
+
+.auth-status-icon.is-success {
+  background: var(--success-bg);
+  color: var(--success);
+}
+
+.auth-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.auth-card .label-row .text-btn {
+  font-size: 13px;
+}
+
 .theme-switch.sidebar-theme {
   justify-content: space-between;
   width: 100%;
@@ -7788,4 +7856,37 @@ form .notice + .modal-actions,
   :root[data-theme='dark'] .answer-key-preview {
     background: #ffffff;
   }
+}
+
+/* Email khôi phục mật khẩu: dòng phụ dưới tài khoản trong danh sách học sinh */
+.account-recovery {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin-top: 3px;
+  font-size: 12px;
+  color: var(--text-light);
+}
+
+.account-recovery svg {
+  flex-shrink: 0;
+}
+
+input.recovery-edit {
+  display: block;
+  width: 100%;
+  margin-top: 6px;
+}
+
+.label-optional {
+  font-weight: 400;
+  color: var(--text-light);
+}
+
+.recovery-intro {
+  margin: 0 0 14px;
+}
+
+.notice.recovery-status {
+  margin-bottom: 18px;
 }

@@ -1,7 +1,8 @@
-// Route cho chính người dùng đang đăng nhập: xem hồ sơ, đổi mật khẩu.
+// Route cho chính người dùng đang đăng nhập: xem hồ sơ, đổi mật khẩu, email khôi phục.
 const express = require('express');
 const { verifyToken } = require('../middleware/auth');
-const { changePassword } = require('../controllers/authController');
+const { changePassword, updateRecoveryEmail } = require('../controllers/authController');
+const { recoveryAddressOf } = require('../controllers/passwordResetController');
 const dataAccess = require('../models/dataAccess');
 
 const router = express.Router();
@@ -18,9 +19,13 @@ router.get('/', verifyToken, (req, res) => {
     role: user.role,
     className: user.className,
     createdAt: user.createdAt,
+    recoveryEmail: user.recoveryEmail || null,
+    // Email thực sự nhận link khôi phục (tên đăng nhập là email thì dùng luôn).
+    effectiveRecoveryEmail: recoveryAddressOf(user),
   });
 });
 
 router.put('/password', verifyToken, changePassword);
+router.put('/recovery-email', verifyToken, updateRecoveryEmail);
 
 module.exports = router;

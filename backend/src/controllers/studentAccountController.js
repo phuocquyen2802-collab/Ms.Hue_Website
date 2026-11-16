@@ -6,18 +6,25 @@ const bcrypt = require('bcryptjs');
 const { v4: uuidv4 } = require('uuid');
 const dataAccess = require('../models/dataAccess');
 const { encryptPassword, decryptPassword } = require('../utils/passwordVault');
+const loginGuard = require('../services/loginGuard');
+const { EMAIL_RE } = require('./passwordResetController');
 
 const SALT_ROUNDS = 10;
+const INVALID_RECOVERY_EMAIL = { message: 'Email khôi phục không hợp lệ' };
 
 // Tạo tài khoản học sinh mới
 async function createStudent(req, res) {
   const { name, email, password, className } = req.body;
+  const recoveryEmail = String(req.body.recoveryEmail || '').trim();
 
   if (!name || !email || !password) {
     return res.status(400).json({ message: 'Thiếu name, email hoặc password' });
   }
   if (password.length < 6) {
     return res.status(400).json({ message: 'Mật khẩu phải có ít nhất 6 ký tự' });
+  }
+  if (recoveryEmail && !EMAIL_RE.test(recoveryEmail)) {
+    return res.status(400).json(INVALID_RECOVERY_EMAIL);
   }
 
   const existing = dataAccess.findOne('users', { email });
@@ -35,6 +42,8 @@ async function createStudent(req, res) {
     passwordEnc: encryptPassword(password),
     role: 'student',
     className: className || null,
+    // Email nhận link khôi phục mật khẩu khi học sinh quên (không bắt buộc)
+    recoveryEmail: recoveryEmail || null,
     createdAt: new Date().toISOString(),
   };
 
@@ -46,6 +55,7 @@ async function createStudent(req, res) {
     email: student.email,
     role: student.role,
     className: student.className,
+    recoveryEmail: student.recoveryEmail,
     password: decryptPassword(student.passwordEnc),
   });
 }
@@ -58,11 +68,16 @@ async function updateStudent(req, res) {
     return res.status(404).json({ message: 'Không tìm thấy học sinh' });
   }
 
-  const { name, className, email, password } = req.body;
+  const { name, className, email, password, recoveryEmail } = req.body;
   const changes = {};
 
   if (name) changes.name = name;
   if (className !== undefined) changes.className = className || null;
+  if (recoveryEmail !== undefined) {
+    const value = String(recoveryEmail || '').trim();
+    if (value && !EMAIL_RE.test(value)) return res.status(400).json(INVALID_RECOVERY_EMAIL);
+    changes.recoveryEmail = value || null;
+  }
   if (email && email !== student.email) {
     const emailTaken = dataAccess.findOne('users', { email });
     if (emailTaken) {
@@ -80,12 +95,15 @@ async function updateStudent(req, res) {
   }
 
   const updated = dataAccess.updateById('users', student.id, changes);
+  // Giáo viên đặt lại mật khẩu: mở khoá luôn nếu học sinh đang bị khoá do nhập sai nhiều lần.
+  if (password) loginGuard.clearFailures(updated.email);
   return res.json({
     id: updated.id,
     name: updated.name,
     email: updated.email,
     role: updated.role,
     className: updated.className,
+    recoveryEmail: updated.recoveryEmail || null,
     password: decryptPassword(updated.passwordEnc),
   });
 }

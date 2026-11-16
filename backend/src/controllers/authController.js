@@ -2,6 +2,8 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const { v4: uuidv4 } = require('uuid');
 const dataAccess = require('../models/dataAccess');
+const loginGuard = require('../services/loginGuard');
+const { EMAIL_RE } = require('./passwordResetController');
 
 const SALT_ROUNDS = 10;
 
@@ -48,7 +50,16 @@ async function register(req, res) {
   });
 }
 
-// Đăng nhập, trả về JWT token
+function lockedResponse(res, retryAfterSeconds) {
+  return res.status(423).json({
+    code: 'LOGIN_LOCKED',
+    message: `Bạn đã nhập sai mật khẩu ${loginGuard.MAX_FAILED_LOGINS} lần liên tiếp. Hãy khôi phục mật khẩu qua email hoặc thử lại sau ${loginGuard.LOCK_MINUTES} phút.`,
+    retryAfterSeconds,
+  });
+}
+
+// Đăng nhập, trả về JWT token. Sai mật khẩu nhiều lần liên tiếp thì tạm khoá
+// (xem services/loginGuard.js) và giao diện chuyển sang khôi phục qua email.
 async function login(req, res) {
   const { email, password } = req.body;
 
@@ -56,15 +67,21 @@ async function login(req, res) {
     return res.status(400).json({ message: 'Thiếu email hoặc mật khẩu' });
   }
 
-  const user = dataAccess.findOne('users', { email });
-  if (!user) {
-    return res.status(401).json({ message: 'Email hoặc mật khẩu không đúng' });
-  }
+  const lock = loginGuard.checkLocked(email);
+  if (lock.locked) return lockedResponse(res, lock.retryAfterSeconds);
 
-  const isMatch = await bcrypt.compare(password, user.passwordHash);
+  const user = dataAccess.findOne('users', { email });
+  const isMatch = user ? await bcrypt.compare(password, user.passwordHash) : false;
   if (!isMatch) {
-    return res.status(401).json({ message: 'Email hoặc mật khẩu không đúng' });
+    const failure = loginGuard.recordFailure(email);
+    if (failure.locked) return lockedResponse(res, failure.retryAfterSeconds);
+    return res.status(401).json({
+      code: 'LOGIN_WRONG',
+      message: 'Email hoặc mật khẩu không đúng',
+      attemptsLeft: failure.attemptsLeft,
+    });
   }
+  loginGuard.clearFailures(email);
 
   const token = jwt.sign(
     { id: user.id, role: user.role, name: user.name },
@@ -102,7 +119,8 @@ async function changePassword(req, res) {
   const user = dataAccess.findById('users', req.user.id);
   const isMatch = await bcrypt.compare(currentPassword, user.passwordHash);
   if (!isMatch) {
-    return res.status(401).json({ message: 'Mật khẩu hiện tại không đúng' });
+    // 400 chứ không phải 401: giao diện coi 401 là hết phiên và tự đăng xuất (services/api.js).
+    return res.status(400).json({ message: 'Mật khẩu hiện tại không đúng' });
   }
 
   const passwordHash = await bcrypt.hash(newPassword, SALT_ROUNDS);
@@ -119,4 +137,23 @@ async function changePassword(req, res) {
   return res.json({ message: 'Đổi mật khẩu thành công' });
 }
 
-module.exports = { register, login, changePassword };
+// Lưu email khôi phục mật khẩu của chính mình (cần nhập đúng mật khẩu hiện
+// tại). Gửi chuỗi rỗng để xoá.
+async function updateRecoveryEmail(req, res) {
+  const { recoveryEmail, currentPassword } = req.body || {};
+  const value = String(recoveryEmail || '').trim();
+  if (value && !EMAIL_RE.test(value)) {
+    return res.status(400).json({ message: 'Email không hợp lệ' });
+  }
+
+  const user = dataAccess.findById('users', req.user.id);
+  const isMatch = currentPassword ? await bcrypt.compare(String(currentPassword), user.passwordHash) : false;
+  if (!isMatch) {
+    return res.status(400).json({ message: 'Mật khẩu hiện tại không đúng' });
+  }
+
+  dataAccess.updateById('users', user.id, { recoveryEmail: value || null });
+  return res.json({ recoveryEmail: value || null, message: 'Đã lưu email khôi phục' });
+}
+
+module.exports = { register, login, changePassword, updateRecoveryEmail };

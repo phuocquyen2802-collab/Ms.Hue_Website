@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import api from '../services/api';
+import UiIcon from '../components/UiIcon';
 
 export default function SettingsPage() {
   const [profile, setProfile] = useState(null);
@@ -10,10 +11,17 @@ export default function SettingsPage() {
   const [passwordSuccess, setPasswordSuccess] = useState('');
   const [savingPassword, setSavingPassword] = useState(false);
 
+  // Email khôi phục mật khẩu
+  const [recoveryForm, setRecoveryForm] = useState({ recoveryEmail: '', currentPassword: '' });
+  const [recoveryError, setRecoveryError] = useState('');
+  const [recoverySuccess, setRecoverySuccess] = useState('');
+  const [savingRecovery, setSavingRecovery] = useState(false);
+
   async function loadInitialData() {
     try {
       const res = await api.get('/me');
       setProfile(res.data);
+      setRecoveryForm({ recoveryEmail: res.data.recoveryEmail || '', currentPassword: '' });
     } catch (err) {
       console.error(err);
     }
@@ -45,6 +53,27 @@ export default function SettingsPage() {
       setPasswordError(err.response?.data?.message || 'Đổi mật khẩu thất bại');
     } finally {
       setSavingPassword(false);
+    }
+  }
+
+  async function handleSaveRecovery(e) {
+    e.preventDefault();
+    setRecoveryError('');
+    setRecoverySuccess('');
+    setSavingRecovery(true);
+    try {
+      const { data } = await api.put('/me/recovery-email', {
+        recoveryEmail: recoveryForm.recoveryEmail.trim(),
+        currentPassword: recoveryForm.currentPassword,
+      });
+      const fallback = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(profile.email) ? profile.email : null;
+      setProfile({ ...profile, recoveryEmail: data.recoveryEmail, effectiveRecoveryEmail: data.recoveryEmail || fallback });
+      setRecoveryForm({ recoveryEmail: data.recoveryEmail || '', currentPassword: '' });
+      setRecoverySuccess(data.recoveryEmail ? 'Đã lưu email khôi phục.' : 'Đã xoá email khôi phục.');
+    } catch (err) {
+      setRecoveryError(err.response?.data?.message || 'Lưu email khôi phục thất bại');
+    } finally {
+      setSavingRecovery(false);
     }
   }
 
@@ -104,6 +133,70 @@ export default function SettingsPage() {
             </tbody>
           </table>
         </div>
+      </div>
+
+      <div className="card">
+        <div className="card-header">
+          <h2>Email khôi phục mật khẩu</h2>
+        </div>
+        <form className="form-panel" onSubmit={handleSaveRecovery} style={{ maxWidth: 420 }}>
+          <p className="field-hint recovery-intro">
+            Khi quên mật khẩu hoặc nhập sai mật khẩu 5 lần liên tiếp, đường dẫn đặt lại mật khẩu sẽ được gửi tới email này.
+          </p>
+          {profile.effectiveRecoveryEmail ? (
+            <div className="notice is-success recovery-status">
+              <UiIcon name="mail" size={18} />
+              <div className="notice-body">
+                Đang nhận link khôi phục qua <strong translate="no">{profile.effectiveRecoveryEmail}</strong>
+              </div>
+            </div>
+          ) : (
+            <div className="notice is-warning recovery-status">
+              <UiIcon name="alert" size={18} />
+              <div className="notice-body">Tài khoản chưa có email khôi phục nên không tự lấy lại được mật khẩu khi quên.</div>
+            </div>
+          )}
+          <div className="form-group">
+            <label htmlFor="recovery-email">Email (Gmail)</label>
+            <input
+              id="recovery-email"
+              type="email"
+              inputMode="email"
+              placeholder="ten@gmail.com"
+              value={recoveryForm.recoveryEmail}
+              onChange={(e) => setRecoveryForm({ ...recoveryForm, recoveryEmail: e.target.value })}
+              autoComplete="email"
+              spellCheck={false}
+            />
+          </div>
+          <div className="form-group">
+            <label htmlFor="recovery-current-password">Mật khẩu hiện tại</label>
+            <input
+              id="recovery-current-password"
+              type="password"
+              value={recoveryForm.currentPassword}
+              onChange={(e) => setRecoveryForm({ ...recoveryForm, currentPassword: e.target.value })}
+              autoComplete="current-password"
+              required
+            />
+            <p className="field-hint">Nhập mật khẩu để xác nhận đúng là bạn đang đổi email.</p>
+          </div>
+
+          {recoveryError && (
+            <p className="error-text" role="alert" aria-live="polite">
+              <span aria-hidden="true">⚠️</span> {recoveryError}
+            </p>
+          )}
+          {recoverySuccess && (
+            <p className="success-text" role="status" aria-live="polite">
+              <span aria-hidden="true">✓</span> {recoverySuccess}
+            </p>
+          )}
+
+          <button className="btn" type="submit" disabled={savingRecovery} style={{ marginTop: 6 }}>
+            {savingRecovery ? 'Đang lưu…' : 'Lưu email khôi phục'}
+          </button>
+        </form>
       </div>
 
       <div className="card">
