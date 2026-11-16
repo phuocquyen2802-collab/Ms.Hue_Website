@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useMemo, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import api from '../services/api';
+import useAutoRefresh, { setIfChanged } from '../hooks/useAutoRefresh';
 import { renderMath } from '../utils/mathRender';
 import UiIcon, { scoreLevel, formatScore, ScoreTrend } from '../components/UiIcon';
 import {
@@ -236,8 +237,9 @@ export default function TeacherExamsPage() {
     });
   }
 
-  async function loadData() {
-    setLoading(true);
+  // silent: tải ngầm (tự cập nhật định kỳ), không hiện trạng thái "Đang tải".
+  async function loadData({ silent = false } = {}) {
+    if (!silent) setLoading(true);
     try {
       const [examsRes, studentsRes, subsRes, groupsRes] = await Promise.all([
         api.get('/exams'),
@@ -245,20 +247,23 @@ export default function TeacherExamsPage() {
         api.get('/teacher/submissions').catch(() => ({ data: [] })),
         api.get('/teacher/groups').catch(() => ({ data: [] })),
       ]);
-      setExams(examsRes.data);
-      setStudents(studentsRes.data);
-      setSubmissions(subsRes.data || []);
-      setGroups(groupsRes.data || []);
+      setIfChanged(setExams, examsRes.data);
+      setIfChanged(setStudents, studentsRes.data);
+      setIfChanged(setSubmissions, subsRes.data || []);
+      setIfChanged(setGroups, groupsRes.data || []);
     } catch (err) {
-      console.error(err);
+      if (!silent) console.error(err);
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
   }
 
   useEffect(() => {
     loadData();
   }, []);
+
+  // Học sinh nộp bài: số bài nộp và điểm trung bình tự cập nhật.
+  useAutoRefresh(() => loadData({ silent: true }), 20000);
 
   function toggleStudentInCreate(id) {
     // Bấm tay từng học sinh -> không còn coi là "đang chọn theo đúng 1 lớp/nhóm

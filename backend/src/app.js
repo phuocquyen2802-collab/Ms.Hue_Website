@@ -22,6 +22,15 @@ app.use(cors());
 // thường.
 app.use(express.json({ limit: '25mb' }));
 
+// Dữ liệu API luôn là bản mới nhất: không cho trình duyệt (nhất là trình
+// duyệt trong ứng dụng trên điện thoại) dùng lại bản lưu tạm cũ, nếu không
+// thông báo / bài đăng mới chỉ hiện sau khi tải lại trang. File tải về
+// (res.download/sendFile) tự đặt lại header riêng.
+app.use('/api', (req, res, next) => {
+  res.set('Cache-Control', 'no-store');
+  next();
+});
+
 app.get('/api/health', (req, res) => res.json({ ok: true }));
 
 app.use('/api/auth', authRoutes);

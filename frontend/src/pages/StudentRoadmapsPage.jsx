@@ -1,6 +1,7 @@
 import { useEffect, useState, useMemo } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import api from '../services/api';
+import useAutoRefresh, { setIfChanged } from '../hooks/useAutoRefresh';
 import RoadmapSteps, { RoadmapSummary } from '../components/RoadmapSteps';
 import UiIcon from '../components/UiIcon';
 
@@ -27,6 +28,16 @@ export default function StudentRoadmapsPage() {
       .finally(() => setLoading(false));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Giáo viên vừa duyệt lộ trình mới: tự hiện, giữ nguyên lộ trình đang xem.
+  useAutoRefresh(async () => {
+    const res = await api.get('/student/me/weak-topics');
+    setIfChanged(setData, res.data);
+    if (!selectedSubmissionId) {
+      const first = (res.data?.submissions || []).find((s) => s.roadmap);
+      if (first) setSelectedSubmissionId(first.id);
+    }
+  }, 20000);
 
   const submissions = useMemo(() => data?.submissions || [], [data]);
   const submissionsWithRoadmap = useMemo(() => submissions.filter((s) => s.roadmap), [submissions]);

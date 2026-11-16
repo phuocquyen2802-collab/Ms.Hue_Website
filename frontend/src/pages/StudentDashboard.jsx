@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import api from '../services/api';
+import useAutoRefresh, { setIfChanged } from '../hooks/useAutoRefresh';
 import AnswerKeyPanel from '../components/AnswerKeyPanel';
 import UiIcon, { scoreLevel, formatScore } from '../components/UiIcon';
 
@@ -11,22 +12,25 @@ export default function StudentDashboard() {
   const [groups, setGroups] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    setLoading(true);
-    Promise.all([
+  async function loadData() {
+    const [examsRes, subsRes, roadmapsRes, groupsRes] = await Promise.all([
       api.get('/student/exams'),
       api.get('/student/submissions'),
       api.get('/student/me/roadmaps'),
       api.get('/student/me/groups').catch(() => ({ data: [] })),
-    ])
-      .then(([examsRes, subsRes, roadmapsRes, groupsRes]) => {
-        setExams(examsRes.data);
-        setSubmissions(subsRes.data);
-        setRoadmaps(roadmapsRes.data);
-        setGroups(groupsRes.data || []);
-      })
-      .finally(() => setLoading(false));
+    ]);
+    setIfChanged(setExams, examsRes.data);
+    setIfChanged(setSubmissions, subsRes.data);
+    setIfChanged(setRoadmaps, roadmapsRes.data);
+    setIfChanged(setGroups, groupsRes.data || []);
+  }
+
+  useEffect(() => {
+    loadData().catch(() => {}).finally(() => setLoading(false));
   }, []);
+
+  // Giáo viên giao đề mới / duyệt lộ trình: tự hiện mà không cần tải lại trang.
+  useAutoRefresh(loadData, 15000);
 
   function isSubmitted(examId) {
     return submissions.some((s) => s.examId === examId);

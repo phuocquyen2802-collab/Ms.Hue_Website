@@ -1,6 +1,7 @@
-import { useEffect, useState, useMemo } from 'react';
+import { useEffect, useState, useRef, useMemo } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import api from '../services/api';
+import useAutoRefresh, { setIfChanged } from '../hooks/useAutoRefresh';
 import WeakTopicsChart from '../components/WeakTopicsChart';
 import UiIcon, { scoreLevel, formatScore, ScoreTrend } from '../components/UiIcon';
 
@@ -98,6 +99,21 @@ export default function TeacherAnalyticsPage() {
 
     fetchStudentStats();
   }, [selectedStudentId]);
+
+  // Học sinh nộp bài mới: danh sách và thống kê của học sinh đang xem tự cập nhật.
+  const selectedStudentRef = useRef(selectedStudentId);
+  selectedStudentRef.current = selectedStudentId;
+  useAutoRefresh(async () => {
+    const [stRes, subRes] = await Promise.all([api.get('/teacher/students'), api.get('/teacher/submissions')]);
+    setIfChanged(setStudents, stRes.data || []);
+    setIfChanged(setAllSubmissions, subRes.data || []);
+    const id = selectedStudentRef.current;
+    if (id) {
+      const res = await api.get(`/teacher/students/${id}/stats`);
+      // Bỏ kết quả nếu trong lúc tải đã chọn sang học sinh khác.
+      if (id === selectedStudentRef.current) setIfChanged(setStudentStats, res.data || null);
+    }
+  }, 20000);
 
   // Submissions of selected student
   const studentSubmissions = useMemo(() => {

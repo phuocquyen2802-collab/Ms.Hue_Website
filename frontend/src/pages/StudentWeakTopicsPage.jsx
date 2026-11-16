@@ -1,6 +1,7 @@
 import { useEffect, useState, useMemo } from 'react';
 import { useSearchParams, Link } from 'react-router-dom';
 import api from '../services/api';
+import useAutoRefresh, { setIfChanged } from '../hooks/useAutoRefresh';
 import WeakTopicsChart from '../components/WeakTopicsChart';
 import { renderMath } from '../utils/mathRender';
 import RoadmapSteps, { RoadmapSummary } from '../components/RoadmapSteps';
@@ -26,6 +27,12 @@ export default function StudentWeakTopicsPage() {
       })
       .finally(() => setLoading(false));
   }, [subIdFromUrl]);
+
+  // Lần nộp mới, lộ trình vừa được duyệt: tự cập nhật, giữ nguyên lần làm đang chọn.
+  useAutoRefresh(async () => {
+    const res = await api.get('/student/me/weak-topics');
+    setIfChanged(setData, res.data);
+  }, 20000);
 
   const submissions = useMemo(() => data?.submissions || [], [data]);
 
