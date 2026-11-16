@@ -59,21 +59,21 @@ function getFileMeta(fileName) {
     return { icon: '📄', label: 'WORD', color: 'var(--primary)', bg: 'var(--primary-light)', border: 'var(--primary-border)' };
   }
   if (['pdf'].includes(ext)) {
-    return { icon: '📕', label: 'PDF', color: '#dc2626', bg: '#fef2f2', border: '#fecaca' };
+    return { icon: '📕', label: 'PDF', color: '#dc2626', bg: 'var(--danger-bg)', border: 'var(--danger-border)' };
   }
   if (['xls', 'xlsx'].includes(ext)) {
-    return { icon: '📊', label: 'EXCEL', color: '#16a34a', bg: '#f0fdf4', border: '#bbf7d0' };
+    return { icon: '📊', label: 'EXCEL', color: '#16a34a', bg: 'var(--success-bg)', border: 'var(--success-border)' };
   }
   if (['ppt', 'pptx'].includes(ext)) {
-    return { icon: '📑', label: 'POWERPOINT', color: '#ea580c', bg: '#fff7ed', border: '#fed7aa' };
+    return { icon: '📑', label: 'POWERPOINT', color: '#ea580c', bg: 'var(--warning-bg)', border: 'var(--warning-border)' };
   }
   if (['zip', 'rar', '7z'].includes(ext)) {
-    return { icon: '🗂️', label: 'NÉN', color: '#7c3aed', bg: '#f5f3ff', border: '#ddd6fe' };
+    return { icon: '🗂️', label: 'NÉN', color: '#7c3aed', bg: 'var(--purple-bg)', border: 'var(--purple-border)' };
   }
   if (['txt'].includes(ext)) {
-    return { icon: '📝', label: 'VĂN BẢN', color: '#475569', bg: '#f8fafc', border: '#e2e8f0' };
+    return { icon: '📝', label: 'VĂN BẢN', color: 'var(--ink-2)', bg: 'var(--surface-2)', border: 'var(--line)' };
   }
-  return { icon: '📁', label: (ext || 'TẬP TIN').toUpperCase(), color: '#475569', bg: '#f8fafc', border: '#e2e8f0' };
+  return { icon: '📁', label: (ext || 'TẬP TIN').toUpperCase(), color: 'var(--ink-2)', bg: 'var(--surface-2)', border: 'var(--line)' };
 }
 
 export default function ChatWidget() {
@@ -366,10 +366,10 @@ export default function ChatWidget() {
             width: 380,
             maxWidth: 'calc(100vw - 32px)',
             height: 530,
-            background: '#ffffff',
+            background: 'var(--surface)',
             borderRadius: 16,
             boxShadow: '0 16px 40px rgba(0,0,0,0.18), 0 4px 12px rgba(0,0,0,0.06)',
-            border: '1px solid #e2e8f0',
+            border: '1px solid var(--line)',
             display: 'flex',
             flexDirection: 'column',
             overflow: 'hidden',
@@ -381,8 +381,8 @@ export default function ChatWidget() {
           <div
             style={{
               padding: '10px 14px',
-              background: '#ffffff',
-              borderBottom: '1px solid #f1f5f9',
+              background: 'var(--surface)',
+              borderBottom: '1px solid var(--bg-subtle)',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'space-between',
@@ -419,7 +419,7 @@ export default function ChatWidget() {
                       height: 12,
                       borderRadius: '50%',
                       background: '#22c55e',
-                      border: '2px solid #ffffff',
+                      border: '2px solid var(--surface)',
                       boxShadow: '0 0 6px rgba(34, 197, 94, 0.9)',
                     }}
                   />
@@ -433,18 +433,18 @@ export default function ChatWidget() {
                       width: 10,
                       height: 10,
                       borderRadius: '50%',
-                      background: '#94a3b8',
-                      border: '2px solid #ffffff',
+                      background: 'var(--text-light)',
+                      border: '2px solid var(--surface)',
                     }}
                   />
                 )}
               </div>
 
               <div style={{ minWidth: 0 }}>
-                <div style={{ fontWeight: 700, fontSize: 13.5, color: '#0f172a', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                <div style={{ fontWeight: 700, fontSize: 13.5, color: 'var(--ink)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                   {activePartner.name}
                   {activePartner.className && (
-                    <span style={{ fontSize: 11, fontWeight: 500, color: '#64748b', marginLeft: 5 }}>
+                    <span style={{ fontSize: 11, fontWeight: 500, color: 'var(--ink-soft)', marginLeft: 5 }}>
                       ({activePartner.className})
                     </span>
                   )}
@@ -452,7 +452,7 @@ export default function ChatWidget() {
                 <div
                   style={{
                     fontSize: 11,
-                    color: activePartner.isOnline ? '#16a34a' : '#94a3b8',
+                    color: activePartner.isOnline ? '#16a34a' : 'var(--text-light)',
                     fontWeight: activePartner.isOnline ? 700 : 400,
                     display: 'flex',
                     alignItems: 'center',
@@ -488,7 +488,7 @@ export default function ChatWidget() {
                   background: 'transparent',
                   border: 'none',
                   fontSize: 15,
-                  color: '#94a3b8',
+                  color: 'var(--text-light)',
                   cursor: 'pointer',
                   padding: '5px 7px',
                   borderRadius: 6,
@@ -497,10 +497,10 @@ export default function ChatWidget() {
                 title="Xóa tất cả tin nhắn"
                 onMouseEnter={(e) => {
                   e.currentTarget.style.color = '#ef4444';
-                  e.currentTarget.style.background = '#fee2e2';
+                  e.currentTarget.style.background = 'var(--danger-bg)';
                 }}
                 onMouseLeave={(e) => {
-                  e.currentTarget.style.color = '#94a3b8';
+                  e.currentTarget.style.color = 'var(--text-light)';
                   e.currentTarget.style.background = 'transparent';
                 }}
               >
@@ -514,7 +514,7 @@ export default function ChatWidget() {
                   background: 'transparent',
                   border: 'none',
                   fontSize: 17,
-                  color: '#94a3b8',
+                  color: 'var(--text-light)',
                   cursor: 'pointer',
                   padding: '4px 6px',
                   borderRadius: 4,
@@ -532,16 +532,16 @@ export default function ChatWidget() {
               flex: 1,
               padding: '14px',
               overflowY: 'auto',
-              background: '#f8fafc',
+              background: 'var(--surface-2)',
               display: 'flex',
               flexDirection: 'column',
               gap: 8,
             }}
           >
             {conversation.length === 0 ? (
-              <div style={{ margin: 'auto', textAlign: 'center', color: '#94a3b8', padding: 16 }}>
+              <div style={{ margin: 'auto', textAlign: 'center', color: 'var(--text-light)', padding: 16 }}>
                 <div style={{ fontSize: 32, marginBottom: 6 }}>👋</div>
-                <div style={{ fontSize: 13, fontWeight: 600, color: '#475569' }}>
+                <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--ink-2)' }}>
                   Bắt đầu trò chuyện với {activePartner.name}
                 </div>
                 <div style={{ fontSize: 11.5, marginTop: 4 }}>
@@ -567,7 +567,7 @@ export default function ChatWidget() {
                         style={{
                           textAlign: 'center',
                           fontSize: 10,
-                          color: '#94a3b8',
+                          color: 'var(--text-light)',
                           margin: '6px 0 4px',
                           fontWeight: 500,
                         }}
@@ -609,15 +609,15 @@ export default function ChatWidget() {
                           maxWidth: '82%',
                           padding: msg.image && !msg.text ? '4px' : '8px 12px',
                           borderRadius: isMe ? '16px 16px 4px 16px' : '16px 16px 16px 4px',
-                          background: isMe ? 'linear-gradient(135deg, var(--primary), var(--primary-hover))' : '#ffffff',
-                          color: isMe ? '#ffffff' : '#0f172a',
+                          background: isMe ? 'linear-gradient(135deg, var(--primary), var(--primary-hover))' : 'var(--surface)',
+                          color: isMe ? '#ffffff' : 'var(--ink)',
                           fontSize: 13,
                           lineHeight: 1.45,
                           wordBreak: 'break-word',
                           boxShadow: isMe
                             ? '0 2px 6px rgba(41, 82, 217,0.25)'
                             : '0 1px 3px rgba(0,0,0,0.06)',
-                          border: isMe ? 'none' : '1px solid #e2e8f0',
+                          border: isMe ? 'none' : '1px solid var(--line)',
                         }}
                       >
                         {/* 1. Hiển thị hình ảnh đính kèm nếu có */}
@@ -656,7 +656,7 @@ export default function ChatWidget() {
                                 border: isMe ? '1px solid rgba(255,255,255,0.3)' : `1px solid ${fileMeta.border}`,
                                 borderRadius: 12,
                                 textDecoration: 'none',
-                                color: isMe ? '#ffffff' : '#0f172a',
+                                color: isMe ? '#ffffff' : 'var(--ink)',
                                 transition: 'all 0.15s ease',
                               }}
                               title="Bấm để tải tệp về máy"
@@ -666,7 +666,7 @@ export default function ChatWidget() {
                                   width: 34,
                                   height: 34,
                                   borderRadius: 8,
-                                  background: isMe ? '#ffffff' : fileMeta.color,
+                                  background: isMe ? 'var(--surface)' : fileMeta.color,
                                   color: isMe ? 'var(--primary)' : '#ffffff',
                                   display: 'flex',
                                   alignItems: 'center',
@@ -687,7 +687,7 @@ export default function ChatWidget() {
                                     whiteSpace: 'nowrap',
                                     overflow: 'hidden',
                                     textOverflow: 'ellipsis',
-                                    color: isMe ? '#ffffff' : '#0f172a',
+                                    color: isMe ? '#ffffff' : 'var(--ink)',
                                   }}
                                 >
                                   {msg.attachment.name}
@@ -695,7 +695,7 @@ export default function ChatWidget() {
                                 <div
                                   style={{
                                     fontSize: 10.5,
-                                    color: isMe ? 'rgba(255,255,255,0.85)' : '#64748b',
+                                    color: isMe ? 'rgba(255,255,255,0.85)' : 'var(--ink-soft)',
                                     marginTop: 1,
                                     display: 'flex',
                                     alignItems: 'center',
@@ -727,8 +727,8 @@ export default function ChatWidget() {
             <div
               style={{
                 padding: '6px 12px',
-                background: '#f1f5f9',
-                borderTop: '1px solid #e2e8f0',
+                background: 'var(--bg-subtle)',
+                borderTop: '1px solid var(--line)',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'space-between',
@@ -740,18 +740,18 @@ export default function ChatWidget() {
                   <img
                     src={filePreview.previewUrl}
                     alt="Chuẩn bị gửi"
-                    style={{ width: 40, height: 40, borderRadius: 8, objectFit: 'cover', border: '1px solid #cbd5e1' }}
+                    style={{ width: 40, height: 40, borderRadius: 8, objectFit: 'cover', border: '1px solid var(--line-strong)' }}
                   />
-                  <span style={{ fontSize: 12, color: '#334155', fontWeight: 600 }}>Ảnh đính kèm sẵn sàng gửi</span>
+                  <span style={{ fontSize: 12, color: 'var(--ink-2)', fontWeight: 600 }}>Ảnh đính kèm sẵn sàng gửi</span>
                 </div>
               ) : (
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0 }}>
                   <span style={{ fontSize: 20 }}>{getFileMeta(filePreview.name).icon}</span>
                   <div style={{ minWidth: 0 }}>
-                    <div style={{ fontSize: 12, fontWeight: 700, color: '#0f172a', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                    <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--ink)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                       {filePreview.name}
                     </div>
-                    <div style={{ fontSize: 10.5, color: '#64748b' }}>
+                    <div style={{ fontSize: 10.5, color: 'var(--ink-soft)' }}>
                       {formatFileSize(filePreview.size)} • {getFileMeta(filePreview.name).label}
                     </div>
                   </div>
@@ -788,10 +788,10 @@ export default function ChatWidget() {
                 left: 10,
                 right: 10,
                 height: 220,
-                background: '#ffffff',
+                background: 'var(--surface)',
                 borderRadius: 14,
                 boxShadow: '0 8px 30px rgba(0,0,0,0.18)',
-                border: '1px solid #e2e8f0',
+                border: '1px solid var(--line)',
                 display: 'flex',
                 flexDirection: 'column',
                 overflow: 'hidden',
@@ -802,18 +802,18 @@ export default function ChatWidget() {
               <div
                 style={{
                   padding: '8px 12px',
-                  background: '#f8fafc',
-                  borderBottom: '1px solid #e2e8f0',
+                  background: 'var(--surface-2)',
+                  borderBottom: '1px solid var(--line)',
                   display: 'flex',
                   justifyContent: 'space-between',
                   alignItems: 'center',
                 }}
               >
-                <span style={{ fontSize: 12, fontWeight: 700, color: '#334155' }}>Bộ biểu tượng cảm xúc</span>
+                <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--ink-2)' }}>Bộ biểu tượng cảm xúc</span>
                 <button
                   type="button"
                   onClick={() => setShowEmojiPicker(false)}
-                  style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: '#94a3b8', fontSize: 14 }}
+                  style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--text-light)', fontSize: 14 }}
                 >
                   ✕
                 </button>
@@ -821,7 +821,7 @@ export default function ChatWidget() {
               <div style={{ flex: 1, overflowY: 'auto', padding: '8px 10px' }}>
                 {EMOJI_CATEGORIES.map((cat) => (
                   <div key={cat.name} style={{ marginBottom: 10 }}>
-                    <div style={{ fontSize: 11, fontWeight: 700, color: '#64748b', marginBottom: 4 }}>
+                    <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--ink-soft)', marginBottom: 4 }}>
                       {cat.name}
                     </div>
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(8, 1fr)', gap: 4 }}>
@@ -839,7 +839,7 @@ export default function ChatWidget() {
                             borderRadius: 6,
                             transition: 'background 0.1s ease',
                           }}
-                          onMouseEnter={(e) => (e.currentTarget.style.background = '#f1f5f9')}
+                          onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--bg-subtle)')}
                           onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
                         >
                           {emoji}
@@ -857,8 +857,8 @@ export default function ChatWidget() {
             onSubmit={handleSendMessage}
             style={{
               padding: '8px 10px',
-              background: '#ffffff',
-              borderTop: '1px solid #f1f5f9',
+              background: 'var(--surface)',
+              borderTop: '1px solid var(--bg-subtle)',
               display: 'flex',
               alignItems: 'center',
               gap: 6,
@@ -881,19 +881,19 @@ export default function ChatWidget() {
                 width: 32,
                 height: 32,
                 borderRadius: '50%',
-                background: '#f1f5f9',
+                background: 'var(--bg-subtle)',
                 border: 'none',
                 cursor: 'pointer',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
                 fontSize: 16,
-                color: '#475569',
+                color: 'var(--ink-2)',
                 flexShrink: 0,
                 transition: 'all 0.15s ease',
               }}
-              onMouseEnter={(e) => (e.currentTarget.style.background = '#e2e8f0')}
-              onMouseLeave={(e) => (e.currentTarget.style.background = '#f1f5f9')}
+              onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--line)')}
+              onMouseLeave={(e) => (e.currentTarget.style.background = 'var(--bg-subtle)')}
             >
               📎
             </button>
@@ -908,7 +908,7 @@ export default function ChatWidget() {
                 width: 32,
                 height: 32,
                 borderRadius: '50%',
-                background: showEmojiPicker ? 'var(--primary-light)' : '#f1f5f9',
+                background: showEmojiPicker ? 'var(--primary-light)' : 'var(--bg-subtle)',
                 border: 'none',
                 cursor: 'pointer',
                 display: 'flex',
@@ -935,10 +935,10 @@ export default function ChatWidget() {
                 flex: 1,
                 padding: '8px 12px',
                 borderRadius: 18,
-                border: '1px solid #e2e8f0',
+                border: '1px solid var(--line)',
                 fontSize: 13,
                 outline: 'none',
-                background: sending ? '#f1f5f9' : '#f8fafc',
+                background: sending ? 'var(--bg-subtle)' : 'var(--surface-2)',
                 minWidth: 0,
               }}
             />
@@ -951,8 +951,8 @@ export default function ChatWidget() {
                 width: 32,
                 height: 32,
                 borderRadius: '50%',
-                background: inputText.trim() || selectedRawFile ? 'var(--primary)' : '#e2e8f0',
-                color: inputText.trim() || selectedRawFile ? '#ffffff' : '#94a3b8',
+                background: inputText.trim() || selectedRawFile ? 'var(--primary)' : 'var(--line)',
+                color: inputText.trim() || selectedRawFile ? '#ffffff' : 'var(--text-light)',
                 border: 'none',
                 cursor: inputText.trim() || selectedRawFile ? 'pointer' : 'default',
                 display: 'flex',
@@ -976,10 +976,10 @@ export default function ChatWidget() {
             maxWidth: 'calc(100vw - 40px)',
             height: 530,
             maxHeight: 'calc(100vh - 80px)',
-            background: '#ffffff',
+            background: 'var(--surface)',
             borderRadius: 16,
             boxShadow: '0 16px 40px rgba(0,0,0,0.14), 0 4px 12px rgba(0,0,0,0.06)',
-            border: '1px solid #e2e8f0',
+            border: '1px solid var(--line)',
             display: 'flex',
             flexDirection: 'column',
             overflow: 'hidden',
@@ -990,14 +990,14 @@ export default function ChatWidget() {
           <div
             style={{
               padding: '12px 14px 10px',
-              background: '#ffffff',
-              borderBottom: '1px solid #f1f5f9',
+              background: 'var(--surface)',
+              borderBottom: '1px solid var(--bg-subtle)',
             }}
           >
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                 <span style={{ fontSize: 16 }}>💬</span>
-                <h4 style={{ margin: 0, fontSize: 15, fontWeight: 800, color: '#0f172a' }}>
+                <h4 style={{ margin: 0, fontSize: 15, fontWeight: 800, color: 'var(--ink)' }}>
                   {user.role === 'teacher' ? 'Học sinh' : 'Giáo viên'}
                 </h4>
                 {totalUnread > 0 && (
@@ -1018,13 +1018,13 @@ export default function ChatWidget() {
                 {onlineCount > 0 && (
                   <span
                     style={{
-                      background: '#ecfdf5',
+                      background: 'var(--success-bg)',
                       color: '#059669',
                       fontSize: 11,
                       fontWeight: 700,
                       padding: '1px 6px',
                       borderRadius: 10,
-                      border: '1px solid #a7f3d0',
+                      border: '1px solid var(--success-border)',
                       display: 'inline-flex',
                       alignItems: 'center',
                       gap: 4,
@@ -1053,7 +1053,7 @@ export default function ChatWidget() {
                   background: 'transparent',
                   border: 'none',
                   fontSize: 16,
-                  color: '#94a3b8',
+                  color: 'var(--text-light)',
                   cursor: 'pointer',
                   padding: '2px 6px',
                   borderRadius: 4,
@@ -1074,9 +1074,9 @@ export default function ChatWidget() {
                   width: '100%',
                   padding: '6px 10px 6px 26px',
                   borderRadius: 12,
-                  border: '1px solid #e2e8f0',
+                  border: '1px solid var(--line)',
                   fontSize: 12,
-                  background: '#f8fafc',
+                  background: 'var(--surface-2)',
                   outline: 'none',
                   boxSizing: 'border-box',
                 }}
@@ -1088,7 +1088,7 @@ export default function ChatWidget() {
                   top: '50%',
                   transform: 'translateY(-50%)',
                   fontSize: 11,
-                  color: '#94a3b8',
+                  color: 'var(--text-light)',
                 }}
               >
                 🔍
@@ -1108,8 +1108,8 @@ export default function ChatWidget() {
                   fontSize: 11.5,
                   fontWeight: 700,
                   cursor: 'pointer',
-                  background: filterTab === 'all' ? 'var(--primary-light)' : '#f1f5f9',
-                  color: filterTab === 'all' ? 'var(--primary)' : '#64748b',
+                  background: filterTab === 'all' ? 'var(--primary-light)' : 'var(--bg-subtle)',
+                  color: filterTab === 'all' ? 'var(--primary)' : 'var(--ink-soft)',
                 }}
               >
                 Tất cả ({contacts.length})
@@ -1125,8 +1125,8 @@ export default function ChatWidget() {
                   fontSize: 11.5,
                   fontWeight: 700,
                   cursor: 'pointer',
-                  background: filterTab === 'online' ? '#ecfdf5' : '#f1f5f9',
-                  color: filterTab === 'online' ? '#059669' : '#64748b',
+                  background: filterTab === 'online' ? 'var(--success-bg)' : 'var(--bg-subtle)',
+                  color: filterTab === 'online' ? '#059669' : 'var(--ink-soft)',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
@@ -1138,7 +1138,7 @@ export default function ChatWidget() {
                     width: 5,
                     height: 5,
                     borderRadius: '50%',
-                    background: filterTab === 'online' ? '#10b981' : '#94a3b8',
+                    background: filterTab === 'online' ? '#10b981' : 'var(--text-light)',
                   }}
                 />
                 Online ({onlineCount})
@@ -1149,9 +1149,9 @@ export default function ChatWidget() {
           {/* Danh sách học sinh */}
           <div style={{ flex: 1, overflowY: 'auto', padding: '2px 0' }}>
             {filteredContacts.length === 0 ? (
-              <div style={{ padding: '24px 12px', textAlign: 'center', color: '#94a3b8' }}>
+              <div style={{ padding: '24px 12px', textAlign: 'center', color: 'var(--text-light)' }}>
                 <div style={{ fontSize: 24, marginBottom: 4 }}>👥</div>
-                <div style={{ fontSize: 12, fontWeight: 600, color: '#475569' }}>
+                <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--ink-2)' }}>
                   {filterTab === 'online' ? 'Chưa có học sinh nào online' : 'Không tìm thấy'}
                 </div>
               </div>
@@ -1170,18 +1170,18 @@ export default function ChatWidget() {
                       activePartner?.id === contact.id
                         ? 'var(--primary-light)'
                         : contact.unreadCount > 0
-                        ? '#fff1f2'
-                        : '#ffffff',
+                        ? 'var(--danger-bg)'
+                        : 'var(--surface)',
                     borderLeft: contact.unreadCount > 0 ? '3px solid #ef4444' : '3px solid transparent',
-                    borderBottom: '1px solid #f8fafc',
+                    borderBottom: '1px solid var(--surface-2)',
                     transition: 'all 0.15s ease',
                   }}
                   onMouseEnter={(e) => {
-                    if (activePartner?.id !== contact.id) e.currentTarget.style.background = '#f8fafc';
+                    if (activePartner?.id !== contact.id) e.currentTarget.style.background = 'var(--surface-2)';
                   }}
                   onMouseLeave={(e) => {
                     if (activePartner?.id !== contact.id)
-                      e.currentTarget.style.background = contact.unreadCount > 0 ? '#fff1f2' : '#ffffff';
+                      e.currentTarget.style.background = contact.unreadCount > 0 ? 'var(--danger-bg)' : 'var(--surface)';
                   }}
                 >
                   {/* Avatar + 🟢 Dấu chấm xanh lá cây */}
@@ -1217,7 +1217,7 @@ export default function ChatWidget() {
                           height: 11,
                           borderRadius: '50%',
                           background: '#22c55e',
-                          border: '2px solid #ffffff',
+                          border: '2px solid var(--surface)',
                           boxShadow: '0 0 6px rgba(34, 197, 94, 0.9)',
                         }}
                       />
@@ -1231,8 +1231,8 @@ export default function ChatWidget() {
                           width: 9,
                           height: 9,
                           borderRadius: '50%',
-                          background: '#cbd5e1',
-                          border: '1.5px solid #ffffff',
+                          background: 'var(--line-strong)',
+                          border: '1.5px solid var(--surface)',
                         }}
                       />
                     )}
@@ -1245,7 +1245,7 @@ export default function ChatWidget() {
                         style={{
                           fontWeight: contact.unreadCount > 0 ? 800 : 700,
                           fontSize: 13,
-                          color: '#0f172a',
+                          color: 'var(--ink)',
                           whiteSpace: 'nowrap',
                           overflow: 'hidden',
                           textOverflow: 'ellipsis',
@@ -1282,14 +1282,14 @@ export default function ChatWidget() {
 
                     <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginTop: 1 }}>
                       {contact.className && (
-                        <span style={{ fontSize: 10.5, fontWeight: 600, color: '#64748b' }}>
+                        <span style={{ fontSize: 10.5, fontWeight: 600, color: 'var(--ink-soft)' }}>
                           Lớp {contact.className} •
                         </span>
                       )}
                       <span
                         style={{
                           fontSize: 10.5,
-                          color: contact.unreadCount > 0 ? '#ef4444' : contact.isOnline ? '#16a34a' : '#94a3b8',
+                          color: contact.unreadCount > 0 ? '#ef4444' : contact.isOnline ? '#16a34a' : 'var(--text-light)',
                           fontWeight: contact.unreadCount > 0 ? 700 : contact.isOnline ? 700 : 400,
                           whiteSpace: 'nowrap',
                           overflow: 'hidden',
@@ -1318,7 +1318,7 @@ export default function ChatWidget() {
             height: 48,
             padding: '0 16px',
             borderRadius: 24,
-            background: 'var(--ink)',
+            background: 'var(--contrast-bg)',
             color: '#ffffff',
             border: 'none',
             cursor: 'pointer',
@@ -1411,8 +1411,8 @@ export default function ChatWidget() {
                 width: 32,
                 height: 32,
                 borderRadius: '50%',
-                background: '#ffffff',
-                color: '#0f172a',
+                background: 'var(--surface)',
+                color: 'var(--ink)',
                 border: 'none',
                 cursor: 'pointer',
                 fontSize: 16,

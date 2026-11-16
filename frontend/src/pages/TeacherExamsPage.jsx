@@ -1887,7 +1887,7 @@ export default function TeacherExamsPage() {
         <div className="formula-batch-toolbar">
           <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
             <span style={{ fontSize: 15 }}>📐</span>
-            <span style={{ fontWeight: 700, fontSize: 13, color: '#1e293b' }}>
+            <span style={{ fontWeight: 700, fontSize: 13, color: 'var(--ink)' }}>
               Đã chọn <strong style={{ color: 'var(--primary)' }}>{selectedFormulaKeys.length}</strong> CT
             </span>
             {selectedFormulaSizes.length > 0 && (
@@ -1911,7 +1911,7 @@ export default function TeacherExamsPage() {
             )}
           </div>
 
-          <div style={{ height: 18, width: 1, background: '#e2e8f0', flexShrink: 0 }} />
+          <div style={{ height: 18, width: 1, background: 'var(--line)', flexShrink: 0 }} />
 
           <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
             {FORMULA_SIZE_PRESETS.map((preset) => {
@@ -1931,7 +1931,7 @@ export default function TeacherExamsPage() {
             })}
           </div>
 
-          <div style={{ height: 18, width: 1, background: '#cbd5e1', flexShrink: 0 }} />
+          <div style={{ height: 18, width: 1, background: 'var(--line-strong)', flexShrink: 0 }} />
 
           <form
             style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}
@@ -1956,9 +1956,9 @@ export default function TeacherExamsPage() {
                 fontSize: 12.5,
                 fontWeight: 600,
                 borderRadius: 20,
-                background: '#f8fafc',
-                color: '#0f172a',
-                border: '1.5px solid #cbd5e1',
+                background: 'var(--surface-2)',
+                color: 'var(--ink)',
+                border: '1.5px solid var(--line-strong)',
               }}
             />
             <button
@@ -1981,14 +1981,14 @@ export default function TeacherExamsPage() {
             </button>
           </form>
 
-          <div style={{ height: 18, width: 1, background: '#cbd5e1', flexShrink: 0 }} />
+          <div style={{ height: 18, width: 1, background: 'var(--line-strong)', flexShrink: 0 }} />
 
           <button
             type="button"
             style={{
-              background: '#fef2f2',
+              background: 'var(--danger-bg)',
               color: '#dc2626',
-              border: '1.5px solid #fecaca',
+              border: '1.5px solid var(--danger-border)',
               borderRadius: 20,
               fontSize: 12,
               padding: '4px 10px',

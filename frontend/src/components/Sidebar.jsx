@@ -1,6 +1,7 @@
 import { NavLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import BrandMark from './BrandMark';
+import { ThemeSwitch } from './PreferenceSwitches';
 import { APP_NAME, APP_TAGLINE } from '../config/brand';
 
 // Bộ icon nét (stroke) 24x24 dùng cho menu - thay cho emoji để giao diện
@@ -174,6 +175,8 @@ export default function Sidebar() {
             </div>
           </div>
         </div>
+
+        <ThemeSwitch label="Giao diện tối" withLabel className="sidebar-theme" />
 
         <div className="sidebar-actions">
           <NavLink

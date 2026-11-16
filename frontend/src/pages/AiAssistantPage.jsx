@@ -200,8 +200,8 @@ export default function AiAssistantPage() {
                   fontSize: 11,
                   padding: '2px 8px',
                   borderRadius: 12,
-                  background: '#e0e7ff',
-                  color: '#4338ca',
+                  background: 'var(--primary-light)',
+                  color: 'var(--primary-strong)',
                   fontWeight: 600,
                 }}
               >
@@ -224,7 +224,7 @@ export default function AiAssistantPage() {
               display: 'flex',
               alignItems: 'center',
               gap: 6,
-              borderColor: '#e2e8f0',
+              borderColor: 'var(--line)',
             }}
             title="Xem lịch sử các đoạn chat trước đó"
           >
@@ -239,7 +239,7 @@ export default function AiAssistantPage() {
               display: 'flex',
               alignItems: 'center',
               gap: 6,
-              borderColor: '#e2e8f0',
+              borderColor: 'var(--line)',
             }}
             title="Bắt đầu phiên hỏi đáp mới"
           >
@@ -259,7 +259,7 @@ export default function AiAssistantPage() {
           padding: 0,
           borderRadius: 14,
           boxShadow: '0 8px 30px rgba(0,0,0,0.06)',
-          border: '1px solid #e2e8f0',
+          border: '1px solid var(--line)',
           overflow: 'hidden',
         }}
       >
@@ -269,19 +269,19 @@ export default function AiAssistantPage() {
             style={{
               width: 260,
               flexShrink: 0,
-              borderRight: '1px solid #e2e8f0',
-              background: '#f8fafc',
+              borderRight: '1px solid var(--line)',
+              background: 'var(--surface-2)',
               display: 'flex',
               flexDirection: 'column',
               overflow: 'hidden',
             }}
           >
-            <div style={{ padding: '12px 14px', borderBottom: '1px solid #e2e8f0', fontSize: 12.5, fontWeight: 700, color: '#64748b' }}>
+            <div style={{ padding: '12px 14px', borderBottom: '1px solid var(--line)', fontSize: 12.5, fontWeight: 700, color: 'var(--ink-soft)' }}>
               Lịch sử đoạn chat
             </div>
             <div style={{ flex: 1, overflowY: 'auto', padding: 8 }}>
               {history.length === 0 ? (
-                <div style={{ padding: 16, textAlign: 'center', fontSize: 12.5, color: '#94a3b8' }}>
+                <div style={{ padding: 16, textAlign: 'center', fontSize: 12.5, color: 'var(--text-light)' }}>
                   Chưa có đoạn chat nào được lưu
                 </div>
               ) : (
@@ -297,20 +297,20 @@ export default function AiAssistantPage() {
                         borderRadius: 8,
                         cursor: 'pointer',
                         marginBottom: 4,
-                        background: conv.id === activeConversationId ? '#e0e7ff' : 'transparent',
+                        background: conv.id === activeConversationId ? 'var(--primary-light)' : 'transparent',
                         display: 'flex',
                         justifyContent: 'space-between',
                         alignItems: 'flex-start',
                         gap: 6,
                       }}
-                      onMouseEnter={(e) => { if (conv.id !== activeConversationId) e.currentTarget.style.background = '#f1f5f9'; }}
+                      onMouseEnter={(e) => { if (conv.id !== activeConversationId) e.currentTarget.style.background = 'var(--bg-subtle)'; }}
                       onMouseLeave={(e) => { if (conv.id !== activeConversationId) e.currentTarget.style.background = 'transparent'; }}
                     >
                       <div style={{ minWidth: 0 }}>
-                        <div style={{ fontSize: 13, fontWeight: 600, color: '#1e293b', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--ink)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                           {conv.title}
                         </div>
-                        <div style={{ fontSize: 11, color: '#94a3b8', marginTop: 2 }}>
+                        <div style={{ fontSize: 11, color: 'var(--text-light)', marginTop: 2 }}>
                           {new Date(conv.updatedAt).toLocaleString('vi-VN')}
                         </div>
                       </div>
@@ -335,7 +335,7 @@ export default function AiAssistantPage() {
             display: 'flex',
             flexDirection: 'column',
             minHeight: 0,
-            background: '#f8fafc',
+            background: 'var(--surface-2)',
             overflow: 'hidden',
           }}
       >
@@ -388,7 +388,7 @@ export default function AiAssistantPage() {
                   <div
                     style={{
                       fontSize: 11,
-                      color: '#94a3b8',
+                      color: 'var(--text-light)',
                       marginBottom: 4,
                       paddingLeft: isUser ? 0 : 4,
                       paddingRight: isUser ? 4 : 0,
@@ -401,14 +401,14 @@ export default function AiAssistantPage() {
                     style={{
                       padding: '12px 18px',
                       borderRadius: isUser ? '16px 4px 16px 16px' : '4px 16px 16px 16px',
-                      background: isUser ? 'var(--primary)' : '#ffffff',
-                      color: isUser ? '#ffffff' : '#1e293b',
+                      background: isUser ? 'var(--primary)' : 'var(--surface)',
+                      color: isUser ? '#ffffff' : 'var(--ink)',
                       fontSize: 14.5,
                       lineHeight: 1.6,
                       boxShadow: isUser
                         ? '0 4px 12px rgba(41, 82, 217, 0.25)'
                         : '0 2px 8px rgba(0, 0, 0, 0.04), 0 1px 2px rgba(0, 0, 0, 0.06)',
-                      border: isUser ? 'none' : '1px solid #e2e8f0',
+                      border: isUser ? 'none' : '1px solid var(--line)',
                       wordBreak: 'break-word',
                     }}
                   >
@@ -432,7 +432,7 @@ export default function AiAssistantPage() {
                         style={{
                           background: 'none',
                           border: 'none',
-                          color: copiedIndex === idx ? '#16a34a' : '#94a3b8',
+                          color: copiedIndex === idx ? '#16a34a' : 'var(--text-light)',
                           fontSize: 11.5,
                           cursor: 'pointer',
                           display: 'flex',
@@ -442,8 +442,8 @@ export default function AiAssistantPage() {
                           borderRadius: 4,
                           transition: 'color 0.15s',
                         }}
-                        onMouseEnter={(e) => (e.currentTarget.style.color = '#475569')}
-                        onMouseLeave={(e) => (e.currentTarget.style.color = copiedIndex === idx ? '#16a34a' : '#94a3b8')}
+                        onMouseEnter={(e) => (e.currentTarget.style.color = 'var(--ink-2)')}
+                        onMouseLeave={(e) => (e.currentTarget.style.color = copiedIndex === idx ? '#16a34a' : 'var(--text-light)')}
                         title="Sao chép câu hỏi"
                       >
                         <UiIcon name={copiedIndex === idx ? 'check' : 'file'} size={13} /> {copiedIndex === idx ? 'Đã sao chép' : 'Sao chép'}
@@ -480,7 +480,7 @@ export default function AiAssistantPage() {
                         style={{
                           background: 'none',
                           border: 'none',
-                          color: copiedIndex === idx ? '#16a34a' : '#64748b',
+                          color: copiedIndex === idx ? '#16a34a' : 'var(--ink-soft)',
                           fontSize: 11.5,
                           cursor: 'pointer',
                           display: 'flex',
@@ -490,8 +490,8 @@ export default function AiAssistantPage() {
                           borderRadius: 4,
                           transition: 'color 0.15s',
                         }}
-                        onMouseEnter={(e) => (e.currentTarget.style.color = '#1e293b')}
-                        onMouseLeave={(e) => (e.currentTarget.style.color = copiedIndex === idx ? '#16a34a' : '#64748b')}
+                        onMouseEnter={(e) => (e.currentTarget.style.color = 'var(--ink)')}
+                        onMouseLeave={(e) => (e.currentTarget.style.color = copiedIndex === idx ? '#16a34a' : 'var(--ink-soft)')}
                         title="Sao chép nội dung câu trả lời"
                       >
                         <UiIcon name={copiedIndex === idx ? 'check' : 'file'} size={13} /> {copiedIndex === idx ? 'Đã sao chép' : 'Sao chép'}
@@ -553,8 +553,8 @@ export default function AiAssistantPage() {
                 style={{
                   padding: '12px 18px',
                   borderRadius: '4px 16px 16px 16px',
-                  background: '#ffffff',
-                  border: '1px solid #e2e8f0',
+                  background: 'var(--surface)',
+                  border: '1px solid var(--line)',
                   color: '#6366f1',
                   fontSize: 14,
                   display: 'flex',
@@ -576,8 +576,8 @@ export default function AiAssistantPage() {
         <div
           style={{
             padding: '12px 16px',
-            background: '#ffffff',
-            borderTop: '1px solid #edf2f7',
+            background: 'var(--surface)',
+            borderTop: '1px solid var(--bg-subtle)',
             display: 'flex',
             gap: 10,
             alignItems: 'flex-end',
@@ -596,7 +596,7 @@ export default function AiAssistantPage() {
                 width: '100%',
                 padding: '10px 14px',
                 borderRadius: 10,
-                border: '1.5px solid #cbd5e1',
+                border: '1.5px solid var(--line-strong)',
                 fontSize: 14,
                 lineHeight: 1.4,
                 resize: 'none',
@@ -606,13 +606,13 @@ export default function AiAssistantPage() {
                 transition: 'border-color 0.2s',
               }}
               onFocus={(e) => (e.target.style.borderColor = '#6366f1')}
-              onBlur={(e) => (e.target.style.borderColor = '#cbd5e1')}
+              onBlur={(e) => (e.target.style.borderColor = 'var(--line-strong)')}
               disabled={loading}
             />
             <div
               style={{
                 fontSize: 11,
-                color: '#94a3b8',
+                color: 'var(--text-light)',
                 marginTop: 2,
               }}
             >
@@ -628,7 +628,7 @@ export default function AiAssistantPage() {
               padding: '0 20px',
               borderRadius: 10,
               background:
-                !inputText.trim() || loading ? '#c5cddb' : 'var(--primary)',
+                !inputText.trim() || loading ? 'var(--line-strong)' : 'var(--primary)',
               color: '#ffffff',
               border: 'none',
               fontWeight: 600,

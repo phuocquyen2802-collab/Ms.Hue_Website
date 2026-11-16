@@ -1,0 +1,243 @@
+// Chữ song ngữ (Việt / Anh) cho các trang công khai: trang giới thiệu và
+// trang đăng nhập. Ngôn ngữ chọn bằng công tắc VI/EN (PreferencesContext).
+// Các trang bên trong (sau khi đăng nhập) vẫn dùng tiếng Việt.
+import { APP_NAME, APP_TAGLINE } from '../config/brand';
+
+export const TAGLINE = {
+  vi: APP_TAGLINE,
+  en: 'Learn math with AI',
+};
+
+export const SWITCH_TEXT = {
+  vi: { darkMode: 'Chế độ tối', english: 'Tiếng Anh', toOther: 'Chuyển sang tiếng Anh' },
+  en: { darkMode: 'Dark mode', english: 'English', toOther: 'Switch to Vietnamese' },
+};
+
+export const LANDING_TEXT = {
+  vi: {
+    pageTitle: `${APP_NAME} - ${APP_TAGLINE}`,
+    homeLabel: `${APP_NAME} - Trang chủ`,
+    navLabel: 'Mục trên trang',
+    nav: { features: 'Tính năng', how: 'Cách hoạt động', audience: 'Giáo viên và học sinh' },
+    ctaLogin: 'Đăng nhập',
+    ctaDashboard: 'Vào trang của tôi',
+    heroTitle: 'Học toán cùng AI, biết rõ mình cần ôn phần nào.',
+    heroText:
+      'Làm bài trắc nghiệm, xem ngay chuyên đề còn yếu và ôn tập theo lộ trình do AI soạn, giáo viên duyệt.',
+    heroSecondary: 'Xem cách hoạt động',
+    explore: 'Khám phá tính năng',
+    collage: {
+      title: 'Kết quả của tôi',
+      exam: 'Đề 2',
+      attempt: 'Lần 1',
+      topics: [
+        { name: 'Cấp số cộng và cấp số nhân', wrong: 'Sai 60%' },
+        { name: 'Phương trình lượng giác', wrong: 'Sai 40%' },
+      ],
+      stepTopic: 'Phương trình mũ và logarit',
+      stepTheory: 'Lý thuyết cần nắm',
+      stepMistake: 'Quên điều kiện cơ số',
+      aiTitle: 'AI đã phân tích bài làm',
+      aiSub: 'Chờ giáo viên duyệt',
+    },
+    featuresTitle: 'Mọi thứ cần cho một buổi ôn tập có trọng tâm',
+    featuresText: 'Từ lúc giao đề đến lúc học sinh ôn xong phần còn yếu, tất cả nằm trong một phần mềm.',
+    features: [
+      {
+        icon: 'upload',
+        title: 'Nhập đề từ file Word',
+        text: 'Tải đề trắc nghiệm có công thức MathType, hệ thống tách câu hỏi và giữ công thức hiển thị rõ nét. Đính kèm được file đáp án chi tiết.',
+      },
+      {
+        icon: 'check',
+        title: 'Làm bài, chấm điểm ngay',
+        text: 'Học sinh làm bài trên web. Nộp xong biết điểm, xem lại từng câu với đáp án đúng và làm lại nếu muốn.',
+      },
+      {
+        icon: 'chart',
+        title: 'Thống kê theo chuyên đề',
+        text: 'Tỉ lệ làm sai của từng chuyên đề, theo từng lần làm, từng học sinh và cả lớp, để thấy ngay phần cần ôn.',
+      },
+      {
+        icon: 'route',
+        title: 'Lộ trình ôn tập do AI soạn',
+        text: 'AI đọc các câu làm sai, chỉ ra lỗ hổng kiến thức, cách khắc phục và soạn bài tập tương tự cho từng chuyên đề.',
+      },
+      {
+        icon: 'edit',
+        title: 'Giáo viên duyệt trước khi gửi',
+        text: 'Mọi lộ trình và bài tập AI đều chờ giáo viên xem, chỉnh sửa hoặc tạo lại trước khi đến tay học sinh.',
+      },
+      {
+        icon: 'sparkles',
+        title: 'Trợ lý AI giải toán',
+        text: 'Hỏi bất cứ lúc nào: giải chi tiết từng bước, tóm tắt lý thuyết, mẹo bấm máy tính Casio.',
+      },
+    ],
+    howTitle: 'Cách hoạt động',
+    howText: 'Bốn bước, lặp lại sau mỗi lần làm bài.',
+    steps: [
+      { title: 'Giáo viên giao đề', text: 'Tạo đề từ file Word hoặc soạn trực tiếp, rồi giao cho lớp hoặc nhóm học sinh.' },
+      { title: 'Học sinh làm bài', text: 'Làm trắc nghiệm trên web. Nộp bài là có điểm và thống kê theo chuyên đề.' },
+      { title: 'AI phân tích câu sai', text: 'AI chỉ ra lỗ hổng kiến thức sau từng câu sai và soạn lộ trình kèm bài tập tương tự.' },
+      { title: 'Ôn đúng chỗ còn yếu', text: 'Giáo viên duyệt, học sinh nhận lộ trình và luyện tập theo từng chuyên đề.' },
+    ],
+    forTeachersTitle: 'Dành cho giáo viên',
+    forTeachers: [
+      'Tạo đề nhanh từ file Word có công thức Toán',
+      'Theo dõi điểm và chuyên đề yếu của từng học sinh, từng lớp',
+      'Xem lại bài làm, duyệt và chỉnh sửa lộ trình AI trước khi gửi',
+      'Đăng thông báo và trò chuyện với học sinh',
+    ],
+    forStudentsTitle: 'Dành cho học sinh',
+    forStudents: [
+      'Làm các đề được giao, biết điểm ngay khi nộp',
+      'Xem lại từng câu cùng đáp án đúng',
+      'Ôn theo lộ trình riêng cho từng lần làm bài',
+      'Hỏi trợ lý AI khi gặp bài khó',
+    ],
+    ctaTitle: `Bắt đầu học cùng ${APP_NAME}`,
+    ctaSignedIn: (name) => `Bạn đang đăng nhập với tài khoản ${name}.`,
+    ctaGuest: 'Học sinh đăng nhập bằng tài khoản do giáo viên cấp.',
+  },
+
+  en: {
+    pageTitle: `${APP_NAME} - Learn math with AI`,
+    homeLabel: `${APP_NAME} - Home`,
+    navLabel: 'On this page',
+    nav: { features: 'Features', how: 'How it works', audience: 'Teachers and students' },
+    ctaLogin: 'Log in',
+    ctaDashboard: 'Go to my dashboard',
+    heroTitle: 'Learn math with AI and know exactly what to review.',
+    heroText:
+      'Take multiple-choice tests, see your weak topics right away and review with a plan written by AI and approved by your teacher.',
+    heroSecondary: 'See how it works',
+    explore: 'Explore features',
+    collage: {
+      title: 'My results',
+      exam: 'Test 2',
+      attempt: 'Attempt 1',
+      topics: [
+        { name: 'Arithmetic and geometric sequences', wrong: '60% wrong' },
+        { name: 'Trigonometric equations', wrong: '40% wrong' },
+      ],
+      stepTopic: 'Exponential and logarithmic equations',
+      stepTheory: 'Key theory',
+      stepMistake: 'Forgot the condition on the base',
+      aiTitle: 'AI has analysed the test',
+      aiSub: 'Waiting for teacher approval',
+    },
+    featuresTitle: 'Everything a focused review session needs',
+    featuresText: 'From assigning a test to finishing the review of weak topics, it all happens in one app.',
+    features: [
+      {
+        icon: 'upload',
+        title: 'Import tests from Word',
+        text: 'Upload multiple-choice tests written with MathType. The system splits them into questions and keeps every formula sharp. A detailed answer key can be attached.',
+      },
+      {
+        icon: 'check',
+        title: 'Take tests, get graded instantly',
+        text: 'Students take tests on the web. They see their score on submission, review every question against the correct answer and retake it if they want.',
+      },
+      {
+        icon: 'chart',
+        title: 'Statistics by topic',
+        text: 'The error rate of each topic, per attempt, per student and for the whole class, so the parts that need review stand out right away.',
+      },
+      {
+        icon: 'route',
+        title: 'Review plans written by AI',
+        text: 'AI reads the wrong answers, points out the knowledge gaps and how to fix them, and writes similar exercises for each topic.',
+      },
+      {
+        icon: 'edit',
+        title: 'Teacher approval before sending',
+        text: 'Every AI plan and exercise set waits for the teacher to review, edit or regenerate it before it reaches students.',
+      },
+      {
+        icon: 'sparkles',
+        title: 'AI math assistant',
+        text: 'Ask at any time: step-by-step solutions, theory summaries and Casio calculator tips.',
+      },
+    ],
+    howTitle: 'How it works',
+    howText: 'Four steps, repeated after every test.',
+    steps: [
+      { title: 'The teacher assigns a test', text: 'Create a test from a Word file or write it directly, then assign it to a class or a group of students.' },
+      { title: 'Students take the test', text: 'Answer multiple-choice questions on the web. Submitting gives a score and statistics by topic.' },
+      { title: 'AI analyses wrong answers', text: 'AI points out the knowledge gap behind each wrong answer and writes a review plan with similar exercises.' },
+      { title: 'Review where it matters', text: 'The teacher approves, then students receive the plan and practise topic by topic.' },
+    ],
+    forTeachersTitle: 'For teachers',
+    forTeachers: [
+      'Create tests quickly from Word files with math formulas',
+      'Track scores and weak topics of every student and every class',
+      'Review submissions, approve and edit AI plans before sending',
+      'Post announcements and chat with students',
+    ],
+    forStudentsTitle: 'For students',
+    forStudents: [
+      'Take assigned tests and see the score on submission',
+      'Review every question with the correct answer',
+      'Study with a personal plan after each attempt',
+      'Ask the AI assistant when a problem gets hard',
+    ],
+    ctaTitle: `Start learning with ${APP_NAME}`,
+    ctaSignedIn: (name) => `You are signed in as ${name}.`,
+    ctaGuest: 'Students sign in with an account provided by their teacher.',
+  },
+};
+
+export const LOGIN_TEXT = {
+  vi: {
+    backToHome: 'Về trang giới thiệu',
+    back: 'Trang giới thiệu',
+    heroTitle: 'Học toán cùng AI, biết rõ mình cần ôn phần nào.',
+    heroText: `Làm bài trắc nghiệm và nhận kết quả ngay. ${APP_NAME} phân tích các chuyên đề còn yếu, gợi ý lộ trình ôn tập và bài tập tương tự cho từng học sinh.`,
+    plotLabel: 'Đồ thị hàm số y = x mũ 3 trừ 3x với điểm cực đại và cực tiểu',
+    plotMax: 'CĐ',
+    plotMin: 'CT',
+    noteTitle: 'Gợi ý từ AI',
+    noteText: 'Ôn lại cực trị của hàm số.',
+    heroFoot: 'Dành cho giáo viên và học sinh',
+    title: 'Đăng nhập',
+    subtitle: 'Dùng tài khoản do giáo viên hoặc nhà trường cấp.',
+    account: 'Tài khoản hoặc email',
+    accountPlaceholder: 'ten@email.com hoặc tên đăng nhập',
+    password: 'Mật khẩu',
+    passwordPlaceholder: 'Nhập mật khẩu',
+    showPassword: 'Hiện mật khẩu',
+    hidePassword: 'Ẩn mật khẩu',
+    submit: 'Đăng nhập',
+    submitting: 'Đang đăng nhập…',
+    help: 'Học sinh chưa có tài khoản? Liên hệ giáo viên để được cấp.',
+    errorWrong: 'Sai tài khoản hoặc mật khẩu. Kiểm tra lại rồi thử lần nữa.',
+    errorNetwork: 'Không kết nối được máy chủ. Kiểm tra mạng rồi thử lại.',
+  },
+  en: {
+    backToHome: 'Back to the home page',
+    back: 'Home page',
+    heroTitle: 'Learn math with AI and know exactly what to review.',
+    heroText: `Take multiple-choice tests and get results instantly. ${APP_NAME} finds weak topics and suggests a review plan with similar exercises for each student.`,
+    plotLabel: 'Graph of y = x cubed minus 3x with its local maximum and minimum',
+    plotMax: 'Max',
+    plotMin: 'Min',
+    noteTitle: 'AI suggestion',
+    noteText: 'Review the extrema of functions.',
+    heroFoot: 'For teachers and students',
+    title: 'Log in',
+    subtitle: 'Use the account provided by your teacher or school.',
+    account: 'Username or email',
+    accountPlaceholder: 'name@email.com or username',
+    password: 'Password',
+    passwordPlaceholder: 'Enter your password',
+    showPassword: 'Show password',
+    hidePassword: 'Hide password',
+    submit: 'Log in',
+    submitting: 'Logging in…',
+    help: 'No account yet? Students get one from their teacher.',
+    errorWrong: 'Incorrect username or password. Check them and try again.',
+    errorNetwork: 'Cannot reach the server. Check your connection and try again.',
+  },
+};

@@ -8,7 +8,15 @@ import RoundSolidDiagram from './RoundSolidDiagram';
 // (Gemini) chỉ trả về DỮ LIỆU có cấu trúc (công thức hàm số / bảng số liệu),
 // hình được HỆ THỐNG TỰ VẼ LẠI chính xác từ dữ liệu đó, không phải ảnh do
 // AI tạo ra. Component này chọn đúng loại hình để render theo `diagram.type`.
+// Hình vẽ toán luôn vẽ bằng bảng màu sáng (.light-scope). Ở chế độ tối, cả
+// khối hình được đảo màu bằng CSS (.diagram-figure) để nét vẽ thành màu sáng
+// trên nền tối mà vẫn giữ sắc màu của các nét tô đỏ/tím.
 export default function QuestionDiagram({ diagram }) {
+  const figure = renderDiagram(diagram);
+  return figure ? <div className="diagram-figure light-scope">{figure}</div> : null;
+}
+
+function renderDiagram(diagram) {
   if (!diagram || !diagram.type) return null;
 
   if (diagram.type === 'function-graph' && diagram.expression) {

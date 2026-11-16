@@ -7,6 +7,15 @@
     <meta name="description" content="MathInsight AI - Phần mềm học toán cùng AI: làm bài trắc nghiệm, phân tích chuyên đề còn yếu và gợi ý lộ trình ôn tập." />
     <meta name="theme-color" content="#2952d9" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <script>
+      // Áp chế độ tối đã lưu trước khi trang hiện ra (tránh nháy nền sáng).
+      try {
+        if (localStorage.getItem('mi-theme') === 'dark') {
+          document.documentElement.dataset.theme = 'dark';
+          document.querySelector('meta[name="theme-color"]').setAttribute('content', '#0e1525');
+        }
+      } catch (e) {}
+    </script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:ital,wght@0,400;0,500;0,600;0,700;0,800;1,500&display=swap" rel="stylesheet">

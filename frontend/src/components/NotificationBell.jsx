@@ -180,7 +180,7 @@ export default function NotificationBell() {
           id: `announcement-${a.id}`,
           type: 'announcement',
           avatarText: '📢',
-          avatarBg: 'linear-gradient(135deg, var(--primary-hover), var(--primary-strong))',
+          avatarBg: 'linear-gradient(135deg, var(--primary), var(--primary-hover))',
           badgeIcon: '📌',
           badgeBg: 'var(--primary)',
           title: a.authorName,
@@ -280,8 +280,8 @@ export default function NotificationBell() {
           height: 42,
           borderRadius: '50%',
           border: '1px solid var(--line-strong)',
-          background: '#ffffff',
-          color: open ? 'var(--primary)' : '#3a4562',
+          background: 'var(--surface)',
+          color: open ? 'var(--primary)' : 'var(--ink-2)',
           cursor: 'pointer',
           position: 'relative',
           display: 'flex',
@@ -296,7 +296,7 @@ export default function NotificationBell() {
         }}
         onMouseLeave={(e) => {
           e.currentTarget.style.borderColor = 'var(--line-strong)';
-          e.currentTarget.style.color = open ? 'var(--primary)' : '#3a4562';
+          e.currentTarget.style.color = open ? 'var(--primary)' : 'var(--ink-2)';
         }}
       >
         <svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
@@ -320,7 +320,7 @@ export default function NotificationBell() {
               alignItems: 'center',
               justifyContent: 'center',
               padding: '0 5px',
-              border: '2px solid #ffffff',
+              border: '2px solid var(--surface)',
               boxShadow: '0 2px 6px rgba(239, 68, 68, 0.4)',
             }}
           >
@@ -339,8 +339,8 @@ export default function NotificationBell() {
             width: 390,
             maxWidth: 'calc(100vw - 32px)',
             maxHeight: 520,
-            background: '#ffffff',
-            border: '1px solid #e2e8f0',
+            background: 'var(--surface)',
+            border: '1px solid var(--line)',
             borderRadius: 16,
             boxShadow: '0 16px 40px rgba(0,0,0,0.14), 0 4px 12px rgba(0,0,0,0.06)',
             display: 'flex',
@@ -353,12 +353,12 @@ export default function NotificationBell() {
           <div
             style={{
               padding: '16px 18px 12px',
-              borderBottom: '1px solid #f1f5f9',
-              background: '#ffffff',
+              borderBottom: '1px solid var(--bg-subtle)',
+              background: 'var(--surface)',
             }}
           >
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-              <h2 style={{ margin: 0, fontSize: 20, fontWeight: 800, color: '#0f172a' }}>Thông báo</h2>
+              <h2 style={{ margin: 0, fontSize: 20, fontWeight: 800, color: 'var(--ink)' }}>Thông báo</h2>
               {unreadCount > 0 && (
                 <button
                   type="button"
@@ -384,7 +384,7 @@ export default function NotificationBell() {
 
             {/* Ô tìm kiếm thông báo theo tên/nội dung */}
             <div style={{ position: 'relative', marginBottom: 10 }}>
-              <span style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', fontSize: 13, color: '#94a3b8' }}>🔍</span>
+              <span style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', fontSize: 13, color: 'var(--text-light)' }}>🔍</span>
               <input
                 type="text"
                 value={searchText}
@@ -396,8 +396,8 @@ export default function NotificationBell() {
                   padding: '7px 10px 7px 30px',
                   fontSize: 13,
                   borderRadius: 20,
-                  border: '1px solid #e2e8f0',
-                  background: '#f8fafc',
+                  border: '1px solid var(--line)',
+                  background: 'var(--surface-2)',
                   outline: 'none',
                 }}
               />
@@ -414,7 +414,7 @@ export default function NotificationBell() {
                     background: 'none',
                     border: 'none',
                     cursor: 'pointer',
-                    color: '#94a3b8',
+                    color: 'var(--text-light)',
                     fontSize: 13,
                   }}
                 >
@@ -435,8 +435,8 @@ export default function NotificationBell() {
                   fontSize: 13,
                   fontWeight: 700,
                   cursor: 'pointer',
-                  background: tab === 'all' ? 'var(--primary-light, var(--primary-light))' : '#f1f5f9',
-                  color: tab === 'all' ? 'var(--primary, var(--primary))' : '#64748b',
+                  background: tab === 'all' ? 'var(--primary-light, var(--primary-light))' : 'var(--bg-subtle)',
+                  color: tab === 'all' ? 'var(--primary, var(--primary))' : 'var(--ink-soft)',
                   transition: 'all 0.15s ease',
                 }}
               >
@@ -452,8 +452,8 @@ export default function NotificationBell() {
                   fontSize: 13,
                   fontWeight: 700,
                   cursor: 'pointer',
-                  background: tab === 'unread' ? 'var(--primary-light, var(--primary-light))' : '#f1f5f9',
-                  color: tab === 'unread' ? 'var(--primary, var(--primary))' : '#64748b',
+                  background: tab === 'unread' ? 'var(--primary-light, var(--primary-light))' : 'var(--bg-subtle)',
+                  color: tab === 'unread' ? 'var(--primary, var(--primary))' : 'var(--ink-soft)',
                   transition: 'all 0.15s ease',
                 }}
               >
@@ -465,11 +465,11 @@ export default function NotificationBell() {
           {/* Notification List */}
           <div style={{ flex: 1, overflowY: 'auto', padding: '4px 0' }}>
             {filteredList.length === 0 ? (
-              <div style={{ padding: '40px 20px', textAlign: 'center', color: '#94a3b8' }}>
+              <div style={{ padding: '40px 20px', textAlign: 'center', color: 'var(--text-light)' }}>
                 <div style={{ fontSize: 36, marginBottom: 8 }}>
                   {q ? '🔍' : tab === 'unread' ? '🎉' : '🔔'}
                 </div>
-                <div style={{ fontSize: 14, fontWeight: 600, color: '#334155' }}>
+                <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--ink-2)' }}>
                   {q ? 'Không tìm thấy thông báo phù hợp' : tab === 'unread' ? 'Bạn đã đọc hết thông báo!' : 'Không có thông báo nào'}
                 </div>
                 <div style={{ fontSize: 12, marginTop: 4 }}>
@@ -491,13 +491,13 @@ export default function NotificationBell() {
                     gap: 12,
                     padding: '12px 16px',
                     cursor: 'pointer',
-                    background: n.read ? '#ffffff' : '#f0f7ff',
-                    borderBottom: '1px solid #f8fafc',
+                    background: n.read ? 'var(--surface)' : 'var(--primary-light)',
+                    borderBottom: '1px solid var(--surface-2)',
                     transition: 'background 0.15s ease',
                     position: 'relative',
                   }}
-                  onMouseEnter={(e) => (e.currentTarget.style.background = n.read ? '#f8fafc' : '#e6f0fa')}
-                  onMouseLeave={(e) => (e.currentTarget.style.background = n.read ? '#ffffff' : '#f0f7ff')}
+                  onMouseEnter={(e) => (e.currentTarget.style.background = n.read ? 'var(--surface-2)' : 'var(--primary-light)')}
+                  onMouseLeave={(e) => (e.currentTarget.style.background = n.read ? 'var(--surface)' : 'var(--primary-light)')}
                 >
                   {/* Left Avatar Icon with small badge */}
                   <div style={{ position: 'relative', flexShrink: 0 }}>
@@ -534,7 +534,7 @@ export default function NotificationBell() {
                           justifyContent: 'center',
                           fontSize: 10,
                           fontWeight: 800,
-                          border: '2px solid #ffffff',
+                          border: '2px solid var(--surface)',
                         }}
                       >
                         {n.badgeIcon}
@@ -544,14 +544,14 @@ export default function NotificationBell() {
 
                   {/* Main Content */}
                   <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontSize: 13.5, color: '#1e293b', lineHeight: 1.45, wordBreak: 'break-word' }}>
-                      <strong style={{ fontWeight: 700, color: '#0f172a' }}>{n.title}</strong>{' '}
+                    <div style={{ fontSize: 13.5, color: 'var(--ink)', lineHeight: 1.45, wordBreak: 'break-word' }}>
+                      <strong style={{ fontWeight: 700, color: 'var(--ink)' }}>{n.title}</strong>{' '}
                       <span>{n.desc}</span>
                     </div>
                     <div
                       style={{
                         fontSize: 12,
-                        color: n.read ? '#64748b' : 'var(--primary)',
+                        color: n.read ? 'var(--ink-soft)' : 'var(--primary)',
                         fontWeight: n.read ? 400 : 700,
                         marginTop: 4,
                         display: 'flex',

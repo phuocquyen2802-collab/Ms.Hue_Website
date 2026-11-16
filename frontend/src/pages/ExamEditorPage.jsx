@@ -760,7 +760,7 @@ export default function ExamEditorPage() {
                   padding: '4px 10px',
                   background: selectedStudents.length > 0 ? 'rgba(16,185,129,0.1)' : 'var(--bg-subtle)',
                   borderColor: selectedStudents.length > 0 ? 'rgba(16,185,129,0.3)' : 'var(--border-color)',
-                  color: selectedStudents.length > 0 ? '#065f46' : 'var(--text-muted)',
+                  color: selectedStudents.length > 0 ? 'var(--success-text)' : 'var(--text-muted)',
                 }}
               >
                 👥 Đã giao cho: <strong>{selectedStudents.length}/{students.length} học sinh</strong>
@@ -776,7 +776,7 @@ export default function ExamEditorPage() {
               onClick={() => setIsEditMode(!isEditMode)}
               style={
                 isEditMode
-                  ? { background: '#fef3c7', color: '#92400e', borderColor: '#fde68a', fontWeight: 700 }
+                  ? { background: 'var(--warning-bg)', color: 'var(--warning-text)', borderColor: 'var(--warning-border)', fontWeight: 700 }
                   : { fontWeight: 700 }
               }
             >
@@ -813,7 +813,7 @@ export default function ExamEditorPage() {
               marginTop: 18,
               padding: '12px 16px',
               borderRadius: 'var(--radius-md)',
-              background: '#fffbeb',
+              background: 'var(--warning-bg)',
               border: '1.5px dashed #f59e0b',
               display: 'flex',
               justifyContent: 'space-between',
@@ -824,7 +824,7 @@ export default function ExamEditorPage() {
           >
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
               <span style={{ fontSize: 18 }}>🛠️</span>
-              <span style={{ fontSize: 13, color: '#92400e', fontWeight: 600 }}>
+              <span style={{ fontSize: 13, color: 'var(--warning-text)', fontWeight: 600 }}>
                 Bạn đang ở <strong>Chế độ Chỉnh sửa</strong>: có thể xoá từng câu hỏi, sửa thông tin đề, nạp thêm câu từ file Word và giao lại đề cho học sinh.
               </span>
             </div>
@@ -841,7 +841,7 @@ export default function ExamEditorPage() {
                 type="button"
                 className="btn sm secondary"
                 onClick={() => setShowEditExamModal(true)}
-                style={{ background: '#ffffff', fontSize: 12.5 }}
+                style={{ background: 'var(--surface)', fontSize: 12.5 }}
               >
                 ⚙️ Sửa tên & thời gian đề
               </button>
@@ -936,7 +936,7 @@ export default function ExamEditorPage() {
                       key={q.tempId || idx}
                       style={{
                         padding: '12px 14px',
-                        background: '#f8fafc',
+                        background: 'var(--surface-2)',
                         border: '1px solid var(--border-color)',
                         borderRadius: 8,
                       }}
@@ -981,7 +981,7 @@ export default function ExamEditorPage() {
                               gap: 6,
                               fontSize: 12.5,
                               padding: '4px 8px',
-                              background: opt.key === (q.correctAnswer || 'A') ? 'var(--success-bg)' : '#ffffff',
+                              background: opt.key === (q.correctAnswer || 'A') ? 'var(--success-bg)' : 'var(--surface)',
                               border: '1px solid var(--border-light)',
                               borderRadius: 6,
                             }}
@@ -1088,7 +1088,7 @@ export default function ExamEditorPage() {
                           marginTop: idx > 0 ? 14 : 0,
                           marginBottom: 4,
                           padding: '9px 16px',
-                          background: 'var(--ink)',
+                          background: 'var(--contrast-bg)',
                           color: '#fff',
                           borderRadius: 'var(--radius-md)',
                           display: 'flex',
@@ -1109,7 +1109,7 @@ export default function ExamEditorPage() {
                     <div
                       className="question-card"
                       style={{
-                        background: '#ffffff',
+                        background: 'var(--surface)',
                         border: '1px solid var(--border-color)',
                         borderRadius: 10,
                         padding: '16px 20px',
@@ -1213,8 +1213,8 @@ export default function ExamEditorPage() {
                                 padding: '8px 12px',
                                 borderRadius: 8,
                                 fontSize: 14,
-                                background: isCorrect ? 'var(--success-bg)' : '#f8fafc',
-                                border: isCorrect ? '1.5px solid var(--success-border)' : '1px solid #e2e8f0',
+                                background: isCorrect ? 'var(--success-bg)' : 'var(--surface-2)',
+                                border: isCorrect ? '1.5px solid var(--success-border)' : '1px solid var(--line)',
                               }}
                             >
                               <strong style={{ minWidth: 22, color: isCorrect ? 'var(--success-text)' : 'var(--text-main)' }}>
@@ -1378,7 +1378,7 @@ export default function ExamEditorPage() {
                         className="btn sm"
                         onClick={() => toggleClass(cls)}
                         style={{
-                          background: isAllSelected ? 'var(--primary)' : isPartial ? 'var(--primary-light)' : '#ffffff',
+                          background: isAllSelected ? 'var(--primary)' : isPartial ? 'var(--primary-light)' : 'var(--surface)',
                           color: isAllSelected ? '#ffffff' : isPartial ? 'var(--primary)' : 'var(--text-main)',
                           border: isAllSelected ? '1px solid var(--primary)' : '1px solid var(--border-color)',
                           fontSize: 12,
@@ -1436,7 +1436,7 @@ export default function ExamEditorPage() {
                         className="btn sm"
                         onClick={() => toggleGroup(g)}
                         style={{
-                          background: isAllSelected ? 'var(--primary)' : isPartial ? 'var(--primary-light)' : '#ffffff',
+                          background: isAllSelected ? 'var(--primary)' : isPartial ? 'var(--primary-light)' : 'var(--surface)',
                           color: isAllSelected ? '#ffffff' : isPartial ? 'var(--primary)' : 'var(--text-main)',
                           border: isAllSelected ? '1px solid var(--primary)' : '1px solid var(--border-color)',
                           fontSize: 12,
@@ -1513,7 +1513,7 @@ export default function ExamEditorPage() {
                       padding: '8px 10px',
                       borderRadius: 6,
                       border: isSelected ? '1.5px solid var(--primary)' : '1px solid var(--border-light)',
-                      background: isSelected ? 'var(--primary-light)' : '#ffffff',
+                      background: isSelected ? 'var(--primary-light)' : 'var(--surface)',
                       cursor: 'pointer',
                     }}
                   >
@@ -1805,7 +1805,7 @@ export default function ExamEditorPage() {
         <div className="formula-batch-toolbar">
           <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
             <span style={{ fontSize: 15 }}>📐</span>
-            <span style={{ fontWeight: 700, fontSize: 13, color: '#1e293b' }}>
+            <span style={{ fontWeight: 700, fontSize: 13, color: 'var(--ink)' }}>
               Đã chọn <strong style={{ color: 'var(--primary)' }}>{selectedFormulaKeys.length}</strong> CT
             </span>
             {selectedFormulaSizes.length > 0 && (
@@ -1829,7 +1829,7 @@ export default function ExamEditorPage() {
             )}
           </div>
 
-          <div style={{ height: 18, width: 1, background: '#e2e8f0', flexShrink: 0 }} />
+          <div style={{ height: 18, width: 1, background: 'var(--line)', flexShrink: 0 }} />
 
           <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
             {FORMULA_SIZE_PRESETS.map((preset) => {
@@ -1849,7 +1849,7 @@ export default function ExamEditorPage() {
             })}
           </div>
 
-          <div style={{ height: 18, width: 1, background: '#cbd5e1', flexShrink: 0 }} />
+          <div style={{ height: 18, width: 1, background: 'var(--line-strong)', flexShrink: 0 }} />
 
           <form
             style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}
@@ -1874,9 +1874,9 @@ export default function ExamEditorPage() {
                 fontSize: 12.5,
                 fontWeight: 600,
                 borderRadius: 20,
-                background: '#f8fafc',
-                color: '#0f172a',
-                border: '1.5px solid #cbd5e1',
+                background: 'var(--surface-2)',
+                color: 'var(--ink)',
+                border: '1.5px solid var(--line-strong)',
               }}
             />
             <button
@@ -1899,14 +1899,14 @@ export default function ExamEditorPage() {
             </button>
           </form>
 
-          <div style={{ height: 18, width: 1, background: '#cbd5e1', flexShrink: 0 }} />
+          <div style={{ height: 18, width: 1, background: 'var(--line-strong)', flexShrink: 0 }} />
 
           <button
             type="button"
             style={{
-              background: '#fef2f2',
+              background: 'var(--danger-bg)',
               color: '#dc2626',
-              border: '1.5px solid #fecaca',
+              border: '1.5px solid var(--danger-border)',
               borderRadius: 20,
               fontSize: 12,
               padding: '4px 10px',

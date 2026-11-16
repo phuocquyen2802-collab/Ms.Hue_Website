@@ -2,7 +2,10 @@ import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import BrandMark from '../components/BrandMark';
-import { APP_NAME, APP_TAGLINE } from '../config/brand';
+import { LanguageSwitch, ThemeSwitch } from '../components/PreferenceSwitches';
+import { APP_NAME } from '../config/brand';
+import { usePreferences } from '../context/PreferencesContext';
+import { LOGIN_TEXT, SWITCH_TEXT, TAGLINE } from '../i18n/publicText';
 
 // Hình minh hoạ bên trái: đồ thị y = x³ − 3x trên giấy kẻ ô, đánh dấu điểm
 // cực đại (CĐ) và cực tiểu (CT). Toạ độ màn hình: gốc O tại (280; 170),
@@ -27,12 +30,12 @@ const CURVE = (() => {
 const GRID_X = Array.from({ length: 15 }, (_, i) => i * 40);
 const GRID_Y = Array.from({ length: 9 }, (_, i) => 10 + i * 40);
 
-function CubicPlot() {
+function CubicPlot({ text }) {
   const max = { x: toX(-1), y: toY(2) };
   const min = { x: toX(1), y: toY(-2) };
 
   return (
-    <figure className="auth-plot" aria-label="Đồ thị hàm số y = x mũ 3 trừ 3x với điểm cực đại và cực tiểu">
+    <figure className="auth-plot" aria-label={text.plotLabel}>
       <svg viewBox="0 0 560 340" role="img" aria-hidden="true">
         <g className="auth-plot-grid">
           {GRID_X.map((x) => (
@@ -70,9 +73,9 @@ function CubicPlot() {
 
         <g className="auth-plot-points">
           <circle cx={max.x} cy={max.y} r="6" className="auth-plot-point" />
-          <text x={max.x} y={max.y - 16} textAnchor="middle" className="auth-plot-label">CĐ</text>
+          <text x={max.x} y={max.y - 16} textAnchor="middle" className="auth-plot-label">{text.plotMax}</text>
           <circle cx={min.x} cy={min.y} r="7" className="auth-plot-point insight" />
-          <text x={min.x} y={min.y - 16} textAnchor="middle" className="auth-plot-label">CT</text>
+          <text x={min.x} y={min.y - 16} textAnchor="middle" className="auth-plot-label">{text.plotMin}</text>
           <text x="24" y="40" className="auth-plot-eq">y = x³ − 3x</text>
         </g>
       </svg>
@@ -80,8 +83,8 @@ function CubicPlot() {
       <figcaption className="auth-plot-note">
         <span className="auth-plot-note-dot" aria-hidden="true" />
         <span>
-          <strong>Gợi ý từ AI</strong>
-          Ôn lại cực trị của hàm số.
+          <strong>{text.noteTitle}</strong>
+          {text.noteText}
         </span>
       </figcaption>
     </figure>
@@ -96,6 +99,9 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const { login } = useAuth();
   const navigate = useNavigate();
+  const { lang } = usePreferences();
+  const t = LOGIN_TEXT[lang];
+  const sw = SWITCH_TEXT[lang];
 
   async function handleSubmit(e) {
     e.preventDefault();
@@ -105,54 +111,60 @@ export default function LoginPage() {
       const user = await login(email, password);
       navigate(user.role === 'teacher' ? '/teacher' : '/student');
     } catch (err) {
-      setError(err.response?.data?.message || 'Sai tài khoản hoặc mật khẩu. Kiểm tra lại rồi thử lần nữa.');
+      // Thông báo lỗi của máy chủ viết bằng tiếng Việt - khi xem bằng tiếng Anh
+      // thì dùng câu tiếng Anh tương ứng.
+      if (!err.response) setError(t.errorNetwork);
+      else if (lang === 'en') setError(t.errorWrong);
+      else setError(err.response.data?.message || t.errorWrong);
     } finally {
       setLoading(false);
     }
   }
 
   return (
-    <div className="auth-page">
+    <div className="auth-page" lang={lang}>
       <section className="auth-hero">
-        <Link to="/" className="auth-hero-brand" title="Về trang giới thiệu">
+        <Link to="/" className="auth-hero-brand" title={t.backToHome}>
           <BrandMark size={40} />
           <div>
             <div className="auth-hero-name">{APP_NAME}</div>
-            <div className="auth-hero-tagline">{APP_TAGLINE}</div>
+            <div className="auth-hero-tagline">{TAGLINE[lang]}</div>
           </div>
         </Link>
 
         <div className="auth-hero-body">
-          <h1>Học toán cùng AI, biết rõ mình cần ôn phần nào.</h1>
-          <p>
-            Làm bài trắc nghiệm và nhận kết quả ngay. {APP_NAME} phân tích các
-            chuyên đề còn yếu, gợi ý lộ trình ôn tập và bài tập tương tự cho
-            từng học sinh.
-          </p>
+          <h1>{t.heroTitle}</h1>
+          <p>{t.heroText}</p>
         </div>
 
-        <CubicPlot />
+        <CubicPlot text={t} />
 
-        <div className="auth-hero-foot">Dành cho giáo viên và học sinh</div>
+        <div className="auth-hero-foot">{t.heroFoot}</div>
       </section>
 
       <main className="auth-form-side">
         <div className="auth-card">
-          <Link to="/" className="auth-back">
-            <span aria-hidden="true">←</span> Trang giới thiệu
-          </Link>
+          <div className="auth-card-top">
+            <Link to="/" className="auth-back">
+              <span aria-hidden="true">←</span> {t.back}
+            </Link>
+            <div className="auth-prefs">
+              <LanguageSwitch label={sw.english} title={sw.toOther} />
+              <ThemeSwitch label={sw.darkMode} />
+            </div>
+          </div>
           <div className="auth-brand">
-            <h2>Đăng nhập</h2>
-            <p className="auth-subtitle">Dùng tài khoản do giáo viên hoặc nhà trường cấp.</p>
+            <h2>{t.title}</h2>
+            <p className="auth-subtitle">{t.subtitle}</p>
           </div>
 
           <form onSubmit={handleSubmit}>
             <div className="form-group">
-              <label htmlFor="login-email">Tài khoản hoặc email</label>
+              <label htmlFor="login-email">{t.account}</label>
               <input
                 id="login-email"
                 type="text"
-                placeholder="ten@email.com hoặc tên đăng nhập"
+                placeholder={t.accountPlaceholder}
                 value={email}
                 onChange={(e) => {
                   setEmail(e.target.value);
@@ -164,12 +176,12 @@ export default function LoginPage() {
               />
             </div>
             <div className="form-group">
-              <label htmlFor="login-password">Mật khẩu</label>
+              <label htmlFor="login-password">{t.password}</label>
               <div className="auth-password-field">
                 <input
                   id="login-password"
                   type={showPassword ? 'text' : 'password'}
-                  placeholder="Nhập mật khẩu"
+                  placeholder={t.passwordPlaceholder}
                   value={password}
                   onChange={(e) => {
                     setPassword(e.target.value);
@@ -182,7 +194,7 @@ export default function LoginPage() {
                   type="button"
                   className="auth-password-toggle"
                   onClick={() => setShowPassword((v) => !v)}
-                  aria-label={showPassword ? 'Ẩn mật khẩu' : 'Hiện mật khẩu'}
+                  aria-label={showPassword ? t.hidePassword : t.showPassword}
                   aria-pressed={showPassword}
                 >
                   {showPassword ? (
@@ -212,12 +224,12 @@ export default function LoginPage() {
             )}
 
             <button className="btn auth-submit" type="submit" disabled={loading}>
-              {loading ? 'Đang đăng nhập…' : 'Đăng nhập'}
+              {loading ? t.submitting : t.submit}
             </button>
           </form>
 
           <p className="auth-help">
-            Học sinh chưa có tài khoản? Liên hệ giáo viên để được cấp.
+            {t.help}
           </p>
         </div>
       </main>
