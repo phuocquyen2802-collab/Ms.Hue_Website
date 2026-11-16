@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import api from '../services/api';
+import CountUp from '../components/CountUp';
 import useAutoRefresh, { setIfChanged } from '../hooks/useAutoRefresh';
 import AnswerKeyPanel from '../components/AnswerKeyPanel';
 import UiIcon, { scoreLevel, formatScore } from '../components/UiIcon';
@@ -64,7 +65,7 @@ export default function StudentDashboard() {
         <div className="metric-card">
           <div className="metric-info">
             <span className="metric-title">Đề được giao</span>
-            <span className="metric-value">{exams.length}</span>
+            <span className="metric-value"><CountUp value={exams.length} /></span>
             <span className="metric-sub">Từ giáo viên của bạn</span>
           </div>
           <div className="metric-icon-box blue"><UiIcon name="file" size={20} /></div>
@@ -72,7 +73,7 @@ export default function StudentDashboard() {
         <div className="metric-card">
           <div className="metric-info">
             <span className="metric-title">Đã làm</span>
-            <span className="metric-value">{completedCount}</span>
+            <span className="metric-value"><CountUp value={completedCount} /></span>
             <span className="metric-sub">Đã nộp và có kết quả</span>
           </div>
           <div className="metric-icon-box green"><UiIcon name="check" size={20} /></div>
@@ -80,7 +81,7 @@ export default function StudentDashboard() {
         <div className="metric-card">
           <div className="metric-info">
             <span className="metric-title">Chưa làm</span>
-            <span className={`metric-value${pendingCount > 0 ? ' score-text is-ok' : ''}`}>{pendingCount}</span>
+            <span className={`metric-value${pendingCount > 0 ? ' score-text is-ok' : ''}`}><CountUp value={pendingCount} /></span>
             <span className="metric-sub">Đang chờ bạn làm</span>
           </div>
           <div className="metric-icon-box amber"><UiIcon name="clock" size={20} /></div>
@@ -88,7 +89,7 @@ export default function StudentDashboard() {
         <div className="metric-card">
           <div className="metric-info">
             <span className="metric-title">Lộ trình ôn tập</span>
-            <span className="metric-value">{roadmaps.length}</span>
+            <span className="metric-value"><CountUp value={roadmaps.length} /></span>
             <span className="metric-sub">Do AI soạn, giáo viên duyệt</span>
           </div>
           <div className="metric-icon-box purple"><UiIcon name="route" size={20} /></div>

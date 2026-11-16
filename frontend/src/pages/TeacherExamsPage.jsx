@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useMemo, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import api from '../services/api';
+import CountUp from '../components/CountUp';
 import useAutoRefresh, { setIfChanged } from '../hooks/useAutoRefresh';
 import { renderMath } from '../utils/mathRender';
 import UiIcon, { scoreLevel, formatScore, ScoreTrend } from '../components/UiIcon';
@@ -865,7 +866,7 @@ export default function TeacherExamsPage() {
         <div className="metric-card">
           <div className="metric-info">
             <span className="metric-title">Tổng số đề thi</span>
-            <span className="metric-value">{exams.length}</span>
+            <span className="metric-value"><CountUp value={exams.length} /></span>
             <span className="metric-sub">Trong kho đề của bạn</span>
           </div>
           <div className="metric-icon-box blue"><UiIcon name="book" size={20} /></div>
@@ -873,7 +874,7 @@ export default function TeacherExamsPage() {
         <div className="metric-card">
           <div className="metric-info">
             <span className="metric-title">Đang giao</span>
-            <span className="metric-value">{assignedCount}</span>
+            <span className="metric-value"><CountUp value={assignedCount} /></span>
             <span className="metric-sub">Học sinh đang làm bài</span>
           </div>
           <div className="metric-icon-box green"><UiIcon name="send" size={20} /></div>
@@ -881,7 +882,7 @@ export default function TeacherExamsPage() {
         <div className="metric-card">
           <div className="metric-info">
             <span className="metric-title">Lượt nộp bài</span>
-            <span className="metric-value">{submissions.length}</span>
+            <span className="metric-value"><CountUp value={submissions.length} /></span>
             <span className="metric-sub">Từ tất cả các đề</span>
           </div>
           <div className="metric-icon-box slate"><UiIcon name="inbox" size={20} /></div>

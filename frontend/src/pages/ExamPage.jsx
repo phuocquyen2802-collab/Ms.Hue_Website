@@ -99,7 +99,9 @@ export default function ExamPage() {
       window.clearTimeout(saveTimerRef.current);
       exitFullscreen();
       window.dispatchEvent(new Event('app:refresh-notifications'));
-      navigate(`/student/submissions/${submissionId}`, { replace: true });
+      // justSubmitted: trang kết quả biết đây là lần xem ngay sau khi nộp
+      // (để chúc mừng khi làm bài xuất sắc).
+      navigate(`/student/submissions/${submissionId}`, { replace: true, state: { justSubmitted: true } });
     },
     [navigate]
   );

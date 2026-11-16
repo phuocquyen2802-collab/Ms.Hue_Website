@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import api from '../services/api';
+import CountUp from '../components/CountUp';
 import UiIcon from '../components/UiIcon';
 import { exportAccountsToXlsx, generatePassword } from '../utils/studentAccountsExport';
 
@@ -248,7 +249,7 @@ export default function TeacherDashboard() {
         <div className="metric-card">
           <div className="metric-info">
             <span className="metric-title">Tổng số học sinh</span>
-            <span className="metric-value">{students.length}</span>
+            <span className="metric-value"><CountUp value={students.length} /></span>
             <span className="metric-sub">Tài khoản đang hoạt động</span>
           </div>
           <div className="metric-icon-box blue"><UiIcon name="users" size={20} /></div>
@@ -256,7 +257,7 @@ export default function TeacherDashboard() {
         <div className="metric-card">
           <div className="metric-info">
             <span className="metric-title">Số lớp học</span>
-            <span className="metric-value">{distinctClasses.length}</span>
+            <span className="metric-value"><CountUp value={distinctClasses.length} /></span>
             <span className="metric-sub">Lớp đang phụ trách</span>
           </div>
           <div className="metric-icon-box green"><UiIcon name="book" size={20} /></div>
@@ -264,7 +265,7 @@ export default function TeacherDashboard() {
         <div className="metric-card">
           <div className="metric-info">
             <span className="metric-title">Nhóm học sinh</span>
-            <span className="metric-value">{groups.length}</span>
+            <span className="metric-value"><CountUp value={groups.length} /></span>
             <span className="metric-sub">Dùng để giao bài nhanh</span>
           </div>
           <div className="metric-icon-box slate"><UiIcon name="folder" size={20} /></div>

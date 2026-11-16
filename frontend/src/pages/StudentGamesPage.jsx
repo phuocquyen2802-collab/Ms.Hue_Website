@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import api from '../services/api';
 import UiIcon from '../components/UiIcon';
 import GameCharacter, { CHARACTERS } from '../components/GameCharacters';
+import Celebration from '../components/Celebration';
 import { renderMath } from '../utils/mathRender';
 
 // Trò chơi "Đường đua Toán học": chọn chủ đề (ngân hàng đề giáo viên tải lên)
@@ -9,6 +10,8 @@ import { renderMath } from '../utils/mathRender';
 // thì buồn và đứng yên. Hết câu hỏi thì tổng kết % quãng đường đã đi.
 
 const CHARACTER_KEY = 'mi-game-character';
+// Đi được từ chừng này % quãng đường trở lên thì chúc mừng (cúp vàng + pháo giấy).
+const CELEBRATE_PERCENT = 80;
 const COUNT_OPTIONS = [10, 20, 0]; // 0 = tất cả
 
 function loadCharacter() {
@@ -78,6 +81,7 @@ export default function StudentGamesPage() {
   const [answers, setAnswers] = useState([]); // { question, chosen, correct, correctAnswer }
   const [feedback, setFeedback] = useState(null); // answer vừa chấm của câu hiện tại
   const [checking, setChecking] = useState(false);
+  const [celebrate, setCelebrate] = useState(false);
 
   useEffect(() => {
     api.get('/student/games/banks')
@@ -104,6 +108,7 @@ export default function StudentGamesPage() {
       setIndex(0);
       setAnswers([]);
       setFeedback(null);
+      setCelebrate(false);
       setPhase('play');
       window.scrollTo({ top: 0 });
     } catch (err) {
@@ -131,6 +136,8 @@ export default function StudentGamesPage() {
 
   function next() {
     if (index + 1 >= game.questions.length) {
+      const correct = answers.filter((a) => a.correct).length;
+      setCelebrate(Math.round((correct / game.questions.length) * 100) >= CELEBRATE_PERCENT);
       setPhase('result');
       window.scrollTo({ top: 0 });
       return;
@@ -222,6 +229,14 @@ export default function StudentGamesPage() {
 
     return (
       <div className="container game-page">
+        {celebrate && (
+          <Celebration
+            title={percent === 100 ? 'Về đích hoàn hảo!' : 'Về đích xuất sắc!'}
+            message={`Chúc mừng! ${character.name} đã đi được ${percent}% quãng đường chủ đề "${game.bank.title}".`}
+            highlight={`Đúng ${correctCount}/${total} câu`}
+            onClose={() => setCelebrate(false)}
+          />
+        )}
         <div className="game-bar">
           <div className="game-bar-title">
             <span className="game-bar-topic">Kết quả lượt chơi</span>

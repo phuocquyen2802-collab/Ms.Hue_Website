@@ -1,16 +1,47 @@
 import React, { useEffect, useState } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useLocation, useNavigate } from 'react-router-dom';
 import api from '../services/api';
+import Celebration from '../components/Celebration';
+import { useAuth } from '../context/AuthContext';
 import { renderMath } from '../utils/mathRender';
 import QuestionDiagram from '../components/QuestionDiagram';
 import UiIcon, { scoreLevel, formatScore } from '../components/UiIcon';
 import { formatDuration, AUTO_SUBMIT_TEXT } from '../utils/examTime';
 
+// Từ mức điểm này trở lên (thang 10) là làm bài xuất sắc: hiện cúp vàng,
+// lời chúc mừng và pháo giấy ngay sau khi nộp bài.
+export const EXCELLENT_SCORE = 8;
+
+function celebrationTitle(score) {
+  if (score >= 10) return 'Điểm tuyệt đối!';
+  if (score >= 9) return 'Xuất sắc!';
+  return 'Làm bài rất tốt!';
+}
+
 export default function ResultPage() {
   const { submissionId } = useParams();
+  const location = useLocation();
+  const navigate = useNavigate();
+  const { user } = useAuth();
   const [submission, setSubmission] = useState(null);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState('all'); // 'all' | 'wrong'
+  // Chỉ chúc mừng ngay sau khi nộp (ExamPage gửi kèm justSubmitted), xem lại sau thì không.
+  const [justSubmitted] = useState(() => Boolean(location.state?.justSubmitted));
+  const [celebrate, setCelebrate] = useState(false);
+
+  useEffect(() => {
+    if (!justSubmitted) return;
+    // Bỏ cờ khỏi lịch sử để tải lại trang không chúc mừng lần nữa.
+    navigate(location.pathname, { replace: true, state: null });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => {
+    if (justSubmitted && submission && Number(submission.score) >= EXCELLENT_SCORE && submission.submitReason !== 'violations') {
+      setCelebrate(true);
+    }
+  }, [justSubmitted, submission]);
 
   useEffect(() => {
     setLoading(true);
@@ -40,6 +71,14 @@ export default function ResultPage() {
 
   return (
     <div className="container">
+      {celebrate && (
+        <Celebration
+          title={celebrationTitle(Number(submission.score))}
+          message={`Chúc mừng ${user?.name || 'bạn'} đã hoàn thành xuất sắc bài "${submission.examTitle || 'kiểm tra'}"!`}
+          highlight={`${formatScore(submission.score)}/10 điểm · đúng ${submission.correctCount}/${submission.totalQuestions} câu`}
+          onClose={() => setCelebrate(false)}
+        />
+      )}
       <div className="page-back">
         <Link to="/student" className="btn-back">
           <span className="btn-back-arrow">←</span> Quay lại Luyện đề

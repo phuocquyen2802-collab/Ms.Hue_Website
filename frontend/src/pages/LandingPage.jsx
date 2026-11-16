@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import BrandMark from '../components/BrandMark';
 import UiIcon from '../components/UiIcon';
@@ -88,6 +88,26 @@ export default function LandingPage() {
   const ctaTo = user ? (user.role === 'teacher' ? '/teacher' : '/student') : '/login';
   const ctaLabel = user ? t.ctaDashboard : t.ctaLogin;
 
+  // Hiệu ứng hiện dần khi cuộn tới: phần tử có data-reveal được đánh dấu
+  // data-revealed khi lọt vào màn hình (CSS lo phần chuyển động). Máy bật
+  // "giảm chuyển động" thì bỏ qua, nội dung hiện ngay.
+  const rootRef = useRef(null);
+  useEffect(() => {
+    const root = rootRef.current;
+    const reduce = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+    if (!root || reduce || !('IntersectionObserver' in window)) return undefined;
+    root.setAttribute('data-animate', '');
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach((entry) => {
+        if (!entry.isIntersecting) return;
+        entry.target.setAttribute('data-revealed', '');
+        observer.unobserve(entry.target);
+      });
+    }, { threshold: 0.12, rootMargin: '0px 0px -6% 0px' });
+    root.querySelectorAll('[data-reveal]').forEach((el) => observer.observe(el));
+    return () => observer.disconnect();
+  }, []);
+
   // Tiêu đề tab trình duyệt theo ngôn ngữ đang chọn; rời trang thì trả lại tên gốc.
   useEffect(() => {
     document.title = t.pageTitle;
@@ -95,7 +115,7 @@ export default function LandingPage() {
   }, [t.pageTitle]);
 
   return (
-    <div className="lp" lang={lang}>
+    <div className="lp" lang={lang} ref={rootRef}>
       <header className="lp-header">
         <div className="lp-wrap lp-header-inner">
           <Link to="/" className="lp-logo" aria-label={t.homeLabel}>
@@ -149,13 +169,13 @@ export default function LandingPage() {
         {/* Tính năng */}
         <section id="tinh-nang" className="lp-section">
           <div className="lp-wrap">
-            <div className="lp-section-head">
+            <div className="lp-section-head" data-reveal="">
               <h2>{t.featuresTitle}</h2>
               <p>{t.featuresText}</p>
             </div>
             <div className="lp-features">
-              {t.features.map((f) => (
-                <div key={f.icon} className="lp-feature">
+              {t.features.map((f, i) => (
+                <div key={f.icon} className="lp-feature" data-reveal="" style={{ '--reveal-delay': `${(i % 3) * 90}ms` }}>
                   <span className="lp-feature-icon"><UiIcon name={f.icon} size={20} /></span>
                   <h3>{f.title}</h3>
                   <p>{f.text}</p>
@@ -168,13 +188,13 @@ export default function LandingPage() {
         {/* Cách hoạt động */}
         <section id="cach-hoat-dong" className="lp-section is-tinted">
           <div className="lp-wrap">
-            <div className="lp-section-head">
+            <div className="lp-section-head" data-reveal="">
               <h2>{t.howTitle}</h2>
               <p>{t.howText}</p>
             </div>
             <ol className="lp-steps">
               {t.steps.map((s, i) => (
-                <li key={i} className="lp-step">
+                <li key={i} className="lp-step" data-reveal="" style={{ '--reveal-delay': `${i * 140}ms` }}>
                   <span className="lp-step-dot">{i + 1}</span>
                   <h3>{s.title}</h3>
                   <p>{s.text}</p>
@@ -187,7 +207,7 @@ export default function LandingPage() {
         {/* Giáo viên và học sinh */}
         <section id="doi-tuong" className="lp-section">
           <div className="lp-wrap lp-audience">
-            <div className="lp-audience-col">
+            <div className="lp-audience-col" data-reveal="left">
               <span className="lp-audience-icon"><UiIcon name="users" size={20} /></span>
               <h2>{t.forTeachersTitle}</h2>
               <ul>
@@ -196,7 +216,7 @@ export default function LandingPage() {
                 ))}
               </ul>
             </div>
-            <div className="lp-audience-col">
+            <div className="lp-audience-col" data-reveal="right" style={{ '--reveal-delay': '120ms' }}>
               <span className="lp-audience-icon is-student"><UiIcon name="user" size={20} /></span>
               <h2>{t.forStudentsTitle}</h2>
               <ul>
@@ -211,7 +231,7 @@ export default function LandingPage() {
         {/* Lời mời */}
         <section className="lp-cta">
           <div className="lp-wrap">
-            <div className="lp-cta-inner">
+            <div className="lp-cta-inner" data-reveal="zoom">
               <div>
                 <h2>{t.ctaTitle}</h2>
                 <p>{user ? t.ctaSignedIn(user.name) : t.ctaGuest}</p>
