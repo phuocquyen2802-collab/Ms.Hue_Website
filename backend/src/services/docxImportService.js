@@ -387,7 +387,7 @@ function parseQuestionsFromHtml(html) {
         const seenKeys = new Set();
         markers.forEach((marker, i) => {
           const nextStart = i + 1 < markers.length ? markers[i + 1].start : groupHtml.length;
-          let optionHtml = groupHtml.slice(marker.end, nextStart).trim();
+          let optionHtml = trimDanglingParagraphTags(groupHtml.slice(marker.end, nextStart).trim());
           optionHtml = optionHtml.replace(/^[.\s]+/, '').replace(/[.\s]+$/, (m) => (m.includes('<') ? m : ''));
           if (!seenKeys.has(marker.key)) {
             seenKeys.add(marker.key);
@@ -438,6 +438,27 @@ function parseQuestionsFromHtml(html) {
   }
 
   return finalQuestions;
+}
+
+// Đáp án cắt ra giữa các đoạn văn của file Word thường dính thẻ </p> đóng
+// thừa ở cuối (đáp án cuối cùng chạy tới hết đoạn) hoặc <p> mở thừa ở đầu.
+// Để nguyên thì trình duyệt tự sinh 1 đoạn văn rỗng, đẩy nội dung đáp án
+// xuống dòng mới. Chỉ bỏ thẻ không có cặp, giữ nguyên các đoạn đầy đủ.
+function trimDanglingParagraphTags(html) {
+  let s = html.trim();
+  const opens = () => (s.match(/<p[\s>]/gi) || []).length;
+  const closes = () => (s.match(/<\/p>/gi) || []).length;
+  for (let changed = true; changed;) {
+    const before = s;
+    s = s
+      .replace(/\s*<p[^>]*>\s*$/i, '') // <p> mở ở cuối: đoạn mới chưa có nội dung
+      .replace(/^\s*<\/p>\s*/i, ''); // </p> đóng ở đầu: đuôi của đoạn trước
+    if (/<\/p>\s*$/i.test(s) && closes() > opens()) s = s.replace(/\s*<\/p>\s*$/i, '');
+    if (/^\s*<p[^>]*>/i.test(s) && opens() > closes()) s = s.replace(/^\s*<p[^>]*>\s*/i, '');
+    s = s.trim();
+    changed = s !== before;
+  }
+  return s;
 }
 
 // Hàm chính: nhận buffer file .docx, trả về danh sách câu hỏi nháp.

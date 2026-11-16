@@ -332,7 +332,7 @@ export default function TeacherQuestionBanksPage() {
                       <ul className="qb-preview-options">
                         {q.options.map((o) => (
                           <li key={o.key} className={o.key === q.correctAnswer ? 'is-correct' : ''}>
-                            <b>{o.key}.</b> <span dangerouslySetInnerHTML={{ __html: renderMath(o.text) }} />
+                            <b>{o.key}.</b> <span className="qb-option-text" dangerouslySetInnerHTML={{ __html: renderMath(o.text) }} />
                           </li>
                         ))}
                       </ul>

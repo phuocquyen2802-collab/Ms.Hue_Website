@@ -33,14 +33,18 @@ RUN apt-get update \
       libreoffice-writer-nogui \
       libreoffice-draw-nogui \
       fonts-liberation2 \
+      fonts-urw-base35 \
       fonts-dejavu-core \
       fontconfig \
       tzdata \
  && rm -rf /var/lib/apt/lists/*
 
 # Font bổ sung (tuỳ chọn): file .ttf/.otf đặt trong docker/fonts/ trước khi
-# build sẽ được cài vào máy chủ - xem docs/DEPLOY_DOCKER.md.
+# build sẽ được cài vào máy chủ - xem docker/fonts/README.md.
+# fonts-liberation2 thay Times New Roman, fonts-urw-base35 (P052) thay
+# Palatino Linotype cùng độ rộng chữ - xem docker/fontconfig/.
 COPY docker/fonts/ /usr/share/fonts/truetype/mathinsight/
+COPY docker/fontconfig/30-mathinsight-aliases.conf /etc/fonts/conf.d/30-mathinsight-aliases.conf
 RUN fc-cache -f
 
 WORKDIR /app/backend

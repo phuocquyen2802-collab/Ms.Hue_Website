@@ -17,6 +17,11 @@ MathType (thư mục `C:\Windows\Fonts`) vào đây **trên server**, rồi buil
   đúng file mà Windows đang dùng, xem trong
   `HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Fonts`.
 - `times.ttf`, `timesbd.ttf`, `timesi.ttf`, `timesbi.ttf`
+- `pala.ttf`, `palai.ttf`, `palab.ttf`, `palabi.ttf` (font `Palatino Linotype`:
+  nhiều đề dùng font này cho biến số và chữ số trong công thức). Thiếu font
+  này máy chủ dùng P052 (bản Palatino tự do, đã cài sẵn khi build - xem
+  `docker/fontconfig/`); trước đây khi chưa có P052 thì chữ trong công thức
+  bị chồng lên nhau.
 - Bộ `Euclid` (nếu đề dùng kiểu Euclid của MathType): `euclid*.ttf`,
   `eucsym*.ttf`, `euextra*.ttf`, `eufrak*.ttf`, `eumat*.ttf`
 

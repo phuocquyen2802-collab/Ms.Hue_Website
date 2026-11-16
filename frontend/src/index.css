@@ -8045,10 +8045,29 @@ input.recovery-edit {
 }
 
 .qb-preview-options li {
+  /* Chữ "A." và nội dung đáp án cùng 1 hàng, kể cả khi nội dung là khối
+     nhiều dòng (renderMath bọc chữ thường trong <div class="mr-p">). */
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  column-gap: 6px;
   padding: 6px 10px;
   border: 1px solid var(--line);
   border-radius: var(--radius-md);
   font-size: 13.5px;
+}
+
+.qb-preview-options li > b {
+  flex-shrink: 0;
+}
+
+.qb-option-text {
+  flex: 1;
+  min-width: 0;
+}
+
+.qb-option-text .mr-p {
+  margin-top: 0;
 }
 
 .qb-preview-options li.is-correct {

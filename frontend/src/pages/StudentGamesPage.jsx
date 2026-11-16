@@ -267,7 +267,7 @@ export default function StudentGamesPage() {
                   <ul className="qb-preview-options">
                     {a.question.options.map((o) => (
                       <li key={o.key} className={o.key === a.correctAnswer ? 'is-correct' : o.key === a.chosen ? 'is-wrong' : ''}>
-                        <b>{o.key}.</b> <span dangerouslySetInnerHTML={{ __html: renderMath(o.text) }} />
+                        <b>{o.key}.</b> <span className="qb-option-text" dangerouslySetInnerHTML={{ __html: renderMath(o.text) }} />
                         {o.key === a.chosen && <em className="game-review-tag">Bạn chọn</em>}
                       </li>
                     ))}
