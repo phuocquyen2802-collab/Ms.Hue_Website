@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
-import api from '../services/api';
+import api, { postEventStream } from '../services/api';
 import { renderMath } from '../utils/mathRender';
 import BrandMark from '../components/BrandMark';
 import UiIcon from '../components/UiIcon';
@@ -66,6 +66,10 @@ export default function AiAssistantPage() {
 
   const chatEndRef = useRef(null);
   const textareaRef = useRef(null);
+  // Huỷ câu trả lời đang hiện dở khi mở đoạn chat khác hoặc rời trang.
+  const streamAbortRef = useRef(null);
+
+  useEffect(() => () => streamAbortRef.current?.abort(), []);
 
   useEffect(() => {
     if (user?.id) setHistory(loadHistory(user.id));
@@ -78,9 +82,12 @@ export default function AiAssistantPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [lang]);
 
+  const isStreaming = messages.length > 0 && Boolean(messages[messages.length - 1].streaming);
+
   useEffect(() => {
-    chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages, loading]);
+    // Lúc chữ đang hiện dần thì cuộn ngay (cuộn mượt liên tục bị giật).
+    chatEndRef.current?.scrollIntoView({ behavior: isStreaming ? 'auto' : 'smooth' });
+  }, [messages, loading, isStreaming]);
 
   // Tự động lưu đoạn chat hiện tại vào lịch sử mỗi khi có tin nhắn mới (chỉ
   // lưu khi đã có ít nhất 1 câu hỏi thật của người dùng, không lưu đoạn chat
@@ -89,6 +96,8 @@ export default function AiAssistantPage() {
     if (!user?.id) return;
     const hasUserMessage = messages.some((m) => m.role === 'user');
     if (!hasUserMessage) return;
+    // Câu trả lời đang hiện dần: đợi xong mới lưu (khỏi ghi lại lịch sử sau mỗi đoạn chữ).
+    if (messages[messages.length - 1]?.streaming) return;
 
     const conversationId = activeConversationId || `conv-${Date.now()}`;
     if (!activeConversationId) setActiveConversationId(conversationId);
@@ -109,12 +118,14 @@ export default function AiAssistantPage() {
   }, [messages]);
 
   function handleNewChat() {
+    streamAbortRef.current?.abort();
     setMessages([greetingMessage(user, lang)]);
     setActiveConversationId(null);
     setShowHistory(false);
   }
 
   function handleLoadConversation(conv) {
+    streamAbortRef.current?.abort();
     setMessages(conv.messages);
     setActiveConversationId(conv.id);
     setShowHistory(false);
@@ -148,38 +159,77 @@ export default function AiAssistantPage() {
     setInputText('');
     setLoading(true);
 
+    // Chuẩn bị payload gửi lên backend (chỉ lấy role và content)
+    const apiMessages = newMessages.map((m) => ({
+      role: m.role,
+      content: m.content,
+    }));
+    const controller = new AbortController();
+    streamAbortRef.current = controller;
+    const now = () => new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
+
+    // Câu trả lời hiện dần: tin nhắn cuối (streaming: true) được nối thêm chữ
+    // mỗi khi máy chủ gửi về 1 đoạn, xong thì thay bằng bản đã chuẩn hoá.
+    const appendDelta = (text) => {
+      if (controller.signal.aborted) return;
+      setMessages((prev) => {
+        const last = prev[prev.length - 1];
+        if (last?.streaming) {
+          return [...prev.slice(0, -1), { ...last, content: last.content + text }];
+        }
+        return [...prev, { role: 'assistant', content: text, streaming: true, timestamp: now() }];
+      });
+    };
+    const finishReply = (content, extra = {}) => {
+      if (controller.signal.aborted) return;
+      setMessages((prev) => {
+        const base = prev[prev.length - 1]?.streaming ? prev.slice(0, -1) : prev;
+        return [...base, { role: 'assistant', content, timestamp: now(), ...extra }];
+      });
+    };
+
+    let streamed = false;
     try {
-      // Chuẩn bị payload gửi lên backend (chỉ lấy role và content)
-      const apiMessages = newMessages.map((m) => ({
-        role: m.role,
-        content: m.content,
-      }));
-
-      const res = await api.post('/ai/chat', { messages: apiMessages, lang });
-
-      if (res.data && res.data.reply) {
-        setMessages((prev) => [
-          ...prev,
-          {
-            role: 'assistant',
-            content: res.data.reply,
-            timestamp: new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }),
-          },
-        ]);
+      let doneText = null;
+      let streamError = null;
+      try {
+        await postEventStream('/ai/chat/stream', { messages: apiMessages, lang }, (event, data) => {
+          if (event === 'delta') { streamed = true; appendDelta(data.text); }
+          else if (event === 'done') doneText = data.text;
+          else if (event === 'error') streamError = data.message;
+        }, controller.signal);
+      } catch (err) {
+        // Chưa nhận được chữ nào (mạng/proxy không đọc được luồng, phiên đăng
+        // nhập hết hạn...): thử lại bằng bản chờ đủ câu trả lời bên dưới - axios
+        // sẽ tự đăng xuất nếu phiên hết hạn như mọi request khác.
+        if (!streamed) err.useFallback = true;
+        throw err;
+      }
+      if (streamError) throw new Error(streamError);
+      if (doneText != null) {
+        finishReply(doneText);
+      } else if (streamed) {
+        // Kết nối đóng trước khi máy chủ báo xong: giữ phần chữ đã nhận.
+        setMessages((prev) => {
+          const last = prev[prev.length - 1];
+          return last?.streaming ? [...prev.slice(0, -1), { ...last, streaming: false }] : prev;
+        });
+      } else {
+        throw Object.assign(new Error('Không nhận được câu trả lời'), { useFallback: true });
       }
     } catch (err) {
-      console.error('Lỗi khi chat với Gemini:', err);
-      const errorMsg =
-        err.response?.data?.message || 'Có lỗi xảy ra khi kết nối tới máy chủ AI. Vui lòng thử lại sau.';
-      setMessages((prev) => [
-        ...prev,
-        {
-          role: 'assistant',
-          content: `⚠️ **Lỗi kết nối:** ${errorMsg}`,
-          isError: true,
-          timestamp: new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }),
-        },
-      ]);
+      if (controller.signal.aborted) return;
+      try {
+        // Trình duyệt/mạng không đọc được luồng dữ liệu: gọi bản chờ đủ câu trả lời.
+        if (!err.useFallback) throw err;
+        const res = await api.post('/ai/chat', { messages: apiMessages, lang });
+        finishReply(res.data.reply);
+      } catch (finalErr) {
+        console.error('Lỗi khi chat với Gemini:', finalErr);
+        const errorMsg = finalErr.response?.data?.message || finalErr.message
+          || 'Có lỗi xảy ra khi kết nối tới máy chủ AI. Vui lòng thử lại sau.';
+        finishReply(`⚠️ **Lỗi kết nối:** ${errorMsg}`, { isError: true });
+      }
     } finally {
       setLoading(false);
       setTimeout(() => textareaRef.current?.focus(), 100);
@@ -224,7 +274,7 @@ export default function AiAssistantPage() {
                   fontWeight: 600,
                 }}
               >
-                Gemini 3.5 Flash
+                Gemini 3.5 Flash-Lite
               </span>
             </h1>
             <p className="page-subtitle" style={{ margin: 0, fontSize: 13 }}>
@@ -544,7 +594,7 @@ export default function AiAssistantPage() {
           })}
 
           {/* Loading Indicator */}
-          {loading && (
+          {loading && !isStreaming && (
             <div
               style={{
                 display: 'flex',

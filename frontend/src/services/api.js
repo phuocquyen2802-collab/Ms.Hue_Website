@@ -37,4 +37,46 @@ api.interceptors.response.use(
   }
 );
 
+// Gọi API trả về Server-Sent Events (VD trợ lý AI trả lời dần từng đoạn).
+// axios không đọc được luồng dữ liệu trong trình duyệt nên dùng fetch.
+// onEvent(event, data) được gọi cho từng sự kiện; lỗi HTTP ném ra err.status.
+export async function postEventStream(path, body, onEvent, signal) {
+  const token = localStorage.getItem('token');
+  const res = await fetch(`${api.defaults.baseURL}${path}`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
+    body: JSON.stringify(body),
+    signal,
+  });
+  if (!res.ok || !res.body) {
+    const error = new Error(`HTTP ${res.status}`);
+    error.status = res.status;
+    throw error;
+  }
+
+  const reader = res.body.getReader();
+  const decoder = new TextDecoder();
+  let buffer = '';
+  for (;;) {
+    const { value, done } = await reader.read();
+    if (done) break;
+    buffer += decoder.decode(value, { stream: true });
+    let end;
+    while ((end = buffer.indexOf('\n\n')) >= 0) {
+      const block = buffer.slice(0, end);
+      buffer = buffer.slice(end + 2);
+      let event = 'message';
+      let data = '';
+      for (const line of block.split('\n')) {
+        if (line.startsWith('event:')) event = line.slice(6).trim();
+        else if (line.startsWith('data:')) data += line.slice(5).trim();
+      }
+      if (data) onEvent(event, JSON.parse(data));
+    }
+  }
+}
+
 export default api;

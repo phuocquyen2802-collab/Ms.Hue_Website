@@ -370,6 +370,8 @@ async function generateRoadmapAndExercises(studentName, weakTags = [], wrongQues
             maxOutputTokens: 32768,
           },
         }),
+        // Model bị treo (đo thực tế có model không phản hồi quá 90 giây) thì bỏ, thử model dự phòng.
+        signal: AbortSignal.timeout(180000),
       });
 
       if (!response.ok) {
@@ -404,13 +406,34 @@ async function generateRoadmapAndExercises(studentName, weakTags = [], wrongQues
   throw lastError || new Error('Không thể kết nối tới Google Gemini API.');
 }
 
-// Trò chuyện trực tiếp với Gemini AI về Toán học
-async function chatWithGemini(messages = [], userContext = {}) {
-  const apiKey = process.env.GEMINI_API_KEY;
-  if (!apiKey) {
-    throw new Error('Chưa cấu hình GEMINI_API_KEY trong backend/.env');
-  }
+// ---------------------------------------------------------------------------
+// Trò chuyện trực tiếp với Gemini AI về Toán học (trang Trợ lý AI)
+//
+// Ưu tiên tốc độ: đo thực tế (11/2026) bản Flash-Lite bắt đầu trả lời sau
+// ~1 giây, còn các bản Flash phải "suy nghĩ" ~1000 token và xếp hàng nên mất
+// 5-20 giây mới có chữ đầu tiên. Vì vậy trợ lý chat dùng Flash-Lite (đổi được
+// qua GEMINI_CHAT_MODEL), trả lời dạng stream để chữ hiện dần, và nếu một
+// model chưa trả chữ nào sau CHAT_FIRST_TOKEN_TIMEOUT_MS thì bỏ, chuyển sang
+// model dự phòng. Phần sinh lộ trình/bài tập ở trên vẫn dùng GEMINI_MODEL.
+// ---------------------------------------------------------------------------
+const CHAT_MODELS = Array.from(new Set([
+  process.env.GEMINI_CHAT_MODEL,
+  'gemini-3.5-flash-lite',
+  'gemini-3.6-flash',
+  process.env.GEMINI_MODEL,
+  'gemini-3.5-flash',
+].filter(Boolean)));
+const CHAT_FIRST_TOKEN_TIMEOUT_MS = 20000;
+const CHAT_TOTAL_TIMEOUT_MS = 120000;
+// Model trả 404 (không còn/không tồn tại) thì bỏ qua 1 giờ, khỏi mất thời gian thử lại mỗi câu hỏi.
+const unavailableUntil = new Map();
 
+// Gemini 3 trở lên: giảm mức suy nghĩ để trả lời nhanh (Flash-Lite mặc định gần như không suy nghĩ).
+function chatThinkingConfig(modelName) {
+  return /^gemini-([3-9]|\d{2,})/.test(modelName) ? { thinkingLevel: 'low' } : undefined;
+}
+
+function buildChatContents(messages, userContext) {
   const roleName = userContext.role === 'teacher' ? 'Thầy/Cô giáo' : 'Học sinh';
   const userName = userContext.name || 'Người dùng';
 
@@ -458,41 +481,104 @@ QUY TẮC CÔNG THỨC VÀ BỐ CỤC BẮT BUỘC:
     });
   }
 
+  return contents;
+}
+
+// Gọi 1 model ở chế độ stream (SSE). onDelta nhận từng đoạn chữ ngay khi có.
+// Lỗi xảy ra SAU khi đã gửi chữ cho người dùng được đánh dấu committed = true
+// (không chuyển model khác nữa vì người dùng đã thấy nửa câu trả lời).
+async function streamOneChatModel(modelName, contents, apiKey, onDelta, signal) {
+  const controller = new AbortController();
+  const abort = () => controller.abort();
+  if (signal) {
+    if (signal.aborted) abort();
+    signal.addEventListener('abort', abort);
+  }
+  let gotText = false;
+  const firstTokenTimer = setTimeout(abort, CHAT_FIRST_TOKEN_TIMEOUT_MS);
+  const totalTimer = setTimeout(abort, CHAT_TOTAL_TIMEOUT_MS);
+
+  try {
+    const generationConfig = { temperature: 0.6, maxOutputTokens: 8192 };
+    const thinkingConfig = chatThinkingConfig(modelName);
+    if (thinkingConfig) generationConfig.thinkingConfig = thinkingConfig;
+
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:streamGenerateContent?alt=sse&key=${apiKey}`;
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ contents, generationConfig }),
+      signal: controller.signal,
+    });
+
+    if (!response.ok) {
+      const errorBody = await response.text();
+      if (response.status === 404) unavailableUntil.set(modelName, Date.now() + 60 * 60 * 1000);
+      throw new Error(`Gemini API (${modelName}) lỗi ${response.status}: ${errorBody.slice(0, 300)}`);
+    }
+
+    const decoder = new TextDecoder();
+    let buffer = '';
+    let full = '';
+    for await (const chunk of response.body) {
+      buffer += decoder.decode(chunk, { stream: true });
+      let newline;
+      while ((newline = buffer.indexOf('\n')) >= 0) {
+        const line = buffer.slice(0, newline).trim();
+        buffer = buffer.slice(newline + 1);
+        if (!line.startsWith('data:')) continue;
+        let data;
+        try { data = JSON.parse(line.slice(5)); } catch { continue; }
+        const text = (data.candidates?.[0]?.content?.parts || [])
+          .filter((p) => !p.thought)
+          .map((p) => p.text || '')
+          .join('');
+        if (!text) continue;
+        if (!gotText) {
+          gotText = true;
+          clearTimeout(firstTokenTimer);
+        }
+        full += text;
+        onDelta(text);
+      }
+    }
+
+    if (!full) throw new Error(`Model ${modelName} không trả về nội dung`);
+    return full;
+  } catch (err) {
+    const error = controller.signal.aborted && !signal?.aborted
+      ? new Error(gotText ? `Gemini (${modelName}) trả lời quá lâu` : `Gemini (${modelName}) chưa phản hồi sau ${CHAT_FIRST_TOKEN_TIMEOUT_MS / 1000} giây`)
+      : err;
+    error.committed = gotText;
+    throw error;
+  } finally {
+    clearTimeout(firstTokenTimer);
+    clearTimeout(totalTimer);
+    if (signal) signal.removeEventListener('abort', abort);
+  }
+}
+
+// Trả lời dạng stream: onDelta(text) cho từng đoạn chữ, trả về toàn bộ câu
+// trả lời đã chuẩn hoá công thức khi xong. signal: huỷ khi người dùng rời trang.
+async function streamChatWithGemini(messages = [], userContext = {}, onDelta = () => {}, signal) {
+  const apiKey = process.env.GEMINI_API_KEY;
+  if (!apiKey) {
+    throw new Error('Chưa cấu hình GEMINI_API_KEY trong backend/.env');
+  }
+
+  const contents = buildChatContents(messages, userContext);
+  const now = Date.now();
+  const models = CHAT_MODELS.filter((m) => !(unavailableUntil.get(m) > now));
   let lastError = null;
 
-  for (const modelName of FALLBACK_MODELS) {
+  for (const modelName of models.length ? models : CHAT_MODELS) {
+    if (signal?.aborted) break;
     try {
-      const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`;
-      const response = await fetch(url, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          contents,
-          generationConfig: {
-            temperature: 0.6,
-            maxOutputTokens: 4096,
-          },
-        }),
-      });
-
-      if (!response.ok) {
-        const errorBody = await response.text();
-        console.warn(`[Gemini Chat] Model ${modelName} phản hồi (${response.status}), chuyển sang model dự phòng...`);
-        lastError = new Error(`Gemini API (${modelName}) lỗi ${response.status}: ${errorBody}`);
-        await new Promise((resolve) => setTimeout(resolve, 300));
-        continue;
-      }
-
-      const data = await response.json();
-      const rawReply = data.candidates?.[0]?.content?.parts?.[0]?.text;
-      if (!rawReply) {
-        lastError = new Error(`Model ${modelName} không trả về nội dung`);
-        continue;
-      }
-
-      return normalizeMathText(rawReply);
+      const full = await streamOneChatModel(modelName, contents, apiKey, onDelta, signal);
+      return normalizeMathText(full);
     } catch (err) {
-      console.warn(`[Gemini Chat] Lỗi gọi model ${modelName}:`, err.message);
+      if (err.committed || signal?.aborted) throw err;
+      console.warn(`[Gemini Chat] ${err.message} - chuyển sang model dự phòng...`);
       lastError = err;
     }
   }
@@ -500,7 +586,13 @@ QUY TẮC CÔNG THỨC VÀ BỐ CỤC BẮT BUỘC:
   throw lastError || new Error('Không thể kết nối tới Google Gemini API.');
 }
 
+// Bản không stream (giữ cho các nơi gọi cũ): chờ đủ câu trả lời rồi trả về.
+async function chatWithGemini(messages = [], userContext = {}) {
+  return streamChatWithGemini(messages, userContext);
+}
+
 module.exports = {
   generateRoadmapAndExercises,
   chatWithGemini,
+  streamChatWithGemini,
 };
