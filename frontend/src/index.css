@@ -4050,12 +4050,12 @@ tr.exam-subrow > td {
 
 .auth-plot-note {
   position: absolute;
-  left: calc(10px + 66.5%);
-  top: 79%;
+  left: calc(10px + 62%);
+  top: 6%;
   display: flex;
   align-items: flex-start;
   gap: 9px;
-  max-width: calc(33.5% - 12px);
+  max-width: calc(38% - 20px);
   padding: 9px 11px;
   background: var(--surface);
   border: 1px solid var(--warning-border);
@@ -4088,7 +4088,7 @@ tr.exam-subrow > td {
 }
 
 /* Đồ thị chạy lặp liên tục, mỗi vòng 5 giây: vẽ đường cong (0-1,25s) ->
-   hiện điểm CĐ/CT + gợi ý AI -> giữ ~2,5s -> xoá đường cong theo chiều vẽ
+   hiện điểm GTLN/GTNN + gợi ý AI -> giữ ~2,5s -> xoá đường cong theo chiều vẽ
    -> nghỉ ngắn rồi vẽ lại từ đầu. */
 @keyframes mi-plot-draw {
   0% {

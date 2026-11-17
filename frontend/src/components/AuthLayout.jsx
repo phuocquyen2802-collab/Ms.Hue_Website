@@ -10,32 +10,45 @@ import { LOGIN_TEXT, TAGLINE } from '../i18n/publicText';
 // hàng trên cùng là nút quay lại (back). Ngôn ngữ và chế độ tối chọn ở trang
 // giới thiệu (hoặc trong menu sau khi đăng nhập), trang này dùng theo.
 
-// Hình minh hoạ bên trái: đồ thị y = x³ − 3x trên giấy kẻ ô, đánh dấu điểm
-// cực đại (CĐ) và cực tiểu (CT). Toạ độ màn hình: gốc O tại (280; 170),
-// 1 đơn vị trục x = 80px, 1 đơn vị trục y = 40px, ô lưới 40px.
-const O = { x: 280, y: 170 };
-const UX = 80;
-const UY = 40;
+// Hình minh hoạ bên trái: đồ thị hàm số lượng giác y = sin x (Toán 11) trên
+// đoạn [-π; 2π], giấy kẻ ô; đánh dấu giá trị lớn nhất (x = π/2) và nhỏ nhất
+// (x = 3π/2). Toạ độ màn hình: gốc O tại (193; 170), 1 radian = 52px,
+// 1 đơn vị trục y = 110px, ô lưới 40px.
+const O = { x: 193, y: 170 };
+const UX = 52;
+const UY = 110;
 const toX = (x) => O.x + x * UX;
 const toY = (y) => O.y - y * UY;
 
 const CURVE = (() => {
   const pts = [];
-  const n = 90;
+  const n = 160;
+  const from = -Math.PI - 0.25;
+  const to = 2 * Math.PI + 0.3;
   for (let i = 0; i <= n; i += 1) {
-    const x = -2.15 + (4.3 * i) / n;
-    const y = x * x * x - 3 * x;
-    pts.push(`${i ? 'L' : 'M'}${toX(x).toFixed(1)} ${toY(y).toFixed(1)}`);
+    const x = from + ((to - from) * i) / n;
+    pts.push(`${i ? 'L' : 'M'}${toX(x).toFixed(1)} ${toY(Math.sin(x)).toFixed(1)}`);
   }
   return pts.join(' ');
 })();
 
+// Nhãn trục x; dx/dy đẩy nhãn sang góc trống cạnh điểm đường cong cắt trục
+// (tại −π, π, 2π đường cong đi qua đúng vị trí vạch chia).
+const X_TICKS = [
+  { v: -Math.PI, label: '−π', dx: -12, dy: 20 },
+  { v: -Math.PI / 2, label: '−π/2', dx: 0, dy: -10 },
+  { v: Math.PI / 2, label: 'π/2', dx: 0, dy: 20 },
+  { v: Math.PI, label: 'π', dx: -10, dy: 20 },
+  { v: (3 * Math.PI) / 2, label: '3π/2', dx: 0, dy: -10 },
+  { v: 2 * Math.PI, label: '2π', dx: -14, dy: -10 },
+];
+
 const GRID_X = Array.from({ length: 15 }, (_, i) => i * 40);
 const GRID_Y = Array.from({ length: 9 }, (_, i) => 10 + i * 40);
 
-function CubicPlot({ text }) {
-  const max = { x: toX(-1), y: toY(2) };
-  const min = { x: toX(1), y: toY(-2) };
+function TrigPlot({ text }) {
+  const max = { x: toX(Math.PI / 2), y: toY(1) };
+  const min = { x: toX((3 * Math.PI) / 2), y: toY(-1) };
 
   return (
     <figure className="auth-plot" aria-label={text.plotLabel}>
@@ -56,20 +69,19 @@ function CubicPlot({ text }) {
           <path d={`M${O.x} 8 l-4 8 h8 Z`} />
           <text x="540" y={O.y + 20}>x</text>
           <text x={O.x + 10} y="20">y</text>
-          <text x={O.x - 14} y={O.y + 18}>O</text>
-          {[-2, -1, 1, 2].map((t) => (
-            <text key={`tx${t}`} x={toX(t)} y={t === 1 ? O.y - 8 : O.y + 18} textAnchor="middle">
-              {t < 0 ? `−${-t}` : t}
+          <text x={O.x - 14} y={O.y - 8}>O</text>
+          {X_TICKS.map((t) => (
+            <text key={t.label} x={toX(t.v) + t.dx} y={O.y + t.dy} textAnchor="middle">
+              {t.label}
             </text>
           ))}
-          <text x={O.x + 10} y={max.y + 5}>2</text>
-          <text x={O.x - 10} y={min.y + 5} textAnchor="end">−2</text>
+          <text x={O.x - 10} y={max.y + 5} textAnchor="end">1</text>
+          <text x={O.x - 10} y={min.y + 5} textAnchor="end">−1</text>
         </g>
 
         <g className="auth-plot-guides">
           <path d={`M${max.x} ${max.y} V${O.y} M${max.x} ${max.y} H${O.x}`} />
           <path d={`M${min.x} ${min.y} V${O.y} M${min.x} ${min.y} H${O.x}`} />
-          <path d={`M${min.x} ${min.y} L${min.x + 18} ${min.y + 22}`} className="auth-plot-leader" />
         </g>
 
         <path className="auth-plot-curve" d={CURVE} pathLength="1" />
@@ -78,8 +90,8 @@ function CubicPlot({ text }) {
           <circle cx={max.x} cy={max.y} r="6" className="auth-plot-point" />
           <text x={max.x} y={max.y - 16} textAnchor="middle" className="auth-plot-label">{text.plotMax}</text>
           <circle cx={min.x} cy={min.y} r="7" className="auth-plot-point insight" />
-          <text x={min.x} y={min.y - 16} textAnchor="middle" className="auth-plot-label">{text.plotMin}</text>
-          <text x="24" y="40" className="auth-plot-eq">y = x³ − 3x</text>
+          <text x={min.x} y={min.y + 30} textAnchor="middle" className="auth-plot-label">{text.plotMin}</text>
+          <text x="24" y="40" className="auth-plot-eq">y = sin x</text>
         </g>
       </svg>
 
@@ -114,7 +126,7 @@ export default function AuthLayout({ back, children }) {
           <p>{t.heroText}</p>
         </div>
 
-        <CubicPlot text={t} />
+        <TrigPlot text={t} />
 
         <div className="auth-hero-foot">{t.heroFoot}</div>
       </section>
