@@ -99,6 +99,8 @@ export const LANDING_TEXT = {
     ctaTitle: `Bắt đầu học cùng ${APP_NAME}`,
     ctaSignedIn: (name) => `Bạn đang đăng nhập với tài khoản ${name}.`,
     ctaGuest: 'Học sinh đăng nhập bằng tài khoản do giáo viên cấp.',
+    creditTeacher: 'Giáo viên hướng dẫn',
+    creditStudents: 'Học sinh thực hiện',
   },
 
   en: {
@@ -186,6 +188,8 @@ export const LANDING_TEXT = {
     ctaTitle: `Start learning with ${APP_NAME}`,
     ctaSignedIn: (name) => `You are signed in as ${name}.`,
     ctaGuest: 'Students sign in with an account provided by their teacher.',
+    creditTeacher: 'Supervising teacher',
+    creditStudents: 'Student authors',
   },
 };
 

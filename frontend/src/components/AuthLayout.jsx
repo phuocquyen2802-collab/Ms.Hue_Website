@@ -1,14 +1,14 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import BrandMark from './BrandMark';
-import { LanguageSwitch, ThemeSwitch } from './PreferenceSwitches';
 import { APP_NAME } from '../config/brand';
 import { usePreferences } from '../context/PreferencesContext';
-import { LOGIN_TEXT, SWITCH_TEXT, TAGLINE } from '../i18n/publicText';
+import { LOGIN_TEXT, TAGLINE } from '../i18n/publicText';
 
 // Khung chung của trang đăng nhập và trang đặt lại mật khẩu: bên trái là
 // thương hiệu + đồ thị minh hoạ, bên phải là thẻ biểu mẫu (children) với
-// hàng trên cùng gồm nút quay lại (back) và 2 công tắc ngôn ngữ / chế độ tối.
+// hàng trên cùng là nút quay lại (back). Ngôn ngữ và chế độ tối chọn ở trang
+// giới thiệu (hoặc trong menu sau khi đăng nhập), trang này dùng theo.
 
 // Hình minh hoạ bên trái: đồ thị y = x³ − 3x trên giấy kẻ ô, đánh dấu điểm
 // cực đại (CĐ) và cực tiểu (CT). Toạ độ màn hình: gốc O tại (280; 170),
@@ -97,7 +97,6 @@ function CubicPlot({ text }) {
 export default function AuthLayout({ back, children }) {
   const { lang } = usePreferences();
   const t = LOGIN_TEXT[lang];
-  const sw = SWITCH_TEXT[lang];
 
   return (
     <div className="auth-page" lang={lang}>
@@ -124,10 +123,6 @@ export default function AuthLayout({ back, children }) {
         <div className="auth-card">
           <div className="auth-card-top">
             {back}
-            <div className="auth-prefs">
-              <LanguageSwitch label={sw.english} title={sw.toOther} />
-              <ThemeSwitch label={sw.darkMode} />
-            </div>
           </div>
           {children}
         </div>

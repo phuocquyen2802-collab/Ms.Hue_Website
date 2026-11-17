@@ -7001,6 +7001,34 @@ body.exam-lock .exam-hide {
   margin-left: auto;
 }
 
+/* Nhóm thực hiện dự án */
+.lp-credits {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 36px;
+  margin-top: 18px;
+  padding-top: 16px;
+  border-top: 1px dashed var(--line);
+  font-size: 14px;
+}
+
+.lp-credit {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 2px 8px;
+  margin: 0;
+}
+
+.lp-credit-label {
+  color: var(--text-muted);
+}
+
+.lp-credit-names {
+  font-weight: 600;
+  color: var(--ink);
+}
+
 @media (max-width: 1024px) {
   .lp-hero-inner {
     grid-template-columns: 1fr;
@@ -7729,12 +7757,6 @@ form .notice + .modal-actions,
 
 .auth-card-top .auth-back {
   margin-bottom: 0;
-}
-
-.auth-prefs {
-  display: flex;
-  align-items: center;
-  gap: 8px;
 }
 
 /* Nút quay lại dạng <button> (màn quên mật khẩu) trông giống link */

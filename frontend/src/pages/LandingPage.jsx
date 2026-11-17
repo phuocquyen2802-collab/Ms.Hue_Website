@@ -4,7 +4,7 @@ import BrandMark from '../components/BrandMark';
 import UiIcon from '../components/UiIcon';
 import { LanguageSwitch, ThemeSwitch } from '../components/PreferenceSwitches';
 import { renderMath } from '../utils/mathRender';
-import { APP_NAME, APP_TITLE } from '../config/brand';
+import { APP_NAME, APP_TITLE, PROJECT_CREDITS } from '../config/brand';
 import { useAuth } from '../context/AuthContext';
 import { usePreferences } from '../context/PreferencesContext';
 import { LANDING_TEXT, SWITCH_TEXT, TAGLINE } from '../i18n/publicText';
@@ -243,13 +243,25 @@ export default function LandingPage() {
       </main>
 
       <footer className="lp-footer">
-        <div className="lp-wrap lp-footer-inner">
-          <div className="lp-logo is-footer">
-            <BrandMark size={26} />
-            <span>{APP_NAME}</span>
+        <div className="lp-wrap">
+          <div className="lp-footer-inner">
+            <div className="lp-logo is-footer">
+              <BrandMark size={26} />
+              <span>{APP_NAME}</span>
+            </div>
+            <span>{tagline}</span>
+            <span className="lp-footer-copy">© {year} {APP_NAME}</span>
           </div>
-          <span>{tagline}</span>
-          <span className="lp-footer-copy">© {year} {APP_NAME}</span>
+          <div className="lp-credits">
+            <p className="lp-credit">
+              <span className="lp-credit-label">{t.creditTeacher}:</span>
+              <span className="lp-credit-names">{PROJECT_CREDITS.teacher}</span>
+            </p>
+            <p className="lp-credit">
+              <span className="lp-credit-label">{t.creditStudents}:</span>
+              <span className="lp-credit-names">{PROJECT_CREDITS.students.join(', ')}</span>
+            </p>
+          </div>
         </div>
       </footer>
     </div>
