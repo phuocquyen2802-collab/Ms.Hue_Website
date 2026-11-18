@@ -18,6 +18,8 @@ submissions (1) -- (N) submission_answers [submission_answers.submissionId -> su
 questions (1) -- (N) submission_answers   [submission_answers.questionId -> questions.id]
 users (1) ---- (N) student_topic_stats    [student_topic_stats.studentId -> users.id]
 users (1) ---- (N) generated_exercises    [generated_exercises.studentId -> users.id]
+users (1) ---- (N) game_history           [game_history.studentId -> users.id]
+question_banks (1) -- (N) game_history    [game_history.bankId -> question_banks.id]
 ```
 
 ## 1. `users.json` — Tài khoản giáo viên & học sinh
@@ -125,3 +127,37 @@ kết luận sai lệch khi học sinh mới làm 1 câu.
 Khi giáo viên duyệt (`status = 'approved'`), backend sẽ tạo một `exam` mới từ
 `exercises` này và gán `assignedTo = [studentId]`, tái sử dụng luồng giao đề
 bình thường thay vì tạo luồng riêng.
+
+## 8. `game_history.json` — Lịch sử chơi trò chơi "Đường đua Toán học"
+
+Mỗi dòng là 1 lượt chơi đã chơi xong (trả lời hết các câu). Lượt bỏ dở không
+được lưu. Kết quả do máy chủ chấm trong lúc chơi (câu trả lời ĐẦU TIÊN của mỗi
+câu), học sinh không sửa được. Xem `backend/src/services/gameHistoryService.js`.
+
+| Trường | Kiểu | Ghi chú |
+|---|---|---|
+| id | string | `gs-<uuid>`, trùng id phiên chơi đã tạo ra lượt này |
+| studentId | string | FK -> `users.id` |
+| bankId | string | FK -> `question_banks.id` (chủ đề) |
+| bankTitle | string | Tên chủ đề lúc chơi - giữ lại kể cả khi chủ đề bị đổi tên/xoá |
+| characterId | string \| null | Nhân vật đã chọn (`pi`, `sigma`...) |
+| totalQuestions | number | Số câu của lượt chơi |
+| correctCount | number | Số câu trả lời đúng |
+| percent | number | % quãng đường = correctCount / totalQuestions, 0..100 |
+| answers | {questionId, chosen, correct, correctAnswer}[] | Theo thứ tự câu hỏi; `questionId` -> `bank_questions.id` |
+| startedAt / finishedAt | ISO date string | |
+| durationSeconds | number | Thời gian chơi |
+
+## 9. `game_sessions.json` — Lượt chơi đang diễn ra
+
+Dữ liệu tạm: tạo khi bấm "Bắt đầu chơi", ghi thêm sau mỗi câu trả lời, chơi
+xong thì chuyển thành 1 dòng `game_history` và bị xoá. Lượt bỏ dở bị xoá khi
+bấm Thoát hoặc sau 6 giờ không hoạt động; mỗi học sinh giữ tối đa 3 lượt dở.
+
+| Trường | Kiểu | Ghi chú |
+|---|---|---|
+| id | string | `gs-<uuid>` |
+| studentId, bankId, bankTitle, characterId | | Như `game_history` |
+| questionIds | string[] | Các câu được phát cho lượt chơi |
+| answers | object[] | Các câu đã trả lời (cùng dạng `game_history.answers`) |
+| startedAt / lastActivityAt | ISO date string | |

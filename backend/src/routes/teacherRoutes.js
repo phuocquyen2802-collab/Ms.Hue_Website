@@ -16,6 +16,7 @@ const { listGroups, createGroup, updateGroup, deleteGroup } = require('../contro
 const {
   listBanks, createBank, renameBank, deleteBank, getBankQuestions,
 } = require('../controllers/questionBankController');
+const { listStudentGameHistory, getStudentGameHistoryDetail } = require('../controllers/gameHistoryController');
 
 const router = express.Router();
 
@@ -26,6 +27,8 @@ router.post('/students', createStudent);
 router.put('/students/:studentId', updateStudent);
 router.delete('/students/:studentId', deleteStudent);
 router.get('/students/:studentId/stats', getStudentStats);
+router.get('/students/:studentId/game-history', listStudentGameHistory);
+router.get('/students/:studentId/game-history/:historyId', getStudentGameHistoryDetail);
 router.get('/groups', listGroups);
 router.post('/groups', createGroup);
 router.put('/groups/:groupId', updateGroup);

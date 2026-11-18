@@ -63,6 +63,12 @@ function removeById(collectionName, id) {
   db.remove({ id }).write();
 }
 
+// Xoá mọi dòng khớp điều kiện (object hoặc hàm) trong 1 lần ghi file.
+function removeMany(collectionName, predicate) {
+  const db = getDb(collectionName);
+  db.remove(predicate).write();
+}
+
 module.exports = {
   findAll,
   findById,
@@ -71,4 +77,5 @@ module.exports = {
   insert,
   updateById,
   removeById,
+  removeMany,
 };

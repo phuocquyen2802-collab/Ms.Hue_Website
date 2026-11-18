@@ -12,7 +12,10 @@ const {
 const { getMyWeakTopics } = require('../controllers/statsController');
 const { getMyApprovedRoadmaps } = require('../controllers/generatedExerciseController');
 const { listMyGroups } = require('../controllers/studentGroupController');
-const { listGameBanks, startGame, checkGameAnswer } = require('../controllers/questionBankController');
+const {
+  listGameBanks, startGame, checkGameAnswer, abandonGame,
+} = require('../controllers/questionBankController');
+const { listMyGameHistory, getMyGameHistoryDetail } = require('../controllers/gameHistoryController');
 
 const router = express.Router();
 
@@ -36,5 +39,9 @@ router.get('/me/groups', listMyGroups);
 router.get('/games/banks', listGameBanks);
 router.post('/games/:bankId/start', startGame);
 router.post('/games/:bankId/check', checkGameAnswer);
+router.post('/games/sessions/:sessionId/abandon', abandonGame);
+// Lịch sử chơi của chính học sinh
+router.get('/games/history', listMyGameHistory);
+router.get('/games/history/:historyId', getMyGameHistoryDetail);
 
 module.exports = router;

@@ -23,6 +23,8 @@ import AnnouncementsPage from './pages/AnnouncementsPage';
 import AiAssistantPage from './pages/AiAssistantPage';
 import TeacherQuestionBanksPage from './pages/TeacherQuestionBanksPage';
 import StudentGamesPage from './pages/StudentGamesPage';
+import StudentGameHistoryPage from './pages/StudentGameHistoryPage';
+import GameHistoryDetailPage from './pages/GameHistoryDetailPage';
 
 export default function App() {
   return (
@@ -90,6 +92,14 @@ export default function App() {
         element={
           <ProtectedRoute role="teacher">
             <TeacherStudentDetailPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/teacher/students/:studentId/games/:historyId"
+        element={
+          <ProtectedRoute role="teacher">
+            <GameHistoryDetailPage />
           </ProtectedRoute>
         }
       />
@@ -182,6 +192,22 @@ export default function App() {
         element={
           <ProtectedRoute role="student">
             <StudentGamesPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/student/games/history"
+        element={
+          <ProtectedRoute role="student">
+            <StudentGameHistoryPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/student/games/history/:historyId"
+        element={
+          <ProtectedRoute role="student">
+            <GameHistoryDetailPage />
           </ProtectedRoute>
         }
       />

@@ -47,6 +47,9 @@ data/chat_uploads/*
 # Lượt đăng nhập sai và link khôi phục mật khẩu: dữ liệu lúc chạy, không đưa lên GitHub
 data/login_attempts.json
 data/password_resets.json
+# Lịch sử chơi và lượt chơi đang dở của học sinh: dữ liệu lúc chạy
+data/game_history.json
+data/game_sessions.json
 temp/
 tmp/
 

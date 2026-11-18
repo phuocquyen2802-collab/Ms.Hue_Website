@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { Link, useSearchParams } from 'react-router-dom';
 import api from '../services/api';
 import UiIcon from '../components/UiIcon';
 import GameCharacter, { CHARACTERS } from '../components/GameCharacters';
@@ -8,6 +9,9 @@ import { renderMath } from '../utils/mathRender';
 // Trò chơi "Đường đua Toán học": chọn chủ đề (ngân hàng đề giáo viên tải lên)
 // và nhân vật; mỗi câu trả lời đúng nhân vật vui vẻ tiến 1 bước về đích, sai
 // thì buồn và đứng yên. Hết câu hỏi thì tổng kết % quãng đường đã đi.
+// Máy chủ ghi từng câu trả lời vào phiên chơi (sessionId) và tự lưu lượt chơi
+// vào Lịch sử chơi khi trả lời xong câu cuối. /student/games?bank=<id> chọn
+// sẵn chủ đề (nút "Chơi lại chủ đề này" trong lịch sử).
 
 const CHARACTER_KEY = 'mi-game-character';
 // Đi được từ chừng này % quãng đường trở lên thì chúc mừng (cúp vàng + pháo giấy).
@@ -82,12 +86,21 @@ export default function StudentGamesPage() {
   const [feedback, setFeedback] = useState(null); // answer vừa chấm của câu hiện tại
   const [checking, setChecking] = useState(false);
   const [celebrate, setCelebrate] = useState(false);
+  // Lưu lịch sử: historyId khi máy chủ đã lưu lượt chơi, unsaved khi có câu không ghi được.
+  const [savedHistoryId, setSavedHistoryId] = useState(null);
+  const [unsaved, setUnsaved] = useState(false);
+  const [searchParams] = useSearchParams();
 
   useEffect(() => {
     api.get('/student/games/banks')
-      .then(({ data }) => setBanks(data))
+      .then(({ data }) => {
+        setBanks(data);
+        const preset = data.find((b) => b.id === searchParams.get('bank'));
+        if (preset) chooseBank(preset);
+      })
       .catch((err) => setLoadError(err.response?.data?.message || 'Không tải được danh sách chủ đề'))
       .finally(() => setLoading(false));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   function chooseCharacter(id) {
@@ -103,12 +116,14 @@ export default function StudentGamesPage() {
       const bank = banks.find((b) => b.id === targetBankId);
       // Phòng hờ: số câu vượt quá chủ đề thì chơi tất cả.
       const safeCount = bank && count > bank.questionCount ? 0 : count;
-      const { data } = await api.post(`/student/games/${targetBankId}/start`, { count: safeCount });
+      const { data } = await api.post(`/student/games/${targetBankId}/start`, { count: safeCount, characterId });
       setGame(data);
       setIndex(0);
       setAnswers([]);
       setFeedback(null);
       setCelebrate(false);
+      setSavedHistoryId(null);
+      setUnsaved(false);
       setPhase('play');
       window.scrollTo({ top: 0 });
     } catch (err) {
@@ -123,10 +138,14 @@ export default function StudentGamesPage() {
     const question = game.questions[index];
     setChecking(true);
     try {
-      const { data } = await api.post(`/student/games/${game.bank.id}/check`, { questionId: question.id, answer: optionKey });
+      const { data } = await api.post(`/student/games/${game.bank.id}/check`, {
+        questionId: question.id, answer: optionKey, sessionId: game.sessionId,
+      });
       const result = { question, chosen: optionKey, correct: data.correct, correctAnswer: data.correctAnswer };
       setFeedback(result);
       setAnswers((prev) => [...prev, result]);
+      if (data.finished && data.historyId) setSavedHistoryId(data.historyId);
+      if (game.sessionId && data.recorded === false) setUnsaved(true);
     } catch (err) {
       alert(err.response?.data?.message || 'Không chấm được câu này, thử lại nhé.');
     } finally {
@@ -148,6 +167,9 @@ export default function StudentGamesPage() {
 
   function quit() {
     if (answers.length > 0 && !window.confirm('Thoát lượt chơi này? Kết quả sẽ không được tính.')) return;
+    // Báo máy chủ bỏ phiên chơi (lượt bỏ dở không vào lịch sử). Lỗi mạng thì
+    // thôi: phiên bỏ dở tự bị xoá sau vài giờ.
+    if (game?.sessionId) api.post(`/student/games/sessions/${game.sessionId}/abandon`).catch(() => {});
     setPhase('pick');
     setGame(null);
   }
@@ -265,6 +287,21 @@ export default function StudentGamesPage() {
             <div><dt>Tổng số câu</dt><dd>{total}</dd></div>
           </dl>
 
+          {savedHistoryId ? (
+            <div className="notice is-success game-saved-note" role="status">
+              <UiIcon name="check" size={18} />
+              <div className="notice-body">
+                <span>Đã lưu kết quả vào Lịch sử chơi.</span>{' '}
+                <Link to={`/student/games/history/${savedHistoryId}`}>Xem lại lượt chơi này</Link>
+              </div>
+            </div>
+          ) : unsaved && (
+            <div className="notice is-warning game-saved-note" role="status">
+              <UiIcon name="alert" size={18} />
+              <div className="notice-body">Lượt chơi này chưa được lưu vào lịch sử.</div>
+            </div>
+          )}
+
           <div className="game-result-actions">
             <button type="button" className="btn secondary" onClick={() => { setPhase('pick'); setGame(null); }}>
               Đổi chủ đề / nhân vật
@@ -323,6 +360,11 @@ export default function StudentGamesPage() {
         <div>
           <h1 className="page-title">Trò chơi</h1>
           <p className="page-subtitle">Đường đua Toán học: trả lời đúng để đưa nhân vật của bạn về đích</p>
+        </div>
+        <div className="header-actions">
+          <Link to="/student/games/history" className="btn secondary">
+            <UiIcon name="history" size={16} /> Lịch sử chơi
+          </Link>
         </div>
       </div>
 

@@ -7,6 +7,7 @@ const { v4: uuidv4 } = require('uuid');
 const dataAccess = require('../models/dataAccess');
 const { encryptPassword, decryptPassword } = require('../utils/passwordVault');
 const loginGuard = require('../services/loginGuard');
+const gameHistory = require('../services/gameHistoryService');
 const { EMAIL_RE } = require('./passwordResetController');
 
 const SALT_ROUNDS = 10;
@@ -132,6 +133,8 @@ function deleteStudent(req, res) {
   dataAccess
     .findMany('generated_exercises', { studentId: student.id })
     .forEach((record) => dataAccess.removeById('generated_exercises', record.id));
+
+  gameHistory.removeStudentData(student.id);
 
   dataAccess.findAll('exams').forEach((exam) => {
     if (exam.assignedTo.includes(student.id)) {

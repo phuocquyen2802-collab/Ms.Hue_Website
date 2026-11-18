@@ -8,9 +8,11 @@
 //
 // Dữ liệu: question_banks (thông tin ngân hàng), bank_questions (câu hỏi).
 // Tách riêng khỏi questions của đề thi để không lẫn vào thống kê điểm.
+// Kết quả từng lượt chơi được lưu vào lịch sử chơi (gameHistoryService).
 const { v4: uuidv4 } = require('uuid');
 const dataAccess = require('../models/dataAccess');
 const { importExamFromDocx } = require('../services/docxImportService');
+const gameHistory = require('../services/gameHistoryService');
 
 const BANKS = 'question_banks';
 const BANK_QUESTIONS = 'bank_questions';
@@ -141,6 +143,7 @@ function shuffle(list) {
 }
 
 // Bắt đầu 1 lượt chơi: lấy ngẫu nhiên `count` câu (0 = tất cả), không kèm đáp án đúng.
+// Tạo phiên chơi để máy chủ tự ghi kết quả vào lịch sử khi chơi xong.
 function startGame(req, res) {
   const bank = dataAccess.findById(BANKS, req.params.bankId);
   if (!bank) return res.status(404).json({ message: 'Không tìm thấy ngân hàng đề' });
@@ -148,19 +151,47 @@ function startGame(req, res) {
   const wanted = Number(req.body?.count) || 0;
   const count = Math.min(all.length, wanted > 0 ? wanted : all.length, MAX_GAME_QUESTIONS);
   const questions = shuffle(all).slice(0, count).map((q) => ({ id: q.id, content: q.content, options: q.options }));
-  return res.json({ bank: { id: bank.id, title: bank.title }, questions });
+  const session = gameHistory.createSession({
+    studentId: req.user.id,
+    bank,
+    questionIds: questions.map((q) => q.id),
+    characterId: req.body?.characterId,
+  });
+  return res.json({ sessionId: session.id, bank: { id: bank.id, title: bank.title }, questions });
 }
 
+// Chấm 1 câu. Có sessionId thì ghi vào phiên chơi; trả lời xong câu cuối
+// cùng thì lượt chơi được lưu vào lịch sử (finished + historyId).
 function checkGameAnswer(req, res) {
-  const { questionId, answer } = req.body || {};
+  const { questionId, answer, sessionId } = req.body || {};
   const question = dataAccess.findById(BANK_QUESTIONS, questionId);
   if (!question || question.bankId !== req.params.bankId) {
     return res.status(404).json({ message: 'Không tìm thấy câu hỏi' });
   }
-  return res.json({ correct: answer === question.correctAnswer, correctAnswer: question.correctAnswer });
+  const result = { correct: answer === question.correctAnswer, correctAnswer: question.correctAnswer };
+  if (!sessionId) return res.json({ ...result, recorded: false });
+
+  const saved = gameHistory.recordAnswer({
+    sessionId, studentId: req.user.id, bankId: req.params.bankId, question, answer,
+  });
+  if (!saved) return res.json({ ...result, recorded: false });
+  return res.json({
+    // Câu đã trả lời trước đó: giữ kết quả lần đầu.
+    correct: saved.answer.correct,
+    correctAnswer: question.correctAnswer,
+    recorded: true,
+    finished: saved.finished,
+    historyId: saved.finished ? saved.record.id : undefined,
+  });
+}
+
+// Học sinh bấm Thoát giữa lượt: bỏ phiên chơi, lượt này không vào lịch sử.
+function abandonGame(req, res) {
+  gameHistory.abandonSession(req.params.sessionId, req.user.id);
+  return res.status(204).send();
 }
 
 module.exports = {
   listBanks, createBank, renameBank, deleteBank, getBankQuestions,
-  listGameBanks, startGame, checkGameAnswer,
+  listGameBanks, startGame, checkGameAnswer, abandonGame,
 };

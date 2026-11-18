@@ -3,6 +3,7 @@ import { useParams, Link } from 'react-router-dom';
 import api from '../services/api';
 import WeakTopicsChart from '../components/WeakTopicsChart';
 import UiIcon, { scoreLevel, formatScore } from '../components/UiIcon';
+import GameHistoryPanel from '../components/GameHistory';
 import { renderMath } from '../utils/mathRender';
 
 export default function TeacherStudentDetailPage() {
@@ -12,6 +13,7 @@ export default function TeacherStudentDetailPage() {
   const [generateError, setGenerateError] = useState('');
   const [proposals, setProposals] = useState([]);
   const [submissions, setSubmissions] = useState([]);
+  const [gameHistory, setGameHistory] = useState(null);
 
   async function loadStats() {
     const { data } = await api.get(`/teacher/students/${studentId}/stats`);
@@ -32,10 +34,20 @@ export default function TeacherStudentDetailPage() {
     }
   }
 
+  async function loadGameHistory() {
+    try {
+      const { data } = await api.get(`/teacher/students/${studentId}/game-history`);
+      setGameHistory(data.items || []);
+    } catch {
+      setGameHistory([]);
+    }
+  }
+
   useEffect(() => {
     loadStats();
     loadProposals();
     loadSubmissions();
+    loadGameHistory();
   }, [studentId]);
 
   async function handleGenerate() {
@@ -230,6 +242,35 @@ export default function TeacherStudentDetailPage() {
               </tbody>
             </table>
           </div>
+        )}
+      </div>
+
+      {/* Lịch sử chơi trò chơi Đường đua Toán học */}
+      <div className="card">
+        <div className="card-header">
+          <div className="card-title-group">
+            <div className="card-title-row">
+              <UiIcon name="play" size={18} className="title-icon" />
+              <h2>Lịch sử trò chơi</h2>
+              <span className="count-badge">{gameHistory ? gameHistory.length : 0}</span>
+            </div>
+            <p className="card-hint">Các lượt chơi Đường đua Toán học học sinh đã chơi xong.</p>
+          </div>
+        </div>
+
+        {gameHistory === null ? (
+          <div className="empty-state"><div className="empty-state-title">Đang tải…</div></div>
+        ) : (
+          <GameHistoryPanel
+            items={gameHistory}
+            detailPath={(id) => `/teacher/students/${studentId}/games/${id}`}
+            empty={(
+              <div className="empty-state">
+                <div className="empty-state-icon is-svg"><UiIcon name="play" size={24} /></div>
+                <div className="empty-state-title">Học sinh chưa chơi xong lượt nào</div>
+              </div>
+            )}
+          />
         )}
       </div>
 
