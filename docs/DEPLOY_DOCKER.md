@@ -131,25 +131,35 @@ email đó. Email chỉ được gửi khi khớp với **email khôi phục** c
 giáo viên nhập khi thêm/sửa học sinh, hoặc người dùng tự thêm ở trang Cài đặt
 (tên đăng nhập là email thì dùng luôn email đó).
 
-Cần một dịch vụ gửi mail qua SMTP. Ví dụ với Resend (miễn phí 3.000 email/tháng):
+Email được gửi qua Resend API (https://resend.com, miễn phí 3.000 email/tháng),
+đi qua HTTPS nên không bị nhà cung cấp server chặn như cổng SMTP:
 
 1. Đăng ký tại https://resend.com, vào **Domains → Add Domain**, nhập tên miền
-   của website.
+   dùng để gửi mail.
 2. Thêm các bản ghi DNS mà Resend hiển thị (TXT/MX) vào trang quản lý DNS của
    tên miền, chờ Resend báo **Verified**.
-3. Vào **API Keys → Create API Key**, chép key (bắt đầu bằng `re_`).
+3. Vào **API Keys → Create API Key** (quyền *Sending access* là đủ), chép key
+   (bắt đầu bằng `re_`).
 4. Thêm vào `backend/.env` trên server (xem mẫu ở `backend/.env.example`):
    ```
-   APP_URL=https://ten-mien-cua-ban
-   MAIL_FROM=MathInsight AI <no-reply@ten-mien-cua-ban>
-   SMTP_HOST=smtp.resend.com
-   SMTP_PORT=465
-   SMTP_USER=resend
-   SMTP_PASS=re_xxxxxxxx
+   APP_URL=https://ten-mien-cua-website
+   EMAIL_FROM="MathInsight AI <support@ten-mien-da-xac-minh>"
+   RESEND_API_KEY=re_xxxxxxxx
    ```
-5. `docker compose up -d` để nạp cấu hình mới.
+   `APP_URL` là địa chỉ người dùng mở website - nút trong email trỏ về đây.
+5. `docker compose up -d` để nạp cấu hình mới. Log khởi động có dòng `[Email]`
+   cho biết đã bật gửi email chưa (`docker compose logs app | grep Email`).
+6. Gửi thử 1 email để kiểm tra:
+   ```
+   docker compose exec app npm run mail:test -- ten-ban@gmail.com
+   ```
+   Lỗi `domain is not verified` là tên miền trong `EMAIL_FROM` chưa xác minh
+   xong ở Resend; lỗi `API key is invalid` là sai key.
 
-Chưa cấu hình SMTP thì màn khôi phục báo "Hệ thống chưa bật gửi email, liên hệ
+Muốn dùng dịch vụ SMTP khác (Brevo, Gmail...) thì bỏ trống `RESEND_API_KEY` và
+đặt `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS` (xem `backend/.env.example`).
+
+Chưa cấu hình gửi email thì màn khôi phục báo "Hệ thống chưa bật gửi email, liên hệ
 giáo viên"; giáo viên vẫn đặt lại mật khẩu cho học sinh ở mục Quản lý học sinh
 (việc này cũng mở khoá tài khoản ngay).
 

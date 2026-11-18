@@ -99,18 +99,25 @@ async function forgotPassword(req, res) {
   };
   dataAccess.insert(COLLECTION, record);
 
-  // Chạy trên máy cá nhân chưa cấu hình SMTP: in link ra cửa sổ máy chủ để thử.
+  // Chạy trên máy cá nhân chưa cấu hình gửi email: in link ra cửa sổ máy chủ để thử.
   const base = mailService.appUrl() || req.get('origin') || 'http://localhost:5173';
   const link = `${base}/reset-password?token=${token}`;
   if (!mailService.isConfigured()) {
-    console.log(`[Khôi phục mật khẩu] Chưa cấu hình SMTP - link cho ${user.email}: ${link}`);
+    console.log(`[Khôi phục mật khẩu] Chưa cấu hình gửi email (thiếu ${mailService.missingConfig().join(', ')}) - link cho ${user.email}: ${link}`);
     return res.json(sent);
   }
 
   try {
-    await mailService.sendPasswordResetEmail({
-      to: address, name: user.name, link, minutes: TOKEN_TTL_MINUTES, lang: lang === 'en' ? 'en' : 'vi',
+    const result = await mailService.sendPasswordResetEmail({
+      to: address,
+      name: user.name,
+      account: user.email,
+      link,
+      minutes: TOKEN_TTL_MINUTES,
+      requestedAt: new Date(now),
+      lang: lang === 'en' ? 'en' : 'vi',
     });
+    console.log(`[Khôi phục mật khẩu] Đã gửi email cho tài khoản ${user.email} (${result.provider}, mã ${result.id})`);
   } catch (err) {
     console.error('[Khôi phục mật khẩu] Gửi email thất bại:', err.message);
     dataAccess.removeById(COLLECTION, record.id);
