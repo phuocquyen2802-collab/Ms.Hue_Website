@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../context/AuthContext';
 import api from '../services/api';
+import { confirmDialog, toast } from './Notify';
 
 const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 const BACKEND_BASE = API_BASE.replace(/\/api$/, '');
@@ -234,7 +235,8 @@ export default function ChatWidget() {
     if (!file) return;
 
     if (file.size > 50 * 1024 * 1024) {
-      alert('Dung lượng tệp tối đa là 50MB.');
+      toast.warning('Dung lượng tệp tối đa là 50MB.');
+      e.target.value = '';
       return;
     }
 
@@ -316,7 +318,7 @@ export default function ChatWidget() {
       loadConversation(activePartner.id);
       loadContacts();
     } catch {
-      alert('Không thể gửi tin nhắn/tệp đính kèm. Vui lòng thử lại.');
+      toast.error('Không thể gửi tin nhắn/tệp đính kèm. Vui lòng thử lại.');
       setInputText(textToSend);
       setSelectedRawFile(rawFile);
       setFilePreview(currentPreview);
@@ -329,9 +331,12 @@ export default function ChatWidget() {
   // Xóa toàn bộ lịch sử tin nhắn
   async function handleClearAllMessages() {
     if (!activePartner?.id) return;
-    const confirmDelete = window.confirm(
-      `Bạn có chắc chắn muốn XÓA TOÀN BỘ lịch sử tin nhắn với ${activePartner.name} không?\nHành động này không thể hoàn tác.`
-    );
+    const confirmDelete = await confirmDialog({
+      title: 'Xoá toàn bộ tin nhắn?',
+      message: `Toàn bộ lịch sử tin nhắn với ${activePartner.name} sẽ bị xoá. Hành động này không thể hoàn tác.`,
+      confirmText: 'Xoá tất cả',
+      tone: 'danger',
+    });
     if (!confirmDelete) return;
 
     try {
@@ -339,7 +344,7 @@ export default function ChatWidget() {
       setConversation([]);
       loadContacts();
     } catch {
-      alert('Không thể xóa lịch sử tin nhắn. Vui lòng thử lại.');
+      toast.error('Không thể xóa lịch sử tin nhắn. Vui lòng thử lại.');
     }
   }
 

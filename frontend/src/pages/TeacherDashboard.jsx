@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import api from '../services/api';
 import CountUp from '../components/CountUp';
 import UiIcon from '../components/UiIcon';
+import { confirmDialog, toast } from '../components/Notify';
 import { exportAccountsToXlsx, generatePassword } from '../utils/studentAccountsExport';
 
 const EMPTY_STUDENT_FORM = { name: '', email: '', password: '', className: '', recoveryEmail: '' };
@@ -109,17 +110,23 @@ export default function TeacherDashboard() {
       setEditingId(null);
       loadData();
     } catch (err) {
-      alert(err.response?.data?.message || 'Lỗi cập nhật');
+      toast.error(err.response?.data?.message || 'Lỗi cập nhật');
     }
   }
 
   async function handleDeleteStudent(student) {
-    if (!window.confirm(`Xoá tài khoản học sinh "${student.name}"?`)) return;
+    const ok = await confirmDialog({
+      title: 'Xoá tài khoản học sinh?',
+      message: `Tài khoản "${student.name}" cùng toàn bộ bài làm, kết quả và lịch sử chơi sẽ bị xoá. Không thể hoàn tác.`,
+      confirmText: 'Xoá tài khoản',
+      tone: 'danger',
+    });
+    if (!ok) return;
     try {
       await api.delete(`/teacher/students/${student.id}`);
       loadData();
     } catch (err) {
-      alert(err.response?.data?.message || 'Lỗi xoá tài khoản');
+      toast.error(err.response?.data?.message || 'Lỗi xoá tài khoản');
     }
   }
 
@@ -177,12 +184,18 @@ export default function TeacherDashboard() {
   }
 
   async function handleDeleteGroup(group) {
-    if (!window.confirm(`Xoá nhóm "${group.name}"? (không ảnh hưởng đề đã giao trước đó)`)) return;
+    const ok = await confirmDialog({
+      title: 'Xoá nhóm?',
+      message: `Nhóm "${group.name}" sẽ bị xoá. Các đề đã giao trước đó không bị ảnh hưởng.`,
+      confirmText: 'Xoá nhóm',
+      tone: 'danger',
+    });
+    if (!ok) return;
     try {
       await api.delete(`/teacher/groups/${group.id}`);
       loadData();
     } catch (err) {
-      alert(err.response?.data?.message || 'Lỗi xoá nhóm');
+      toast.error(err.response?.data?.message || 'Lỗi xoá nhóm');
     }
   }
 

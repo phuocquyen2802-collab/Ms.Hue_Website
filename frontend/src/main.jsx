@@ -4,6 +4,7 @@ import { BrowserRouter } from 'react-router-dom';
 import App from './App.jsx';
 import { AuthProvider } from './context/AuthContext.jsx';
 import { PreferencesProvider } from './context/PreferencesContext.jsx';
+import NotifyHost from './components/Notify.jsx';
 import './index.css';
 import 'katex/dist/katex.min.css';
 
@@ -13,6 +14,8 @@ ReactDOM.createRoot(document.getElementById('root')).render(
       <PreferencesProvider>
         <AuthProvider>
           <App />
+          {/* Hộp thoại xác nhận + thông báo nhanh thay cho alert/confirm của trình duyệt */}
+          <NotifyHost />
         </AuthProvider>
       </PreferencesProvider>
     </BrowserRouter>

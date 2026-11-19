@@ -5,6 +5,7 @@ import { renderMath } from '../utils/mathRender';
 import RoadmapSteps, { RoadmapSummary } from '../components/RoadmapSteps';
 import UiIcon, { scoreLevel, formatScore, ScoreTrend } from '../components/UiIcon';
 import QuestionDiagram from '../components/QuestionDiagram';
+import { toast } from '../components/Notify';
 import { formatDuration, AUTO_SUBMIT_TEXT } from '../utils/examTime';
 
 export default function TeacherSubmissionDetailPage() {
@@ -140,7 +141,7 @@ export default function TeacherSubmissionDetailPage() {
       setActionMessage('✓ Đã xóa và huỷ bản đề xuất AI này khỏi hệ thống.');
     } catch (err) {
       console.error(err);
-      alert(err.response?.data?.message || 'Lỗi khi xóa bản đề xuất');
+      toast.error(err.response?.data?.message || 'Lỗi khi xóa bản đề xuất');
     } finally {
       setRejectActionLoading(false);
     }
@@ -230,7 +231,7 @@ export default function TeacherSubmissionDetailPage() {
       setActionMessage('✓ Đã phê duyệt và gửi lộ trình ôn tập / bài tập đến học sinh thành công!');
     } catch (err) {
       console.error(err);
-      alert(err.response?.data?.message || 'Lỗi khi phê duyệt');
+      toast.error(err.response?.data?.message || 'Lỗi khi phê duyệt');
     } finally {
       setReviewing(false);
     }

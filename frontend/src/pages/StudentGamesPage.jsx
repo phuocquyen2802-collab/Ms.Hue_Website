@@ -4,6 +4,7 @@ import api from '../services/api';
 import UiIcon from '../components/UiIcon';
 import GameCharacter, { CHARACTERS } from '../components/GameCharacters';
 import Celebration from '../components/Celebration';
+import { confirmDialog, toast } from '../components/Notify';
 import { renderMath } from '../utils/mathRender';
 
 // Trò chơi "Đường đua Toán học": chọn chủ đề (ngân hàng đề giáo viên tải lên)
@@ -147,7 +148,7 @@ export default function StudentGamesPage() {
       if (data.finished && data.historyId) setSavedHistoryId(data.historyId);
       if (game.sessionId && data.recorded === false) setUnsaved(true);
     } catch (err) {
-      alert(err.response?.data?.message || 'Không chấm được câu này, thử lại nhé.');
+      toast.error(err.response?.data?.message || 'Không chấm được câu này, thử lại nhé.');
     } finally {
       setChecking(false);
     }
@@ -165,8 +166,17 @@ export default function StudentGamesPage() {
     setFeedback(null);
   }
 
-  function quit() {
-    if (answers.length > 0 && !window.confirm('Thoát lượt chơi này? Kết quả sẽ không được tính.')) return;
+  async function quit() {
+    if (answers.length > 0) {
+      const ok = await confirmDialog({
+        title: 'Thoát lượt chơi này?',
+        message: 'Kết quả sẽ không được tính và không lưu vào lịch sử chơi.',
+        confirmText: 'Thoát',
+        cancelText: 'Chơi tiếp',
+        tone: 'warning',
+      });
+      if (!ok) return;
+    }
     // Báo máy chủ bỏ phiên chơi (lượt bỏ dở không vào lịch sử). Lỗi mạng thì
     // thôi: phiên bỏ dở tự bị xoá sau vài giờ.
     if (game?.sessionId) api.post(`/student/games/sessions/${game.sessionId}/abandon`).catch(() => {});

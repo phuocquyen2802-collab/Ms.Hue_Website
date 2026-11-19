@@ -5,6 +5,7 @@ import CountUp from '../components/CountUp';
 import useAutoRefresh, { setIfChanged } from '../hooks/useAutoRefresh';
 import { renderMath } from '../utils/mathRender';
 import UiIcon, { scoreLevel, formatScore, ScoreTrend } from '../components/UiIcon';
+import { confirmDialog, toast } from '../components/Notify';
 import {
   FORMULA_SIZE_PRESETS,
   valignForHeightEm,
@@ -169,10 +170,13 @@ export default function TeacherExamsPage() {
           const topicCounts = computeTopicCounts(questions, (q) => (q.tags && q.tags[0]) || 'Kiến thức chung');
           const coverage = await checkCoverage(file, topicCounts);
           if (coverage.supported && !coverage.isComplete) {
-            const proceed = window.confirm(
-              `⚠️ File đáp án chi tiết này có vẻ THIẾU lời giải cho ${coverage.missingNumbers.length} số câu ` +
-              `(thiếu Câu: ${coverage.missingNumbers.join(', ')} - tính theo từng chủ đề).\n\nVẫn tiếp tục tải lên?`
-            );
+            const proceed = await confirmDialog({
+              title: 'File đáp án có thể bị thiếu',
+              message: `File đáp án chi tiết này có vẻ thiếu lời giải cho ${coverage.missingNumbers.length} câu ` +
+                `(Câu ${coverage.missingNumbers.join(', ')} - tính theo từng chủ đề). Vẫn tiếp tục tải lên?`,
+              confirmText: 'Vẫn tải lên',
+              tone: 'warning',
+            });
             if (!proceed) {
               setUploadingAnswerKeyExamId(null);
               return;
@@ -194,21 +198,27 @@ export default function TeacherExamsPage() {
       loadData().catch((err) => console.error('Lỗi làm mới danh sách:', err));
     } catch (err) {
       console.error(err);
-      alert(err.response?.data?.message || 'Lỗi khi tải lên file đáp án chi tiết');
+      toast.error(err.response?.data?.message || 'Lỗi khi tải lên file đáp án chi tiết');
     } finally {
       setUploadingAnswerKeyExamId(null);
     }
   }
 
   async function handleRemoveAnswerKey(examId) {
-    if (!window.confirm('Gỡ file đáp án chi tiết khỏi đề thi này?')) return;
+    const ok = await confirmDialog({
+      title: 'Gỡ file đáp án chi tiết?',
+      message: 'Học sinh sẽ không xem được file đáp án chi tiết của đề thi này nữa.',
+      confirmText: 'Gỡ file',
+      tone: 'danger',
+    });
+    if (!ok) return;
     setUploadingAnswerKeyExamId(examId);
     try {
       await api.delete(`/exams/${examId}/answer-key`);
       loadData().catch((err) => console.error('Lỗi làm mới danh sách:', err));
     } catch (err) {
       console.error(err);
-      alert(err.response?.data?.message || 'Lỗi khi gỡ file đáp án chi tiết');
+      toast.error(err.response?.data?.message || 'Lỗi khi gỡ file đáp án chi tiết');
     } finally {
       setUploadingAnswerKeyExamId(null);
     }
@@ -769,12 +779,18 @@ export default function TeacherExamsPage() {
   }
 
   async function handleDeleteExam(exam) {
-    if (!window.confirm(`Xoá đề thi "${exam.title}"?`)) return;
+    const ok = await confirmDialog({
+      title: 'Xoá đề thi?',
+      message: `Đề "${exam.title}" cùng toàn bộ câu hỏi và bài làm của học sinh sẽ bị xoá. Không thể hoàn tác.`,
+      confirmText: 'Xoá đề thi',
+      tone: 'danger',
+    });
+    if (!ok) return;
     try {
       await api.delete(`/exams/${exam.id}`);
       loadData();
     } catch (err) {
-      alert(err.response?.data?.message || 'Xoá đề thi thất bại');
+      toast.error(err.response?.data?.message || 'Xoá đề thi thất bại');
     }
   }
 

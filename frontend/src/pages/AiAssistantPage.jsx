@@ -4,6 +4,7 @@ import api, { postEventStream } from '../services/api';
 import { renderMath } from '../utils/mathRender';
 import BrandMark from '../components/BrandMark';
 import UiIcon from '../components/UiIcon';
+import { confirmDialog } from '../components/Notify';
 import { APP_NAME, APP_TITLE } from '../config/brand';
 import { usePreferences } from '../context/PreferencesContext';
 
@@ -131,9 +132,15 @@ export default function AiAssistantPage() {
     setShowHistory(false);
   }
 
-  function handleDeleteConversation(convId, e) {
+  async function handleDeleteConversation(convId, e) {
     e.stopPropagation();
-    if (!window.confirm('Xoá đoạn chat này khỏi lịch sử?')) return;
+    const ok = await confirmDialog({
+      title: 'Xoá đoạn chat?',
+      message: 'Đoạn chat này sẽ bị xoá khỏi lịch sử và không khôi phục được.',
+      confirmText: 'Xoá',
+      tone: 'danger',
+    });
+    if (!ok) return;
     setHistory((prev) => {
       const next = prev.filter((c) => c.id !== convId);
       saveHistory(user.id, next);

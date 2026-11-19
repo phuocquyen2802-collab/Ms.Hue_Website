@@ -9389,3 +9389,225 @@ tr.qb-row-new > td {
     animation: none;
   }
 }
+
+/* ==========================================================================
+   Hộp thoại xác nhận & thông báo nhanh (components/Notify.jsx) - thay cho
+   hộp thoại mặc định của trình duyệt (window.confirm / window.alert)
+   ========================================================================== */
+
+.notify-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 10050; /* trên mọi hộp thoại khác của trang (z-index 9999) */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  background: rgba(21, 32, 58, 0.5);
+  backdrop-filter: blur(3px);
+  animation: notify-fade 0.15s ease-out;
+}
+
+.notify-dialog {
+  width: 100%;
+  max-width: 440px;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  column-gap: 16px;
+  row-gap: 22px;
+  padding: 24px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: var(--surface);
+  box-shadow: var(--shadow-lg);
+  animation: notify-pop 0.18s ease-out;
+}
+
+.notify-dialog-icon {
+  width: 46px;
+  height: 46px;
+  display: grid;
+  place-items: center;
+  border-radius: 14px;
+  background: var(--primary-light);
+  color: var(--primary);
+}
+
+.notify-dialog.is-danger .notify-dialog-icon {
+  background: var(--danger-bg);
+  color: var(--danger);
+}
+
+.notify-dialog.is-warning .notify-dialog-icon {
+  background: var(--warning-bg);
+  color: var(--warning-text);
+}
+
+.notify-dialog-body {
+  min-width: 0;
+  padding-top: 2px;
+}
+
+.notify-dialog-title {
+  margin: 0;
+  font-size: 17px;
+  font-weight: 700;
+  line-height: 1.35;
+  color: var(--ink);
+}
+
+.notify-dialog-message {
+  margin: 6px 0 0;
+  font-size: 14px;
+  line-height: 1.55;
+  color: var(--text-muted);
+  white-space: pre-line;
+  overflow-wrap: anywhere;
+}
+
+.notify-dialog-actions {
+  grid-column: 1 / -1;
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+/* Thông báo nhanh: góc trên bên phải, dưới chuông thông báo */
+.toast-region {
+  position: fixed;
+  top: 72px;
+  right: 20px;
+  z-index: 10100;
+  width: min(380px, calc(100vw - 32px));
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  pointer-events: none;
+}
+
+.toast {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 11px 10px 11px 12px;
+  border: 1px solid var(--line);
+  border-left: 4px solid var(--primary);
+  border-radius: 12px;
+  background: var(--surface);
+  box-shadow: var(--shadow-md);
+  pointer-events: auto;
+  animation: toast-in 0.2s ease-out;
+}
+
+.toast.is-success {
+  border-left-color: var(--success);
+}
+
+.toast.is-error {
+  border-left-color: var(--danger);
+}
+
+.toast.is-warning {
+  border-left-color: var(--insight);
+}
+
+.toast-icon {
+  flex-shrink: 0;
+  width: 24px;
+  height: 24px;
+  display: grid;
+  place-items: center;
+  margin-top: 1px;
+  border-radius: 50%;
+  background: var(--primary);
+  color: #ffffff;
+}
+
+.toast.is-success .toast-icon {
+  background: var(--success);
+}
+
+.toast.is-error .toast-icon {
+  background: var(--danger);
+}
+
+.toast.is-warning .toast-icon {
+  background: var(--insight);
+}
+
+.toast-body {
+  flex: 1;
+  min-width: 0;
+  padding-top: 2px;
+  font-size: 13.5px;
+  line-height: 1.5;
+  color: var(--ink);
+  overflow-wrap: anywhere;
+}
+
+.toast-title {
+  display: block;
+  font-weight: 700;
+}
+
+.toast-close {
+  flex-shrink: 0;
+  width: 26px;
+  height: 26px;
+  display: grid;
+  place-items: center;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+}
+
+.toast-close:hover {
+  background: var(--bg-hover);
+  color: var(--ink);
+}
+
+@keyframes notify-fade {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes notify-pop {
+  from { opacity: 0; transform: translateY(10px) scale(0.97); }
+  to { opacity: 1; transform: none; }
+}
+
+@keyframes toast-in {
+  from { opacity: 0; transform: translateY(-8px); }
+  to { opacity: 1; transform: none; }
+}
+
+@media (max-width: 640px) {
+  .toast-region {
+    top: 70px;
+    right: 12px;
+    left: 12px;
+    width: auto;
+  }
+
+  .notify-dialog {
+    padding: 20px;
+  }
+
+  .notify-dialog-actions {
+    flex-direction: column-reverse;
+  }
+
+  .notify-dialog-actions .btn {
+    width: 100%;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .notify-overlay,
+  .notify-dialog,
+  .toast {
+    animation: none;
+  }
+}

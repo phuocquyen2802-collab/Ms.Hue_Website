@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import api from '../services/api';
 import { renderMath } from '../utils/mathRender';
 import QuestionDiagram from '../components/QuestionDiagram';
+import { toast } from '../components/Notify';
 
 // Nhóm các câu hỏi AI sinh theo đúng chuyên đề trong lộ trình (tái sử dụng
 // cho cả khối xem trước trên trang và khối xuất PDF, tránh lặp code).
@@ -140,7 +141,7 @@ export default function GeneratedExercisesListPage() {
       await loadData();
     } catch (err) {
       console.error(err);
-      alert(err.response?.data?.message || 'Lỗi khi xóa bản đề xuất');
+      toast.error(err.response?.data?.message || 'Lỗi khi xóa bản đề xuất');
     } finally {
       setActionLoading(false);
     }
@@ -160,7 +161,7 @@ export default function GeneratedExercisesListPage() {
       await loadData();
     } catch (err) {
       console.error(err);
-      alert(err.response?.data?.message || 'Lỗi khi sinh lại đề xuất');
+      toast.error(err.response?.data?.message || 'Lỗi khi sinh lại đề xuất');
     } finally {
       setActionLoading(false);
     }

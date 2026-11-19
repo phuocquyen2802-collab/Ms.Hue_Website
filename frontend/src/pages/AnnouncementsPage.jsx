@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import api from '../services/api';
 import UiIcon from '../components/UiIcon';
+import { confirmDialog, toast } from '../components/Notify';
 
 const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
@@ -179,7 +180,7 @@ export default function AnnouncementsPage() {
   async function handleSaveEdit(id) {
     if (!editContent.trim()) return;
     if (editAudienceType !== 'all' && !editAudienceValue) {
-      alert('Vui lòng chọn lớp hoặc nhóm nhận thông báo');
+      toast.warning('Vui lòng chọn lớp hoặc nhóm nhận thông báo');
       return;
     }
     try {
@@ -194,17 +195,23 @@ export default function AnnouncementsPage() {
       setEditingId(null);
       await loadData({ silent: true });
     } catch (err) {
-      alert(err.response?.data?.message || 'Lỗi khi sửa thông báo');
+      toast.error(err.response?.data?.message || 'Lỗi khi sửa thông báo');
     }
   }
 
   async function handleDeleteAnnouncement(a) {
-    if (!window.confirm('Xoá thông báo này? Toàn bộ bình luận bên dưới sẽ bị xoá theo.')) return;
+    const ok = await confirmDialog({
+      title: 'Xoá thông báo này?',
+      message: 'Toàn bộ bình luận bên dưới sẽ bị xoá theo.',
+      confirmText: 'Xoá',
+      tone: 'danger',
+    });
+    if (!ok) return;
     try {
       await api.delete(`/announcements/${a.id}`);
       await loadData({ silent: true });
     } catch (err) {
-      alert(err.response?.data?.message || 'Lỗi khi xoá thông báo');
+      toast.error(err.response?.data?.message || 'Lỗi khi xoá thông báo');
     }
   }
 
@@ -217,19 +224,25 @@ export default function AnnouncementsPage() {
       setCommentDrafts((prev) => ({ ...prev, [announcementId]: '' }));
       await loadData({ silent: true });
     } catch (err) {
-      alert(err.response?.data?.message || 'Lỗi khi gửi bình luận');
+      toast.error(err.response?.data?.message || 'Lỗi khi gửi bình luận');
     } finally {
       setPostingCommentId(null);
     }
   }
 
   async function handleDeleteComment(commentId) {
-    if (!window.confirm('Xoá bình luận này?')) return;
+    const ok = await confirmDialog({
+      title: 'Xoá bình luận này?',
+      message: 'Bình luận sẽ bị xoá vĩnh viễn.',
+      confirmText: 'Xoá',
+      tone: 'danger',
+    });
+    if (!ok) return;
     try {
       await api.delete(`/announcements/comments/${commentId}`);
       await loadData({ silent: true });
     } catch (err) {
-      alert(err.response?.data?.message || 'Lỗi khi xoá bình luận');
+      toast.error(err.response?.data?.message || 'Lỗi khi xoá bình luận');
     }
   }
 
@@ -247,7 +260,7 @@ export default function AnnouncementsPage() {
       setEditingCommentId(null);
       await loadData({ silent: true });
     } catch (err) {
-      alert(err.response?.data?.message || 'Lỗi khi sửa bình luận');
+      toast.error(err.response?.data?.message || 'Lỗi khi sửa bình luận');
     } finally {
       setSavingCommentId(null);
     }

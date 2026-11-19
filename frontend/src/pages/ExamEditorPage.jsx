@@ -3,6 +3,7 @@ import { useParams, Link, useNavigate } from 'react-router-dom';
 import api from '../services/api';
 import { renderMath } from '../utils/mathRender';
 import QuestionDiagram from '../components/QuestionDiagram';
+import { confirmDialog, toast } from '../components/Notify';
 import {
   FORMULA_SIZE_PRESETS,
   valignForHeightEm,
@@ -203,9 +204,19 @@ export default function ExamEditorPage() {
   }
 
   async function handleDeleteQuestion(questionId) {
-    if (!window.confirm('Xoá câu hỏi này khỏi đề thi?')) return;
-    await api.delete(`/exams/${examId}/questions/${questionId}`);
-    loadExam();
+    const ok = await confirmDialog({
+      title: 'Xoá câu hỏi này?',
+      message: 'Câu hỏi sẽ bị xoá khỏi đề thi.',
+      confirmText: 'Xoá',
+      tone: 'danger',
+    });
+    if (!ok) return;
+    try {
+      await api.delete(`/exams/${examId}/questions/${questionId}`);
+      loadExam();
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Xoá câu hỏi thất bại');
+    }
   }
 
   // Chỉnh tay cỡ 1 ảnh công thức cụ thể - cỡ tự động (backend tính lúc
@@ -665,12 +676,18 @@ export default function ExamEditorPage() {
   }
 
   async function handleDeleteExam() {
-    if (!window.confirm(`Xoá đề thi "${exam?.title}"?`)) return;
+    const ok = await confirmDialog({
+      title: 'Xoá đề thi?',
+      message: `Đề "${exam?.title}" cùng toàn bộ câu hỏi và bài làm của học sinh sẽ bị xoá. Không thể hoàn tác.`,
+      confirmText: 'Xoá đề thi',
+      tone: 'danger',
+    });
+    if (!ok) return;
     try {
       await api.delete(`/exams/${examId}`);
       navigate('/teacher/exams');
     } catch (err) {
-      alert(err.response?.data?.message || 'Xoá đề thi thất bại');
+      toast.error(err.response?.data?.message || 'Xoá đề thi thất bại');
     }
   }
 

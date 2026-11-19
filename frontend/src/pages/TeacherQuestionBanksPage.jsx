@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import api from '../services/api';
 import UiIcon from '../components/UiIcon';
+import { confirmDialog, toast } from '../components/Notify';
 import { renderMath } from '../utils/mathRender';
 
 // Ngân hàng đề: giáo viên tải nhiều file Word, mỗi file đặt 1 tên chủ đề.
@@ -130,17 +131,23 @@ export default function TeacherQuestionBanksPage() {
       setEditingId(null);
       loadBanks();
     } catch (err) {
-      alert(err.response?.data?.message || 'Đổi tên thất bại');
+      toast.error(err.response?.data?.message || 'Đổi tên thất bại');
     }
   }
 
   async function deleteBank(bank) {
-    if (!window.confirm(`Xoá ngân hàng đề "${bank.title}"? Học sinh sẽ không chơi được chủ đề này nữa.`)) return;
+    const ok = await confirmDialog({
+      title: 'Xoá ngân hàng đề?',
+      message: `Học sinh sẽ không chơi được chủ đề "${bank.title}" nữa. Lịch sử chơi trước đó vẫn được giữ.`,
+      confirmText: 'Xoá',
+      tone: 'danger',
+    });
+    if (!ok) return;
     try {
       await api.delete(`/teacher/question-banks/${bank.id}`);
       loadBanks();
     } catch (err) {
-      alert(err.response?.data?.message || 'Xoá thất bại');
+      toast.error(err.response?.data?.message || 'Xoá thất bại');
     }
   }
 
@@ -151,7 +158,7 @@ export default function TeacherQuestionBanksPage() {
       setPreview(data);
     } catch (err) {
       setPreview(null);
-      alert(err.response?.data?.message || 'Không tải được câu hỏi');
+      toast.error(err.response?.data?.message || 'Không tải được câu hỏi');
     }
   }
 
