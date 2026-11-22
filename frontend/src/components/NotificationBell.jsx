@@ -155,7 +155,9 @@ export default function NotificationBell() {
             badgeIcon: '🚀',
             badgeBg: '#f59e0b',
             title: 'Lộ trình ôn tập AI',
-            desc: `đã được giáo viên duyệt cho bài "${examName}"${attemptText}`,
+            desc: r.autoApproved
+              ? `AI vừa soạn xong cho bài "${examName}"${attemptText}`
+              : `đã được giáo viên duyệt cho bài "${examName}"${attemptText}`,
             timestamp: r.reviewedAt || r.generatedAt,
             targetPath,
             read: readSet.has(`roadmap-${r.id}`) || readSet.has(r.id),

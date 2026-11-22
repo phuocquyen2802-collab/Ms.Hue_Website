@@ -1,6 +1,7 @@
 const { v4: uuidv4 } = require('uuid');
 const dataAccess = require('../models/dataAccess');
 const weaknessAnalysisService = require('../services/weaknessAnalysisService');
+const roadmapJobService = require('../services/roadmapJobService');
 
 // Danh sách đề thi đã được giao cho học sinh hiện tại
 function listAssignedExams(req, res) {
@@ -130,6 +131,10 @@ function gradeAndSaveSubmission(exam, studentId, questions, answerMap, meta = {}
 
   // Tái tính toán lại thống kê điểm yếu chính xác theo toàn bộ bài nộp hiện có
   weaknessAnalysisService.recomputeStudentTopicStats([studentId]);
+
+  // Đề bật chế độ tự động: xếp bài này vào hàng chờ để AI soạn và gửi thẳng
+  // lộ trình ôn tập cho học sinh (chạy ngầm, không làm chậm việc nộp bài).
+  roadmapJobService.onSubmissionGraded(exam, submission);
 
   return { submission, answerRecords };
 }
@@ -322,7 +327,10 @@ function submitExam(req, res) {
       .sort((a, b) => new Date(b.finishedAt) - new Date(a.finishedAt))[0];
     if (recent && Date.now() - new Date(recent.finishedAt).getTime() < 5 * 60 * 1000) {
       const submission = dataAccess.findById('submissions', recent.submissionId);
-      if (submission) return res.json(submission);
+      if (submission) {
+        const { aiJob, ...submissionData } = submission;
+        return res.json(submissionData);
+      }
     }
   }
 
@@ -367,8 +375,9 @@ function listMySubmissions(req, res) {
   const enriched = submissions
     .map((s) => {
       const exam = exams.find((e) => e.id === s.examId);
+      const { aiJob, ...rest } = s;
       return {
-        ...s,
+        ...rest,
         examTitle: exam?.title || s.examId,
       };
     })
@@ -432,17 +441,12 @@ function getSubmissionDetail(req, res) {
 
   const examWeakTopics = examTopicStats.filter((t) => t.totalWrong > 0);
 
-  // Tìm lộ trình AI tương ứng với chính xác đợt nộp này (chỉ khi giáo viên đã duyệt đúng đợt này)
-  const candidateRoadmaps = dataAccess.findMany('generated_exercises', (r) => r.sourceSubmissionId === submission.id);
-  candidateRoadmaps.sort((a, b) => {
-    if (a.status === 'approved' && b.status !== 'approved') return -1;
-    if (b.status === 'approved' && a.status !== 'approved') return 1;
-    return new Date(b.reviewedAt || b.generatedAt || 0) - new Date(a.reviewedAt || a.generatedAt || 0);
-  });
-  const roadmapRecord = candidateRoadmaps[0] || null;
+  // Lộ trình AI của chính xác đợt nộp này: đã gửi / AI đang soạn / chờ duyệt.
+  const { roadmap, roadmapStatus } = roadmapJobService.studentRoadmapView(submission);
+  const { aiJob, ...submissionData } = submission;
 
   return res.json({
-    ...submission,
+    ...submissionData,
     examTitle: exam?.title || submission.examId,
     examDescription: exam?.description || '',
     durationMinutes: exam?.durationMinutes || 45,
@@ -450,8 +454,8 @@ function getSubmissionDetail(req, res) {
     historySubmissions,
     examTopicStats,
     examWeakTopics,
-    roadmap: roadmapRecord && roadmapRecord.status === 'approved' ? roadmapRecord : null,
-    roadmapStatus: roadmapRecord ? roadmapRecord.status : 'none',
+    roadmap,
+    roadmapStatus,
   });
 }
 

@@ -5,6 +5,34 @@ const dataAccess = require('../models/dataAccess');
 const weaknessAnalysisService = require('../services/weaknessAnalysisService');
 const wmfConvertService = require('../services/wmfConvertService');
 const answerKeyCoverageService = require('../services/answerKeyCoverageService');
+const roadmapJobService = require('../services/roadmapJobService');
+
+// Cài đặt lộ trình AI của đề (chuẩn hoá cho đề cũ chưa có trường này):
+// - aiRoadmapMode 'auto': học sinh nộp bài là AI tự sinh và gửi lộ trình
+//   ngay, không cần giáo viên duyệt; 'review': giáo viên duyệt trước.
+// - aiRoadmapExercises: chế độ tự động có giao kèm đề luyện tập hay không.
+function withRoadmapSettings(exam) {
+  return {
+    ...exam,
+    aiRoadmapMode: roadmapJobService.roadmapModeOf(exam),
+    aiRoadmapExercises: roadmapJobService.roadmapExercisesOf(exam),
+  };
+}
+
+// Đọc cài đặt lộ trình AI từ body (chỉ nhận giá trị hợp lệ).
+function readRoadmapSettings(body) {
+  const changes = {};
+  if (body.aiRoadmapMode !== undefined) {
+    if (!['auto', 'review'].includes(body.aiRoadmapMode)) {
+      return { error: 'Chế độ gửi lộ trình AI không hợp lệ (auto hoặc review)' };
+    }
+    changes.aiRoadmapMode = body.aiRoadmapMode;
+  }
+  if (body.aiRoadmapExercises !== undefined) {
+    changes.aiRoadmapExercises = Boolean(body.aiRoadmapExercises);
+  }
+  return { changes };
+}
 
 // Thư mục lưu file đáp án chi tiết (lời giải) giáo viên tải lên cho từng đề -
 // giống cơ chế lưu file đính kèm chat (chatController.js), dùng tên file
@@ -186,6 +214,11 @@ function createExam(req, res) {
     return res.status(400).json({ message: 'Thiếu title hoặc durationMinutes' });
   }
 
+  const roadmapSettings = readRoadmapSettings(req.body);
+  if (roadmapSettings.error) {
+    return res.status(400).json({ message: roadmapSettings.error });
+  }
+
   const assignedStudentIds = Array.isArray(assignedTo) ? assignedTo : [];
   const initialStatus = status || (assignedStudentIds.length > 0 ? 'assigned' : 'draft');
 
@@ -197,6 +230,10 @@ function createExam(req, res) {
     assignedTo: assignedStudentIds,
     durationMinutes: Number(durationMinutes),
     status: initialStatus,
+    // Mặc định: AI tự gửi lộ trình + bài luyện tập ngay khi học sinh nộp bài.
+    aiRoadmapMode: 'auto',
+    aiRoadmapExercises: true,
+    ...roadmapSettings.changes,
     createdAt: new Date().toISOString(),
   };
 
@@ -212,7 +249,7 @@ function listMyExams(req, res) {
   const enriched = exams.map((exam) => {
     const questionsCount = allQuestions.filter((q) => q.examId === exam.id).length;
     return {
-      ...exam,
+      ...withRoadmapSettings(exam),
       questionsCount,
     };
   });
@@ -231,7 +268,7 @@ function getExamDetail(req, res) {
   }
 
   const questions = dataAccess.findMany('questions', { examId: exam.id });
-  return res.json({ ...exam, questions });
+  return res.json({ ...withRoadmapSettings(exam), questions });
 }
 
 // Cập nhật thông tin đề thi (tiêu đề, mô tả, thời gian, trạng thái)
@@ -265,9 +302,14 @@ function updateExam(req, res) {
     }
     changes.status = status;
   }
+  const roadmapSettings = readRoadmapSettings(req.body);
+  if (roadmapSettings.error) {
+    return res.status(400).json({ message: roadmapSettings.error });
+  }
+  Object.assign(changes, roadmapSettings.changes);
 
   const updated = dataAccess.updateById('exams', exam.id, changes);
-  return res.json(updated);
+  return res.json(withRoadmapSettings(updated));
 }
 
 // Xoá đề thi và toàn bộ dữ liệu liên quan (câu hỏi, bài nộp của học sinh)
@@ -433,6 +475,9 @@ function getSubmissionDetailForTeacher(req, res) {
     studentName: student ? student.name : submission.studentId,
     studentClassName: student ? student.className : null,
     examTitle: exam.title,
+    aiRoadmapMode: roadmapJobService.roadmapModeOf(exam),
+    aiRoadmapExercises: roadmapJobService.roadmapExercisesOf(exam),
+    aiJob: roadmapJobService.publicJob(submission.aiJob),
     weakTags,
     proposal,
     answers: detailedAnswers,

@@ -2,6 +2,7 @@ import { useEffect, useState, useMemo } from 'react';
 import { useSearchParams, Link } from 'react-router-dom';
 import api from '../services/api';
 import useAutoRefresh, { setIfChanged } from '../hooks/useAutoRefresh';
+import { RoadmapSentPill, RoadmapGeneratingState } from '../components/RoadmapStatus';
 import WeakTopicsChart from '../components/WeakTopicsChart';
 import { renderMath } from '../utils/mathRender';
 import RoadmapSteps, { RoadmapSummary } from '../components/RoadmapSteps';
@@ -28,11 +29,13 @@ export default function StudentWeakTopicsPage() {
       .finally(() => setLoading(false));
   }, [subIdFromUrl]);
 
-  // Lần nộp mới, lộ trình vừa được duyệt: tự cập nhật, giữ nguyên lần làm đang chọn.
+  // Lần nộp mới, lộ trình vừa được gửi: tự cập nhật, giữ nguyên lần làm đang
+  // chọn. Khi AI đang soạn lộ trình thì hỏi lại dày hơn để hiện ngay khi xong.
+  const aiWorking = (data?.submissions || []).some((s) => s.roadmapStatus === 'generating');
   useAutoRefresh(async () => {
     const res = await api.get('/student/me/weak-topics');
     setIfChanged(setData, res.data);
-  }, 20000);
+  }, aiWorking ? 4000 : 20000);
 
   const submissions = useMemo(() => data?.submissions || [], [data]);
 
@@ -138,8 +141,12 @@ export default function StudentWeakTopicsPage() {
         <span className="pick-item-title">{s.examTitle}</span>
         <span className="pick-item-meta">
           <span className="class-badge">Lần {s.attempt}</span>
-          {s.roadmapStatus !== 'approved' && (
-            <span className="pick-item-flag" title="Giáo viên chưa gửi lộ trình ôn tập cho lần làm này">
+          {s.roadmapStatus === 'generating' ? (
+            <span className="pick-item-flag" title="AI đang soạn lộ trình ôn tập cho lần làm này">
+              AI đang soạn
+            </span>
+          ) : s.roadmapStatus !== 'approved' && (
+            <span className="pick-item-flag" title="Chưa có lộ trình ôn tập cho lần làm này">
               Chưa có lộ trình
             </span>
           )}
@@ -270,12 +277,7 @@ export default function StudentWeakTopicsPage() {
                   </div>
                   {contextLabel && <p className="card-hint">{contextLabel}</p>}
                 </div>
-                {activeRoadmap && activeRoadmap.reviewedAt && (
-                  <span className="status-pill approved">
-                    <UiIcon name="check" size={13} />
-                    Giáo viên đã duyệt {new Date(activeRoadmap.reviewedAt).toLocaleDateString('vi-VN')}
-                  </span>
-                )}
+                <RoadmapSentPill roadmap={activeRoadmap} />
               </div>
 
               {activeRoadmap ? (
@@ -339,6 +341,8 @@ export default function StudentWeakTopicsPage() {
                     </div>
                   )}
                 </div>
+              ) : activeRoadmapStatus === 'generating' ? (
+                <RoadmapGeneratingState />
               ) : activeRoadmapStatus === 'pending_review' ? (
                 <div className="empty-state">
                   <div className="empty-state-icon is-svg"><UiIcon name="clock" size={24} /></div>
@@ -352,7 +356,7 @@ export default function StudentWeakTopicsPage() {
                   <div className="empty-state-icon is-svg"><UiIcon name="route" size={24} /></div>
                   <div className="empty-state-title">Chưa có lộ trình cho lần làm này</div>
                   <p className="empty-state-desc">
-                    Khi bài làm có câu sai, giáo viên sẽ duyệt và gửi lộ trình ôn tập do AI đề xuất cho bạn.
+                    Khi bài làm có câu sai, AI sẽ soạn lộ trình ôn tập riêng và gửi cho bạn.
                   </p>
                 </div>
               )}

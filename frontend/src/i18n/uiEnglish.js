@@ -1106,6 +1106,51 @@ export const EXACT = {
   'Lỗi khi gọi Gemini API:': 'Error calling the Gemini API:',
   'Tải lên đáp án chi tiết thất bại:': 'Answer key upload failed:',
   'Lỗi khi xử lý phản hồi từ Gemini AI': 'Error processing the Gemini AI response',
+
+  // Lộ trình AI tự gửi / chạy ngầm
+  'AI tự gửi lộ trình ngay khi học sinh nộp bài': 'AI sends the review plan as soon as the student submits',
+  'Không cần giáo viên duyệt. Học sinh nhận thông báo khi AI phân tích xong lỗ hổng kiến thức.':
+    'No teacher approval needed. Students get a notification once AI has analysed their knowledge gaps.',
+  'Đang tắt: giáo viên bấm phân tích bằng AI và duyệt lộ trình trước khi gửi cho học sinh.':
+    'Off: the teacher runs the AI analysis and approves the plan before it is sent to the student.',
+  'Giao kèm bài tập luyện tập': 'Also assign practice exercises',
+  'AI giao thêm đề câu hỏi tương tự theo từng chuyên đề còn yếu.': 'AI assigns an extra set of similar questions for each weak topic.',
+  'AI đã tự gửi': 'Sent by AI',
+  'Đề này bật chế độ AI tự gửi: học sinh nộp bài là AI phân tích các câu sai, soạn lộ trình và bài tập tương tự rồi gửi ngay cho học sinh.':
+    'Auto-send is on for this exam: when a student submits, AI analyses the wrong answers, writes a review plan and similar exercises, and sends them straight to the student.',
+  'AI đang tự động phân tích bài làm': 'AI is analysing this submission automatically',
+  'AI đang phân tích bài làm': 'AI is analysing this submission',
+  'Có thể tải lại trang hoặc chuyển sang mục khác, AI vẫn tiếp tục chạy và kết quả sẽ tự hiện ở đây.':
+    'You can reload the page or switch to another section; AI keeps running and the result will appear here.',
+  'Lộ trình sẽ được gửi thẳng cho học sinh khi xong.': 'The plan will be sent straight to the student when it is ready.',
+  'AI tự động chưa phân tích được bài này': 'Automatic AI analysis of this submission failed',
+  'Lần phân tích trước bị lỗi': 'The previous analysis failed',
+  'Bấm nút bên dưới để thử lại.': 'Press the button below to try again.',
+  'Đang chờ lượt AI…': 'Waiting for an AI slot…',
+  'AI đã tự gửi lộ trình ôn tập cho học sinh': 'AI has sent the review plan to the student',
+  '✓ AI đã phân tích xong và tự gửi lộ trình ôn tập cho học sinh.': '✓ AI has finished and sent the review plan to the student.',
+  '✓ Đã có sẵn lộ trình AI cho đúng các lỗi sai trong bài này.': '✓ An AI review plan for these exact mistakes already exists.',
+  'AI đang soạn lại đề xuất mới. Bản mới sẽ tự hiện trong danh sách khi xong.':
+    'AI is writing a new proposal. It will appear in the list when ready.',
+  'AI đang soạn lộ trình ôn tập cho bạn': 'AI is writing your review plan',
+  'AI đang phân tích các câu sai để chỉ ra lỗ hổng kiến thức. Lộ trình sẽ tự hiện ở đây và bạn sẽ nhận thông báo khi xong, thường trong khoảng 1 phút.':
+    'AI is analysing your wrong answers to find knowledge gaps. The plan will appear here and you will get a notification when it is ready, usually within a minute.',
+  'AI đang soạn': 'AI is writing',
+  'AI đang soạn lộ trình ôn tập cho lần làm này': 'AI is writing a review plan for this attempt',
+  'Chưa có lộ trình ôn tập cho lần làm này': 'No review plan for this attempt yet',
+  'Khi bài làm có câu sai, AI sẽ soạn lộ trình ôn tập riêng và gửi cho bạn.':
+    'When an attempt has wrong answers, AI writes a personal review plan and sends it to you.',
+  'AI phân tích các câu sai và soạn lộ trình ôn tập riêng cho bạn.': 'AI analyses your wrong answers and writes a personal review plan for you.',
+  'Lộ trình AI soạn riêng cho từng lần làm bài của bạn.': 'Review plans written by AI for each of your attempts.',
+  'Sau khi bạn nộp bài có câu sai, lộ trình ôn tập AI soạn riêng cho bạn sẽ hiện ở đây.':
+    'After you submit an attempt with wrong answers, your personal AI review plan will appear here.',
+  'Do AI soạn riêng cho bạn': 'Written by AI just for you',
+  'AI đang phân tích các câu sai để tìm lỗ hổng kiến thức. Bạn sẽ nhận thông báo khi lộ trình sẵn sàng.':
+    'AI is analysing your wrong answers to find knowledge gaps. You will get a notification when the plan is ready.',
+  'Lộ trình ôn tập AI đã sẵn sàng': 'Your AI review plan is ready',
+  'AI đã soạn lộ trình ôn tập và giao thêm bài tập luyện tập cho bạn.': 'AI has written your review plan and assigned extra practice exercises.',
+  'AI đã soạn lộ trình ôn tập riêng cho lần làm này.': 'AI has written a review plan for this attempt.',
+  'Xem lộ trình': 'View plan',
 };
 
 const t = (s) => (Object.prototype.hasOwnProperty.call(EXACT, s) ? EXACT[s] : s);
@@ -1232,4 +1277,10 @@ export const PATTERNS = [
   [/^Ký tự không hợp lệ trong biểu thức: "(.*)"$/, 'Invalid character in expression: "$1"'],
   [/^Không rõ biến\/hằng số "(.*)"\.$/, 'Unknown variable/constant "$1".'],
   [/^Không hỗ trợ hàm "(.*)"\.$/, 'Unsupported function "$1".'],
+
+  // Lộ trình AI tự gửi / chạy ngầm
+  [/^Đang phân tích… (\d+)%$/, 'Analysing… $1%'],
+  [/^AI gửi ngày (.+)$/, 'Sent by AI on $1'],
+  [/^Giáo viên đã duyệt (.+)$/, 'Approved by teacher on $1'],
+  [/^AI vừa soạn xong cho bài "(.*)"(?: \(Lần (\d+)\))?$/, (m, title, n) => `written by AI for "${title}"${n ? ` (Attempt ${n})` : ''}`],
 ];

@@ -51,6 +51,24 @@ export default function ResultPage() {
       .finally(() => setLoading(false));
   }, [submissionId]);
 
+  // Đề bật chế độ AI tự gửi: AI đang soạn lộ trình -> hỏi lại tới khi xong để
+  // báo ngay trên trang kết quả (chuông thông báo cũng tự cập nhật).
+  const aiWorking = submission?.roadmapStatus === 'generating';
+  useEffect(() => {
+    if (!aiWorking) return undefined;
+    const timer = setInterval(() => {
+      if (document.hidden) return;
+      api.get(`/student/submissions/${submissionId}`).then((res) => {
+        if (res.data?.id !== submissionId) return;
+        setSubmission(res.data);
+        if (res.data.roadmapStatus !== 'generating') {
+          window.dispatchEvent(new Event('app:refresh-notifications'));
+        }
+      }).catch(() => {});
+    }, 4000);
+    return () => clearInterval(timer);
+  }, [aiWorking, submissionId]);
+
   if (loading || !submission) {
     return (
       <div className="container">
@@ -131,6 +149,34 @@ export default function ResultPage() {
           <div className="notice is-warning">
             <UiIcon name={submission.submitReason === 'timeout' ? 'clock' : 'alert'} size={18} />
             <div className="notice-body">{AUTO_SUBMIT_TEXT[submission.submitReason]}.</div>
+          </div>
+        )}
+
+        {submission.roadmapStatus === 'generating' && (
+          <div className="notice is-info" role="status">
+            <span className="spinner" style={{ width: 18, height: 18, flexShrink: 0 }} aria-hidden="true" />
+            <div className="notice-body">
+              <div className="notice-title">AI đang soạn lộ trình ôn tập cho bạn</div>
+              <div className="notice-text">
+                AI đang phân tích các câu sai để tìm lỗ hổng kiến thức. Bạn sẽ nhận thông báo khi lộ trình sẵn sàng.
+              </div>
+            </div>
+          </div>
+        )}
+        {submission.roadmapStatus === 'approved' && submission.roadmap?.autoApproved && (
+          <div className="notice is-success" role="status">
+            <UiIcon name="sparkles" size={18} />
+            <div className="notice-body">
+              <div className="notice-title">Lộ trình ôn tập AI đã sẵn sàng</div>
+              <div className="notice-text">
+                {submission.roadmap.examId
+                  ? 'AI đã soạn lộ trình ôn tập và giao thêm bài tập luyện tập cho bạn.'
+                  : 'AI đã soạn lộ trình ôn tập riêng cho lần làm này.'}
+              </div>
+            </div>
+            <Link to={`/student/history/${submission.id}`} className="btn sm">
+              Xem lộ trình
+            </Link>
           </div>
         )}
 

@@ -4,6 +4,7 @@ import api from '../services/api';
 import useAutoRefresh, { setIfChanged } from '../hooks/useAutoRefresh';
 import RoadmapSteps, { RoadmapSummary } from '../components/RoadmapSteps';
 import UiIcon from '../components/UiIcon';
+import { RoadmapSentPill } from '../components/RoadmapStatus';
 
 export default function StudentRoadmapsPage() {
   const [data, setData] = useState(null);
@@ -29,7 +30,7 @@ export default function StudentRoadmapsPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Giáo viên vừa duyệt lộ trình mới: tự hiện, giữ nguyên lộ trình đang xem.
+  // Có lộ trình mới (AI tự gửi / giáo viên duyệt): tự hiện, giữ nguyên lộ trình đang xem.
   useAutoRefresh(async () => {
     const res = await api.get('/student/me/weak-topics');
     setIfChanged(setData, res.data);
@@ -128,7 +129,7 @@ export default function StudentRoadmapsPage() {
       <div className="page-header">
         <div>
           <h1 className="page-title">Lộ trình ôn tập</h1>
-          <p className="page-subtitle">Lộ trình AI soạn riêng cho từng lần làm bài, đã được giáo viên duyệt.</p>
+          <p className="page-subtitle">Lộ trình AI soạn riêng cho từng lần làm bài của bạn.</p>
         </div>
       </div>
 
@@ -138,7 +139,7 @@ export default function StudentRoadmapsPage() {
             <div className="empty-state-icon is-svg"><UiIcon name="route" size={24} /></div>
             <div className="empty-state-title">Chưa có lộ trình ôn tập nào</div>
             <p className="empty-state-desc">
-              Sau khi bạn nộp bài và giáo viên duyệt lộ trình do AI đề xuất, lộ trình sẽ hiện ở đây.
+              Sau khi bạn nộp bài có câu sai, lộ trình ôn tập AI soạn riêng cho bạn sẽ hiện ở đây.
             </p>
           </div>
         </div>
@@ -187,12 +188,7 @@ export default function StudentRoadmapsPage() {
                   </div>
                   {activeSubmission && <p className="card-hint">Lần làm {activeSubmission.attempt}</p>}
                 </div>
-                {roadmap?.reviewedAt && (
-                  <span className="status-pill approved">
-                    <UiIcon name="check" size={13} />
-                    Giáo viên đã duyệt {new Date(roadmap.reviewedAt).toLocaleDateString('vi-VN')}
-                  </span>
-                )}
+                <RoadmapSentPill roadmap={roadmap} />
               </div>
 
               {roadmap ? (

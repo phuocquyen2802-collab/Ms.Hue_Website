@@ -90,7 +90,7 @@ export default function StudentDashboard() {
           <div className="metric-info">
             <span className="metric-title">Lộ trình ôn tập</span>
             <span className="metric-value"><CountUp value={roadmaps.length} /></span>
-            <span className="metric-sub">Do AI soạn, giáo viên duyệt</span>
+            <span className="metric-sub">Do AI soạn riêng cho bạn</span>
           </div>
           <div className="metric-icon-box purple"><UiIcon name="route" size={20} /></div>
         </div>

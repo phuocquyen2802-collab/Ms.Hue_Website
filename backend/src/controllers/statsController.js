@@ -1,5 +1,6 @@
 const dataAccess = require('../models/dataAccess');
 const weaknessAnalysisService = require('../services/weaknessAnalysisService');
+const roadmapJobService = require('../services/roadmapJobService');
 const { decryptPassword } = require('../utils/passwordVault');
 
 // [Học sinh] Xem các chủ đề yếu nhất của chính mình (kèm theo dữ liệu của từng đề và lộ trình AI)
@@ -14,13 +15,7 @@ function getMyWeakTopics(req, res) {
       const weakTopics = topicStats.filter((t) => t.totalWrong > 0);
 
       // Chỉ lấy lộ trình AI của chính xác đợt nộp này (không lấy chéo của đợt nộp khác)
-      const candidateRoadmaps = allProposals.filter((r) => r.sourceSubmissionId === s.id);
-      candidateRoadmaps.sort((a, b) => {
-        if (a.status === 'approved' && b.status !== 'approved') return -1;
-        if (b.status === 'approved' && a.status !== 'approved') return 1;
-        return new Date(b.reviewedAt || b.generatedAt || 0) - new Date(a.reviewedAt || a.generatedAt || 0);
-      });
-      const roadmapRecord = candidateRoadmaps[0] || null;
+      const { roadmap, roadmapStatus } = roadmapJobService.studentRoadmapView(s, allProposals);
 
       return {
         id: s.id,
@@ -35,8 +30,8 @@ function getMyWeakTopics(req, res) {
         submittedAt: s.submittedAt,
         topicStats,
         weakTopics,
-        roadmap: roadmapRecord && roadmapRecord.status === 'approved' ? roadmapRecord : null,
-        roadmapStatus: roadmapRecord ? roadmapRecord.status : 'none',
+        roadmap,
+        roadmapStatus,
       };
     })
     .sort((a, b) => new Date(b.submittedAt) - new Date(a.submittedAt));

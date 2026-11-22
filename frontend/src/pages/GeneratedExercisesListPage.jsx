@@ -3,6 +3,7 @@ import api from '../services/api';
 import { renderMath } from '../utils/mathRender';
 import QuestionDiagram from '../components/QuestionDiagram';
 import { toast } from '../components/Notify';
+import useAutoRefresh, { setIfChanged } from '../hooks/useAutoRefresh';
 
 // Nhóm các câu hỏi AI sinh theo đúng chuyên đề trong lộ trình (tái sử dụng
 // cho cả khối xem trước trên trang và khối xuất PDF, tránh lặp code).
@@ -101,25 +102,28 @@ export default function GeneratedExercisesListPage() {
     };
   }, [printProposal]);
 
-  async function loadData() {
-    setLoading(true);
+  async function loadData({ silent = false } = {}) {
+    if (!silent) setLoading(true);
     try {
       const [proposalsRes, studentsRes] = await Promise.all([
         api.get('/teacher/generated-exercises', { params: { status: 'pending_review' } }),
         api.get('/teacher/students'),
       ]);
-      setProposals(proposalsRes.data);
-      setStudents(studentsRes.data);
+      setIfChanged(setProposals, proposalsRes.data);
+      setIfChanged(setStudents, studentsRes.data);
     } catch (err) {
       console.error(err);
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
   }
 
   useEffect(() => {
     loadData();
   }, []);
+
+  // AI sinh lại đề xuất chạy ngầm trên máy chủ: tự tải lại để bản mới hiện ra.
+  useAutoRefresh(() => loadData({ silent: true }), 10000);
 
   function getStudent(id) {
     return students.find((s) => s.id === id);
@@ -153,6 +157,7 @@ export default function GeneratedExercisesListPage() {
     try {
       if (selectedRejectProposal.sourceSubmissionId) {
         await api.post(`/teacher/submissions/${selectedRejectProposal.sourceSubmissionId}/generate-roadmap`, { force: true });
+        toast.info('AI đang soạn lại đề xuất mới. Bản mới sẽ tự hiện trong danh sách khi xong.');
       } else {
         await api.delete(`/teacher/generated-exercises/${selectedRejectProposal.id}`);
       }

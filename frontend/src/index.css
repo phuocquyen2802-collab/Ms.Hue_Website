@@ -4675,6 +4675,37 @@ button.btn.btn-lg {
   background: var(--primary-light);
 }
 
+/* Cài đặt "Lộ trình ôn tập AI" trong form tạo / sửa đề thi */
+.ai-roadmap-settings {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+  margin: 16px 0 0;
+  padding: 0;
+  border: 0;
+}
+
+.ai-roadmap-settings legend {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 8px;
+  padding: 0;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.check-row.is-sub {
+  margin-left: 27px;
+}
+
+@media (max-width: 600px) {
+  .check-row.is-sub {
+    margin-left: 14px;
+  }
+}
+
 /* Nút bật/tắt chế độ sửa */
 .toggle-chip {
   display: inline-flex;

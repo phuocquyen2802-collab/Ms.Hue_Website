@@ -3,6 +3,7 @@ import { useParams, Link, useNavigate } from 'react-router-dom';
 import api from '../services/api';
 import { renderMath } from '../utils/mathRender';
 import QuestionDiagram from '../components/QuestionDiagram';
+import AiRoadmapSettings from '../components/AiRoadmapSettings';
 import { confirmDialog, toast } from '../components/Notify';
 import {
   FORMULA_SIZE_PRESETS,
@@ -63,7 +64,9 @@ export default function ExamEditorPage() {
 
 
   // Sửa thông tin đề
-  const [editExamForm, setEditExamForm] = useState({ title: '', description: '', durationMinutes: 15, status: 'draft' });
+  const [editExamForm, setEditExamForm] = useState({
+    title: '', description: '', durationMinutes: 15, status: 'draft', aiRoadmapMode: 'auto', aiRoadmapExercises: true,
+  });
   const [editExamError, setEditExamError] = useState('');
   const [savingExam, setSavingExam] = useState(false);
 
@@ -81,6 +84,8 @@ export default function ExamEditorPage() {
         description: examRes.data.description || '',
         durationMinutes: examRes.data.durationMinutes,
         status: examRes.data.status || 'draft',
+        aiRoadmapMode: examRes.data.aiRoadmapMode || 'auto',
+        aiRoadmapExercises: examRes.data.aiRoadmapExercises !== false,
       });
     } catch (err) {
       console.error(err);
@@ -1797,6 +1802,12 @@ export default function ExamEditorPage() {
                   onChange={(e) => setEditExamForm({ ...editExamForm, description: e.target.value })}
                 />
               </div>
+
+              <AiRoadmapSettings
+                idPrefix="editor-ai-roadmap"
+                value={editExamForm}
+                onChange={(next) => setEditExamForm({ ...editExamForm, ...next })}
+              />
 
               {editExamError && (
                 <p className="error-text" role="alert" aria-live="polite">

@@ -1,6 +1,7 @@
 const app = require('./app');
 const wmfConvertService = require('./services/wmfConvertService');
 const mailService = require('./services/mailService');
+const roadmapJobService = require('./services/roadmapJobService');
 
 const PORT = process.env.PORT || 5000;
 
@@ -24,6 +25,8 @@ process.on('uncaughtException', (err) => {
 app.listen(PORT, () => {
   console.log(`Server đang chạy tại http://localhost:${PORT}`);
   console.log(`[Email] ${mailService.describeConfig()}`);
+  // Chạy tiếp các bài AI đang phân tích dở trước khi máy chủ khởi động lại.
+  roadmapJobService.resumePending();
   // Khởi động sẵn LibreOffice ở chế độ nền để lần tải file Word đầu tiên
   // không phải chờ khởi động lạnh (xem wmfConvertService.warmUp).
   setTimeout(() => {

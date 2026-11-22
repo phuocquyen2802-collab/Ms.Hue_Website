@@ -8,20 +8,34 @@ import QuestionDiagram from '../components/QuestionDiagram';
 import { toast } from '../components/Notify';
 import { formatDuration, AUTO_SUBMIT_TEXT } from '../utils/examTime';
 
+const ACTIVE_JOB = ['queued', 'running'];
+const isJobActive = (job) => Boolean(job && ACTIVE_JOB.includes(job.status));
+const JOB_POLL_MS = 2500;
+
+// % tiến độ MÔ PHỎNG khi AI đang chạy (Gemini chỉ trả kết quả 1 lần, không báo
+// tiến độ giữa chừng). Tính theo thời gian từ lúc job bắt đầu trên máy chủ nên
+// tải lại trang vẫn hiện đúng mức đang chạy; tiến dần tới 90% (30 giây ~ 50%,
+// 2 phút ~ 85%) và chỉ lên 100% khi có kết quả thật.
+function simulatedProgress(job, now) {
+  if (!job || job.status !== 'running') return 2;
+  const startMs = new Date(job.startedAt || job.requestedAt || now).getTime();
+  const elapsed = Math.max(0, now - startMs);
+  return Math.max(3, Math.min(90, Math.round(90 * (1 - Math.exp(-elapsed / 42000)))));
+}
+
 export default function TeacherSubmissionDetailPage() {
   const { examId, submissionId } = useParams();
   const [submission, setSubmission] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
-  // AI Generation & Editing state
-  const [generating, setGenerating] = useState(false);
-  // % tiến độ MÔ PHỎNG khi đang chờ Gemini trả lời (backend không có cách
-  // báo tiến độ thật giữa chừng vì chỉ có 1 lệnh gọi API duy nhất) - tăng dần
-  // theo thời gian, dừng ở 90% cho tới khi có phản hồi thật để tránh cảm
-  // giác thanh chạy xong nhưng vẫn phải chờ thêm.
-  const [generateProgress, setGenerateProgress] = useState(0);
-  const generateProgressTimerRef = useRef(null);
+  // AI sinh nhận xét / lộ trình chạy NGẦM trên máy chủ (submission.aiJob):
+  // trang chỉ gửi yêu cầu rồi theo dõi trạng thái, nên tải lại trang hay
+  // chuyển sang trang khác rồi quay lại vẫn thấy AI đang chạy tiếp.
+  const [requesting, setRequesting] = useState(false); // đang gửi yêu cầu sinh
+  const [now, setNow] = useState(() => Date.now());
+  const loadSeqRef = useRef(0);
+  const prevJobRef = useRef(null);
   const [generateError, setGenerateError] = useState('');
   const [includeExercises, setIncludeExercises] = useState(true);
   const [reviewing, setReviewing] = useState(false);
@@ -62,12 +76,33 @@ export default function TeacherSubmissionDetailPage() {
     return result;
   }, [editExercises, editSteps]);
 
-  async function loadData() {
-    setLoading(true);
-    setError('');
+  async function loadData({ silent = false } = {}) {
+    const seq = ++loadSeqRef.current;
+    if (!silent) {
+      setLoading(true);
+      setError('');
+    }
     try {
       const { data } = await api.get(`/exams/${examId}/submissions/${submissionId}`);
+      if (seq !== loadSeqRef.current) return; // đã chuyển sang bài nộp khác
       setSubmission(data);
+
+      // AI vừa chạy xong / lỗi trong lúc đang mở trang -> báo kết quả.
+      const wasActive = isJobActive(prevJobRef.current);
+      prevJobRef.current = data.aiJob || null;
+      if (wasActive && data.aiJob?.status === 'done') {
+        setIsEditing(false);
+        setGenerateError('');
+        window.dispatchEvent(new Event('app:refresh-notifications'));
+        setActionMessage(
+          data.proposal?.status === 'approved'
+            ? '✓ AI đã phân tích xong và tự gửi lộ trình ôn tập cho học sinh.'
+            : '✓ Gemini AI đã phân tích lỗi sai và tạo lộ trình ôn tập thành công!'
+        );
+      } else if (wasActive && data.aiJob?.status === 'failed') {
+        setGenerateError(data.aiJob.error || 'Lỗi khi gọi Gemini AI.');
+      }
+
       if (data.proposal) {
         setEditSummary(data.proposal.roadmap?.summary || '');
         setEditSteps(data.proposal.roadmap?.steps ? JSON.parse(JSON.stringify(data.proposal.roadmap.steps)) : []);
@@ -78,54 +113,63 @@ export default function TeacherSubmissionDetailPage() {
         setEditExercises([]);
       }
     } catch (err) {
+      if (seq !== loadSeqRef.current) return;
       console.error(err);
-      setError(err.response?.data?.message || 'Không thể tải chi tiết bài làm của học sinh.');
+      if (!silent) setError(err.response?.data?.message || 'Không thể tải chi tiết bài làm của học sinh.');
     } finally {
-      setLoading(false);
+      if (!silent && seq === loadSeqRef.current) setLoading(false);
     }
   }
 
   useEffect(() => {
+    prevJobRef.current = null;
+    setActionMessage('');
+    setGenerateError('');
     loadData();
   }, [examId, submissionId]);
 
+  const aiJob = submission?.aiJob || null;
+  const jobActive = isJobActive(aiJob);
+  const generating = requesting || jobActive;
+  const generateProgress = simulatedProgress(aiJob, now);
+
+  // Trong lúc AI chạy: hỏi lại trạng thái định kỳ + cập nhật thanh tiến độ.
+  useEffect(() => {
+    if (!jobActive) return undefined;
+    const poll = setInterval(() => {
+      if (!document.hidden) loadData({ silent: true });
+    }, JOB_POLL_MS);
+    const tick = setInterval(() => setNow(Date.now()), 500);
+    return () => {
+      clearInterval(poll);
+      clearInterval(tick);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [jobActive, examId, submissionId]);
+
   async function handleGenerateAI(force = false) {
-    const isForce = force === true;
-    setGenerating(true);
-    setGenerateProgress(2);
+    setRequesting(true);
     setGenerateError('');
     setActionMessage('');
-
-    // Tăng % mô phỏng dần đều, chậm lại khi gần tới mốc trần 90% (Gemini
-    // sinh lộ trình + phân tích từng câu + bài tập thường mất 15-40 giây) -
-    // KHÔNG bao giờ tự chạm 100% ở đây, chỉ set 100% thật khi API trả về.
-    clearInterval(generateProgressTimerRef.current);
-    generateProgressTimerRef.current = setInterval(() => {
-      setGenerateProgress((prev) => {
-        if (prev >= 90) return prev;
-        const step = prev < 50 ? 6 : prev < 75 ? 3 : 1;
-        return Math.min(90, prev + step);
-      });
-    }, 500);
-
+    setNow(Date.now());
     try {
-      await api.post(`/teacher/submissions/${submissionId}/generate-roadmap`, {
-        force: isForce,
+      const res = await api.post(`/teacher/submissions/${submissionId}/generate-roadmap`, {
+        force: force === true,
         includeExercises: Boolean(includeExercises),
       });
-      clearInterval(generateProgressTimerRef.current);
-      setGenerateProgress(100);
-      await loadData();
-      setIsEditing(false);
-      window.dispatchEvent(new Event('app:refresh-notifications'));
-      setActionMessage('✓ Gemini AI đã phân tích lỗi sai và tạo lộ trình ôn tập thành công!');
+      // 202: AI bắt đầu chạy ngầm -> tải lại để nhận trạng thái job và bắt
+      // đầu theo dõi. 200: đã có sẵn đề xuất cho đúng các lỗi sai này.
+      if (res.status === 202) prevJobRef.current = res.data?.job || { status: 'queued' };
+      await loadData({ silent: true });
+      if (res.status !== 202) {
+        setIsEditing(false);
+        setActionMessage('✓ Đã có sẵn lộ trình AI cho đúng các lỗi sai trong bài này.');
+      }
     } catch (err) {
       console.error(err);
       setGenerateError(err.response?.data?.message || 'Lỗi khi gọi Gemini AI.');
     } finally {
-      clearInterval(generateProgressTimerRef.current);
-      setGenerating(false);
-      setTimeout(() => setGenerateProgress(0), 600);
+      setRequesting(false);
     }
   }
 
@@ -270,8 +314,9 @@ export default function TeacherSubmissionDetailPage() {
     : 0;
   const proposal = submission.proposal;
   const history = submission.historySubmissions || [];
+  const autoMode = submission.aiRoadmapMode === 'auto';
   const statusLabel = (status) => {
-    if (status === 'approved') return 'Đã duyệt và gửi';
+    if (status === 'approved') return proposal?.autoApproved ? 'AI đã tự gửi' : 'Đã duyệt và gửi';
     if (status === 'rejected') return 'Đã từ chối';
     return 'Chờ giáo viên duyệt';
   };
@@ -396,7 +441,9 @@ export default function TeacherSubmissionDetailPage() {
               <h2>Nhận xét và lộ trình ôn tập AI</h2>
             </div>
             <p className="card-hint">
-              AI phân tích các câu làm sai, chỉ ra lý thuyết cần củng cố và đề xuất bài tập tương tự. Giáo viên duyệt trước khi gửi cho học sinh.
+              {autoMode
+                ? 'Đề này bật chế độ AI tự gửi: học sinh nộp bài là AI phân tích các câu sai, soạn lộ trình và bài tập tương tự rồi gửi ngay cho học sinh.'
+                : 'AI phân tích các câu làm sai, chỉ ra lý thuyết cần củng cố và đề xuất bài tập tương tự. Giáo viên duyệt trước khi gửi cho học sinh.'}
             </p>
           </div>
           {proposal && (
@@ -426,30 +473,55 @@ export default function TeacherSubmissionDetailPage() {
               <UiIcon name="sparkles" size={24} />
             </div>
             <div>
-              <h3>Chưa có nhận xét AI cho bài nộp này</h3>
-              <p>
-                AI sẽ đọc các câu <strong>{submission.studentName}</strong> làm sai, chỉ ra lỗ hổng kiến thức
-                và soạn bộ câu hỏi luyện tập tương tự.
-              </p>
+              {generating ? (
+                <>
+                  <h3>{aiJob?.mode === 'auto' ? 'AI đang tự động phân tích bài làm' : 'AI đang phân tích bài làm'}</h3>
+                  <p>
+                    Có thể tải lại trang hoặc chuyển sang mục khác, AI vẫn tiếp tục chạy và kết quả sẽ tự hiện ở đây.
+                    {aiJob?.mode === 'auto' && ' Lộ trình sẽ được gửi thẳng cho học sinh khi xong.'}
+                  </p>
+                </>
+              ) : (
+                <>
+                  <h3>Chưa có nhận xét AI cho bài nộp này</h3>
+                  <p>
+                    AI sẽ đọc các câu <strong>{submission.studentName}</strong> làm sai, chỉ ra lỗ hổng kiến thức
+                    và soạn bộ câu hỏi luyện tập tương tự.
+                  </p>
+                </>
+              )}
             </div>
 
-            <label className={`check-row${includeExercises ? ' is-checked' : ''}`} htmlFor="includeExPre">
-              <input
-                type="checkbox"
-                id="includeExPre"
-                checked={includeExercises}
-                onChange={(e) => setIncludeExercises(e.target.checked)}
-              />
-              <span>
-                <strong>Tạo kèm bài tập luyện tập</strong>
-                <span>Gửi cho học sinh bộ câu hỏi tương tự theo từng chuyên đề.</span>
-              </span>
-            </label>
+            {!generating && !generateError && aiJob?.status === 'failed' && (
+              <div className="notice is-warning">
+                <UiIcon name="alert" size={18} />
+                <div className="notice-body">
+                  {aiJob.mode === 'auto' ? 'AI tự động chưa phân tích được bài này' : 'Lần phân tích trước bị lỗi'}
+                  {aiJob.error ? `: ${aiJob.error}` : '.'} Bấm nút bên dưới để thử lại.
+                </div>
+              </div>
+            )}
+
+            {!generating && (
+              <label className={`check-row${includeExercises ? ' is-checked' : ''}`} htmlFor="includeExPre">
+                <input
+                  type="checkbox"
+                  id="includeExPre"
+                  checked={includeExercises}
+                  onChange={(e) => setIncludeExercises(e.target.checked)}
+                />
+                <span>
+                  <strong>Tạo kèm bài tập luyện tập</strong>
+                  <span>Gửi cho học sinh bộ câu hỏi tương tự theo từng chuyên đề.</span>
+                </span>
+              </label>
+            )}
 
             <button className="btn btn-lg" onClick={() => handleGenerateAI(false)} disabled={generating}>
               {generating ? (
                 <>
-                  <span className="spinner is-on-primary" /> Đang phân tích… {generateProgress}%
+                  <span className="spinner is-on-primary" />
+                  {aiJob?.status === 'running' ? ` Đang phân tích… ${generateProgress}%` : ' Đang chờ lượt AI…'}
                 </>
               ) : (
                 <>
@@ -878,7 +950,9 @@ export default function TeacherSubmissionDetailPage() {
               <div className="notice is-success">
                 <UiIcon name="check" size={18} />
                 <div className="notice-body">
-                  <div className="notice-title">Đã duyệt và gửi lộ trình ôn tập cho học sinh</div>
+                  <div className="notice-title">
+                    {proposal.autoApproved ? 'AI đã tự gửi lộ trình ôn tập cho học sinh' : 'Đã duyệt và gửi lộ trình ôn tập cho học sinh'}
+                  </div>
                   <div className="notice-text">
                     {proposal.examId ? 'Đề luyện tập đã được tạo và giao cho học sinh.' : 'Học sinh đã nhận được nhận xét và lộ trình ôn tập.'}
                   </div>

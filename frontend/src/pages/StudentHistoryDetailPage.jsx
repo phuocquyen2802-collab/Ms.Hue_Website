@@ -4,6 +4,7 @@ import api from '../services/api';
 import WeakTopicsChart from '../components/WeakTopicsChart';
 import RoadmapSteps, { RoadmapSummary } from '../components/RoadmapSteps';
 import UiIcon, { scoreLevel, formatScore, ScoreTrend } from '../components/UiIcon';
+import { RoadmapSentPill, RoadmapGeneratingState } from '../components/RoadmapStatus';
 
 export default function StudentHistoryDetailPage() {
   const { submissionId } = useParams();
@@ -17,6 +18,19 @@ export default function StudentHistoryDetailPage() {
       .then((res) => setData(res.data))
       .finally(() => setLoading(false));
   }, [submissionId]);
+
+  // AI đang soạn lộ trình cho lần làm này: hỏi lại tới khi có kết quả.
+  const aiWorking = data?.roadmapStatus === 'generating';
+  useEffect(() => {
+    if (!aiWorking) return undefined;
+    const timer = setInterval(() => {
+      if (document.hidden) return;
+      api.get(`/student/submissions/${submissionId}`).then((res) => {
+        if (res.data?.id === submissionId) setData(res.data);
+      }).catch(() => {});
+    }, 4000);
+    return () => clearInterval(timer);
+  }, [aiWorking, submissionId]);
 
   if (loading || !data) {
     return (
@@ -147,14 +161,9 @@ export default function StudentHistoryDetailPage() {
               <UiIcon name="route" size={18} className="title-icon" />
               <h2>Lộ trình ôn tập cho lần làm này</h2>
             </div>
-            <p className="card-hint">AI phân tích các câu sai, giáo viên duyệt trước khi gửi.</p>
+            <p className="card-hint">AI phân tích các câu sai và soạn lộ trình ôn tập riêng cho bạn.</p>
           </div>
-          {roadmap && roadmap.reviewedAt && (
-            <span className="status-pill approved">
-              <UiIcon name="check" size={13} />
-              Giáo viên đã duyệt {new Date(roadmap.reviewedAt).toLocaleDateString('vi-VN')}
-            </span>
-          )}
+          <RoadmapSentPill roadmap={roadmap} />
         </div>
 
         {roadmap ? (
@@ -170,6 +179,8 @@ export default function StudentHistoryDetailPage() {
             <RoadmapSummary text={roadmap.roadmap?.summary} />
             <RoadmapSteps steps={roadmap.roadmap?.steps} />
           </div>
+        ) : roadmapStatus === 'generating' ? (
+          <RoadmapGeneratingState />
         ) : roadmapStatus === 'pending_review' ? (
           <div className="empty-state">
             <div className="empty-state-icon is-svg"><UiIcon name="clock" size={24} /></div>

@@ -2,6 +2,7 @@ import React, { useEffect, useState, useMemo, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import api from '../services/api';
 import CountUp from '../components/CountUp';
+import AiRoadmapSettings from '../components/AiRoadmapSettings';
 import useAutoRefresh, { setIfChanged } from '../hooks/useAutoRefresh';
 import { renderMath } from '../utils/mathRender';
 import UiIcon, { scoreLevel, formatScore, ScoreTrend } from '../components/UiIcon';
@@ -33,6 +34,9 @@ function isLongOptionQuestion(options) {
   });
 }
 
+// Form tạo đề trống. Mặc định AI tự gửi lộ trình + bài luyện tập khi học sinh nộp bài.
+const EMPTY_NEW_EXAM = { title: '', description: '', durationMinutes: 15, aiRoadmapMode: 'auto', aiRoadmapExercises: true };
+
 export default function TeacherExamsPage() {
   const [exams, setExams] = useState([]);
   const [students, setStudents] = useState([]);
@@ -44,7 +48,7 @@ export default function TeacherExamsPage() {
   const [statusFilter, setStatusFilter] = useState('all');
 
   // Tạo đề thi mới
-  const [newExam, setNewExam] = useState({ title: '', description: '', durationMinutes: 15 });
+  const [newExam, setNewExam] = useState(EMPTY_NEW_EXAM);
   const [createError, setCreateError] = useState('');
   const [creating, setCreating] = useState(false);
   const [wordFile, setWordFile] = useState(null);
@@ -92,7 +96,9 @@ export default function TeacherExamsPage() {
   }, [students, createAssignSearch, createAssignClassFilter]);
 
   const [editingExam, setEditingExam] = useState(null);
-  const [editForm, setEditForm] = useState({ title: '', description: '', durationMinutes: 15, status: 'draft' });
+  const [editForm, setEditForm] = useState({
+    title: '', description: '', durationMinutes: 15, status: 'draft', aiRoadmapMode: 'auto', aiRoadmapExercises: true,
+  });
   const [editError, setEditError] = useState('');
   const [savingEdit, setSavingEdit] = useState(false);
   const [successMessage, setSuccessMessage] = useState('');
@@ -727,7 +733,7 @@ export default function TeacherExamsPage() {
         }
       }
 
-      setNewExam({ title: '', description: '', durationMinutes: 15 });
+      setNewExam(EMPTY_NEW_EXAM);
       setWordFile(null);
       setParsedQuestions([]);
       setCreateAssignedStudents([]);
@@ -758,6 +764,8 @@ export default function TeacherExamsPage() {
       description: exam.description || '',
       durationMinutes: exam.durationMinutes,
       status: exam.status || 'draft',
+      aiRoadmapMode: exam.aiRoadmapMode || 'auto',
+      aiRoadmapExercises: exam.aiRoadmapExercises !== false,
     });
     setEditError('');
   }
@@ -1213,6 +1221,12 @@ export default function TeacherExamsPage() {
                       />
                     </div>
                   </div>
+
+                  <AiRoadmapSettings
+                    idPrefix="create-ai-roadmap"
+                    value={newExam}
+                    onChange={(next) => setNewExam({ ...newExam, ...next })}
+                  />
                 </div>
               </section>
 
@@ -1884,6 +1898,12 @@ export default function TeacherExamsPage() {
                   autoComplete="off"
                 />
               </div>
+
+              <AiRoadmapSettings
+                idPrefix="edit-ai-roadmap"
+                value={editForm}
+                onChange={(next) => setEditForm({ ...editForm, ...next })}
+              />
 
               {editError && (
                 <p className="error-text" role="alert" aria-live="polite">
