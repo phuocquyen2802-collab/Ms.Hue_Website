@@ -28,7 +28,69 @@ function cleanMathContent(html) {
     .trim();
 }
 
-function buildPrompt(studentName, weakTags = [], wrongQuestions = []) {
+// Công thức MathType trong file Word được lưu thành ảnh PNG nhúng base64 (không
+// có chữ thay thế). Trước đây cleanMathContent bỏ hết ảnh nên Gemini chỉ đọc
+// được "Các nghiệm của phương trình là" mà KHÔNG thấy phương trình, đáp án
+// cũng trống - phần phân tích lỗi sai là AI đoán. Nay mỗi ảnh công thức được
+// thay bằng 1 dấu mốc ⟦n⟧ và chính ảnh đó được gửi kèm cho Gemini đúng tại vị
+// trí ấy (toContentParts), Gemini đọc được công thức trong ảnh.
+const FORMULA_IMAGE_RE = /<img[^>]*?\ssrc=["']data:(image\/(?:png|jpe?g|webp));base64,([A-Za-z0-9+/=\s]+)["'][^>]*>/gi;
+const MAX_PROMPT_IMAGES = 150;
+
+// Chữ của đề bài / phương án gửi cho AI. Có truyền `images` thì ảnh công thức
+// được giữ lại (dấu mốc ⟦n⟧ + thêm vào `images`), không thì bỏ như cũ.
+function questionText(html, images) {
+  if (!images) return cleanMathContent(html);
+  const marked = String(html || '').replace(FORMULA_IMAGE_RE, (match, mimeType, data) => {
+    if (images.length >= MAX_PROMPT_IMAGES) return ' ';
+    images.push({ mimeType: mimeType.toLowerCase() === 'image/jpg' ? 'image/jpeg' : mimeType.toLowerCase(), data: data.replace(/\s+/g, '') });
+    return ` ⟦${images.length - 1}⟧ `;
+  });
+  return cleanMathContent(marked);
+}
+
+// Tách prompt có dấu mốc ⟦n⟧ thành các "parts" gửi Gemini: chữ và ảnh xen kẽ.
+function toContentParts(prompt, images) {
+  if (!images || images.length === 0) return [{ text: prompt }];
+  const parts = [];
+  prompt.split(/⟦(\d+)⟧/).forEach((piece, i) => {
+    if (i % 2 === 1) {
+      const image = images[Number(piece)];
+      if (image) parts.push({ inlineData: { mimeType: image.mimeType, data: image.data } });
+    } else if (piece) {
+      parts.push({ text: piece });
+    }
+  });
+  return parts;
+}
+
+// Gemini hay đặt đáp án đúng ở A (các ví dụ mẫu trong prompt đều là A; đo thực
+// tế có lần 16/16 câu, có lần 11/16 câu đáp án A) nên học sinh đoán ra ngay.
+// Xáo ngẫu nhiên thứ tự các phương án rồi cập nhật lại đáp án đúng - trừ câu
+// có phương án nhắc tới phương án khác ("A và B đều đúng", "Tất cả các đáp án
+// trên"...) vì đổi chỗ sẽ sai nghĩa.
+const OPTION_REFERENCE_RE = /(?:^|[^A-Za-z])[A-D]\s*(?:,|và|hoặc)\s*[A-D](?:[^A-Za-z]|$)|tất cả|cả hai|cả ba|đều đúng|đều sai|(?:đáp án|phương án|câu) (?:trên|[A-D](?:[^A-Za-z]|$))/i;
+function shuffleExerciseOptions(exercises) {
+  return (exercises || []).map((ex) => {
+    const options = Array.isArray(ex.options) ? ex.options : [];
+    const keys = options.map((o) => o.key);
+    const correctIndex = keys.indexOf(ex.correctAnswer);
+    if (options.length < 2 || correctIndex === -1) return ex;
+    if (options.some((o) => OPTION_REFERENCE_RE.test(String(o.text || '')))) return ex;
+    const order = options.map((_, i) => i);
+    for (let i = order.length - 1; i > 0; i -= 1) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [order[i], order[j]] = [order[j], order[i]];
+    }
+    return {
+      ...ex,
+      options: order.map((from, to) => ({ ...options[from], key: keys[to] })),
+      correctAnswer: keys[order.indexOf(correctIndex)],
+    };
+  });
+}
+
+function buildPrompt(studentName, weakTags = [], wrongQuestions = [], images = null) {
   const tagList = weakTags
     .map((t) => `- "${t.tag}" (tỷ lệ sai: ${Math.round(t.wrongRate * 100)}%, sai ${t.totalWrong}/${t.totalAnswered} câu)`)
     .join('\n');
@@ -37,9 +99,9 @@ function buildPrompt(studentName, weakTags = [], wrongQuestions = []) {
   if (wrongQuestions && wrongQuestions.length > 0) {
     const list = wrongQuestions
       .map((q, idx) => {
-        const cleanContent = cleanMathContent(q.content);
+        const cleanContent = questionText(q.content, images);
         const optionsText = (q.options || [])
-          .map((opt) => `    ${opt.key}. ${cleanMathContent(opt.text)}`)
+          .map((opt) => `    ${opt.key}. ${questionText(opt.text, images)}`)
           .join('\n');
         const diagramLine = q.diagram
           ? `\n- Hình minh hoạ gốc (dữ liệu CHÍNH XÁC, dùng làm mẫu để vẽ hình tương tự): ${JSON.stringify(q.diagram)}`
@@ -52,7 +114,10 @@ ${optionsText}
       })
       .join('\n\n');
 
-    wrongQuestionsSection = `\nDANH SÁCH CÁC CÂU HỎI CỤ THỂ HỌC SINH VỪA LÀM SAI TRONG ĐỀ THI:
+    const imageNote = images && images.length > 0
+      ? '\n(Công thức trong đề bài và trong các đáp án được gửi kèm dưới dạng ẢNH ngay tại vị trí của nó - hãy đọc kỹ công thức trong ảnh để phân tích đúng lỗi sai và sinh bài tương tự cùng dạng.)'
+      : '';
+    wrongQuestionsSection = `\nDANH SÁCH CÁC CÂU HỎI CỤ THỂ HỌC SINH VỪA LÀM SAI TRONG ĐỀ THI:${imageNote}
 ${list}\n`;
   }
 
@@ -353,7 +418,9 @@ async function generateRoadmapAndExercises(studentName, weakTags = [], wrongQues
     );
   }
 
-  const prompt = buildPrompt(studentName, weakTags, wrongQuestions);
+  const images = [];
+  const prompt = buildPrompt(studentName, weakTags, wrongQuestions, images);
+  const parts = toContentParts(prompt, images);
   let lastError = null;
 
   for (const modelName of FALLBACK_MODELS) {
@@ -365,11 +432,14 @@ async function generateRoadmapAndExercises(studentName, weakTags = [], wrongQues
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          contents: [{ parts: [{ text: prompt }] }],
+          contents: [{ parts }],
           generationConfig: {
             responseMimeType: 'application/json',
             temperature: 0.4,
             maxOutputTokens: 32768,
+            // Ảnh công thức rất nhỏ: độ phân giải thấp vẫn đọc rõ mà tốn ít token
+            // hơn nhiều (mặc định ~1.100 token/ảnh, 8 câu sai ~54 ảnh = ~60.000 token).
+            ...(images.length > 0 ? { mediaResolution: 'MEDIA_RESOLUTION_LOW' } : {}),
           },
         }),
         // Model bị treo (đo thực tế có model không phản hồi quá 90 giây) thì bỏ, thử model dự phòng.
@@ -399,8 +469,10 @@ async function generateRoadmapAndExercises(studentName, weakTags = [], wrongQues
         continue;
       }
 
-      console.log(`[Gemini] Lộ trình: ${modelName} trả lời xong sau ${seconds()}s`);
-      return normalizeAIOutput(parsed);
+      console.log(`[Gemini] Lộ trình: ${modelName} trả lời xong sau ${seconds()}s (${images.length} ảnh công thức)`);
+      const result = normalizeAIOutput(parsed);
+      result.exercises = shuffleExerciseOptions(result.exercises);
+      return result;
     } catch (err) {
       console.warn(`[Gemini] Lỗi gọi model ${modelName} sau ${seconds()}s:`, err.message);
       lastError = err;

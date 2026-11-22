@@ -480,6 +480,9 @@ export default function TeacherSubmissionDetailPage() {
                     Có thể tải lại trang hoặc chuyển sang mục khác, AI vẫn tiếp tục chạy và kết quả sẽ tự hiện ở đây.
                     {aiJob?.mode === 'auto' && ' Lộ trình sẽ được gửi thẳng cho học sinh khi xong.'}
                   </p>
+                  <p className="ai-eta">
+                    <UiIcon name="clock" size={14} />Quá trình này mất 1 - 3 phút để AI nhận xét.
+                  </p>
                 </>
               ) : (
                 <>

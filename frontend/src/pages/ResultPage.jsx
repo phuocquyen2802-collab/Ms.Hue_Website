@@ -160,6 +160,9 @@ export default function ResultPage() {
               <div className="notice-text">
                 AI đang phân tích các câu sai để tìm lỗ hổng kiến thức. Bạn sẽ nhận thông báo khi lộ trình sẵn sàng.
               </div>
+              <div className="notice-text ai-eta">
+                <UiIcon name="clock" size={14} />Quá trình này mất 1 - 3 phút để AI nhận xét.
+              </div>
             </div>
           </div>
         )}

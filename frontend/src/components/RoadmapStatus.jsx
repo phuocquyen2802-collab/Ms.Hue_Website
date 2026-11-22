@@ -24,7 +24,10 @@ export function RoadmapGeneratingState() {
       <div className="empty-state-title">AI đang soạn lộ trình ôn tập cho bạn</div>
       <p className="empty-state-desc">
         AI đang phân tích các câu sai để chỉ ra lỗ hổng kiến thức. Lộ trình sẽ tự hiện ở đây và bạn sẽ nhận
-        thông báo khi xong, thường mất 1–2 phút.
+        thông báo khi xong.
+      </p>
+      <p className="empty-state-desc ai-eta">
+        <UiIcon name="clock" size={14} />Quá trình này mất 1 - 3 phút để AI nhận xét.
       </p>
     </div>
   );

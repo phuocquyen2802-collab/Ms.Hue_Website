@@ -1133,8 +1133,9 @@ export const EXACT = {
   'AI đang soạn lại đề xuất mới. Bản mới sẽ tự hiện trong danh sách khi xong.':
     'AI is writing a new proposal. It will appear in the list when ready.',
   'AI đang soạn lộ trình ôn tập cho bạn': 'AI is writing your review plan',
-  'AI đang phân tích các câu sai để chỉ ra lỗ hổng kiến thức. Lộ trình sẽ tự hiện ở đây và bạn sẽ nhận thông báo khi xong, thường mất 1–2 phút.':
-    'AI is analysing your wrong answers to find knowledge gaps. The plan will appear here and you will get a notification when it is ready, usually within 1–2 minutes.',
+  'AI đang phân tích các câu sai để chỉ ra lỗ hổng kiến thức. Lộ trình sẽ tự hiện ở đây và bạn sẽ nhận thông báo khi xong.':
+    'AI is analysing your wrong answers to find knowledge gaps. The plan will appear here and you will get a notification when it is ready.',
+  'Quá trình này mất 1 - 3 phút để AI nhận xét.': 'This takes 1–3 minutes while the AI writes its feedback.',
   'AI đang soạn': 'AI is writing',
   'AI đang soạn lộ trình ôn tập cho lần làm này': 'AI is writing a review plan for this attempt',
   'Chưa có lộ trình ôn tập cho lần làm này': 'No review plan for this attempt yet',
