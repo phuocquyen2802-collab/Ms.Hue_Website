@@ -357,6 +357,8 @@ async function generateRoadmapAndExercises(studentName, weakTags = [], wrongQues
   let lastError = null;
 
   for (const modelName of FALLBACK_MODELS) {
+    const startedAt = Date.now();
+    const seconds = () => ((Date.now() - startedAt) / 1000).toFixed(1);
     try {
       const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`;
       const response = await fetch(url, {
@@ -376,7 +378,8 @@ async function generateRoadmapAndExercises(studentName, weakTags = [], wrongQues
 
       if (!response.ok) {
         const errorBody = await response.text();
-        console.warn(`[Gemini] Model ${modelName} tạm thời phản hồi (${response.status}), tự động chuyển sang model dự phòng tiếp theo...`);
+        // 429 = API key vượt giới hạn số lần gọi; 503 = model của Google đang quá tải.
+        console.warn(`[Gemini] Model ${modelName} tạm thời phản hồi (${response.status}) sau ${seconds()}s, tự động chuyển sang model dự phòng tiếp theo...`);
         lastError = new Error(`Gemini API (${modelName}) lỗi ${response.status}: ${errorBody}`);
         await new Promise((resolve) => setTimeout(resolve, 300));
         continue;
@@ -396,9 +399,10 @@ async function generateRoadmapAndExercises(studentName, weakTags = [], wrongQues
         continue;
       }
 
+      console.log(`[Gemini] Lộ trình: ${modelName} trả lời xong sau ${seconds()}s`);
       return normalizeAIOutput(parsed);
     } catch (err) {
-      console.warn(`[Gemini] Lỗi gọi model ${modelName}:`, err.message);
+      console.warn(`[Gemini] Lỗi gọi model ${modelName} sau ${seconds()}s:`, err.message);
       lastError = err;
     }
   }

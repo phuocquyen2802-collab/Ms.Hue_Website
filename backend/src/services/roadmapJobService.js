@@ -235,10 +235,13 @@ async function runJob(submissionId) {
   if (!submission || !submission.aiJob) return;
   const mode = submission.aiJob.mode === 'auto' ? 'auto' : 'manual';
   const attempts = (submission.aiJob.attempts || 0) + 1;
-  setJob(submissionId, { status: 'running', startedAt: new Date().toISOString(), attempts });
+  const startedMs = Date.now();
+  const queuedSeconds = ((startedMs - new Date(submission.aiJob.requestedAt || startedMs).getTime()) / 1000).toFixed(1);
+  setJob(submissionId, { status: 'running', startedAt: new Date(startedMs).toISOString(), attempts });
 
   try {
     const record = await generateProposal(submissionId, mode);
+    console.log(`[AI lộ trình] Bài nộp ${submissionId} (${mode}, lần ${attempts}): chờ hàng ${queuedSeconds}s, AI chạy ${((Date.now() - startedMs) / 1000).toFixed(1)}s`);
     setJob(submissionId, {
       status: 'done',
       finishedAt: new Date().toISOString(),
