@@ -34,7 +34,7 @@ export default function AiRoadmapSettings({ value, onChange, idPrefix = 'ai-road
       </label>
 
       {auto && (
-        <label className={`check-row is-sub${withExercises ? ' is-checked' : ''}`} htmlFor={`${idPrefix}-exercises`}>
+        <label className={`check-row${withExercises ? ' is-checked' : ''}`} htmlFor={`${idPrefix}-exercises`}>
           <input
             id={`${idPrefix}-exercises`}
             type="checkbox"
